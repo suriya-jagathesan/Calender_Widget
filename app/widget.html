@@ -3,25 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Day Calendar View</title>
-    <link
-  rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-/>
-
+    <title>Day & Week Calendar View</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-           font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background: #f5f7fa;
             padding: 20px;
         }
-
         .calendar-container {
             max-width: 1600px;
             margin: 0 auto;
@@ -30,7 +20,6 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             overflow: hidden;
         }
-
         .calendar-header {
             display: flex;
             justify-content: space-between;
@@ -38,7 +27,156 @@
             padding: 20px 30px;
             border-bottom: 1px solid #e5e7eb;
         }
+        .view-toggle {
+            display: flex;
+            gap: 0;
+            background: #f3f4f6;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .view-toggle button {
+            padding: 8px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .view-toggle button.active {
+            background: #4f46e5;
+            color: white;
+        }
+        .date-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #1f2937;
+        }
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .nav-btn {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover { background: #f9fafb; }
+        .calendar-icon {
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .mini-calendar {
+            position: absolute;
+            right: 30px;
+            top: 70px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 100;
+            display: none;
+            width: 320px;
+        }
 
+        .mini-calendar.active {
+            display: block;
+        }
+
+        .mini-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .mini-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .mini-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            text-align: center;
+        }
+
+        .mini-day-label {
+            font-size: 11px;
+            color: #6b7280;
+            font-weight: 600;
+            padding: 8px 5px;
+            text-transform: uppercase;
+        }
+
+        .mini-day {
+            padding: 10px;
+            font-size: 13px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .mini-day:not(.other-month):hover {
+            background: #f3f4f6;
+        }
+
+        .mini-day.other-month {
+            color: #d1d5db;
+            cursor: default;
+        }
+
+        .mini-day.today {
+            background: #dbeafe;
+            color: #1e40af;
+            font-weight: 600;
+        }
+
+        .mini-day.selected {
+            background: #4f46e5;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .mini-day.week-highlighted {
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+        
+        .mini-day.week-highlighted.today {
+            background: #dbeafe;
+            color: #1e40af;
+            font-weight: 600;
+        }
+        
+        .mini-day.week-highlighted.selected {
+            background: #4f46e5;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .mini-day.week-hover {
+            background: #f3f4f6 !important;
+        }
+        
         /* Search Filters Display Section */
         .search-filters-section {
             padding: 15px 30px;
@@ -107,136 +245,6 @@
         .filter-pill-remove:hover {
             background: #9ca3af;
             color: white;
-        }
-
-        .view-toggle {
-            display: flex;
-            gap: 0;
-            background: #f3f4f6;
-            border-radius: 6px;
-            overflow: hidden;
-        }
-
-        .view-toggle button {
-            padding: 8px 20px;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .view-toggle button.active {
-            background: #4f46e5;
-            color: white;
-        }
-
-        .date-title {
-            font-size: 16px;
-            font-weight: 500;
-            color: #1f2937;
-        }
-
-        .header-controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .nav-btn {
-            padding: 8px 12px;
-            border: 1px solid #d1d5db;
-            background: white;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .nav-btn:hover {
-            background: #f9fafb;
-        }
-
-        .calendar-icon {
-            padding: 8px;
-            border: 1px solid #d1d5db;
-            background: white;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .mini-calendar {
-            position: absolute;
-            right: 30px;
-            top: 70px;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 100;
-            display: none;
-        }
-
-        .mini-calendar.active {
-            display: block;
-        }
-
-        .mini-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .mini-nav {
-            display: flex;
-            gap: 10px;
-        }
-
-        .mini-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            text-align: center;
-        }
-
-        .mini-day-label {
-            font-size: 11px;
-            color: #6b7280;
-            font-weight: 600;
-            padding: 5px;
-        }
-
-        .mini-day {
-            padding: 8px;
-            font-size: 13px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .mini-day:not(.other-month):hover {
-            background: #f3f4f6;
-        }
-
-        .mini-day.other-month {
-            color: #d1d5db;
-            cursor: default;
-        }
-
-        .mini-day.today {
-            background: #dbeafe;
-            color: #1e40af;
-            font-weight: 600;
-        }
-
-        .mini-day.selected {
-            background: #4f46e5;
-            color: white;
-            font-weight: 600;
         }
 
         /* Search Panel Styles */
@@ -425,7 +433,6 @@
             background-color: #3367d6;
         }
 
-        /* Scrollbar styling for dropdown */
         .filter-options::-webkit-scrollbar {
             width: 8px;
         }
@@ -512,18 +519,6 @@
             color: #9ca3af;
         }
 
-        .tag {
-            display: inline-flex;
-            align-items: center;
-            background: #e9d5ff;
-            color: #6b21a8;
-            padding: 4px 8px;
-            border-radius: 3px;
-            font-size: 13px;
-            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            gap: 6px;
-        }
-
         .search-footer {
             padding: 20px;
             border-top: 1px solid #e5e7eb;
@@ -561,7 +556,11 @@
         .search-overlay.active {
             display: block;
         }
-
+        
+        /* Day View Styles */
+        .day-view { display: none; }
+        .day-view.active { display: block; }
+        
         .hour-header {
             display: flex;
             border-bottom: 2px solid #e5e7eb;
@@ -569,7 +568,6 @@
             z-index: 30;
             min-width: 2400px;
         }
-
         .hour-label {
             flex: 0 0 100px;
             min-width: 100px;
@@ -577,96 +575,178 @@
             text-align: center;
             font-size: 15px;
             color: #000;
-            font-weight: 500;
-            border-right: 1px solid #e5e7eb;
             font-weight: bolder;
+            border-right: 1px solid #e5e7eb;
         }
-
-        .calendar-wrapper {
-            overflow-x: auto;
-            overflow-y: auto;
-        }
-
+        .calendar-wrapper { overflow-x: auto; overflow-y: auto; }
         .calendar-body {
             display: flex;
             position: relative;
             min-height: 800px;
         }
-
         .calendar-grid {
             flex: 1;
             display: flex;
             position: relative;
             min-width: 2400px;
         }
-
         .hour-column {
             flex: 0 0 100px;
             min-width: 100px;
             border-right: 1px solid #e5e7eb;
             position: relative;
         }
-
         .hour-column-inner {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             pointer-events: none;
         }
-
-        .quarter-line {
-            border-right: 1px dotted #d1d5db;
-        }
-
-        .quarter-line:last-child {
-            border-right: none;
-        }
-
+        .quarter-line { border-right: 1px dotted #d1d5db; }
+        .quarter-line:last-child { border-right: none; }
         .quarter-slot {
             position: absolute;
-            top: 0;
-            bottom: 0;
+            top: 0; bottom: 0;
             padding: 2px;
             display: flex;
             flex-direction: column;
             gap: 3px;
             pointer-events: auto;
         }
-
-        .quarter-slot[data-quarter="0"] {
-            left: 0;
-            width: 25%;
-        }
-
-        .quarter-slot[data-quarter="1"] {
-            left: 25%;
-            width: 25%;
-        }
-
-        .quarter-slot[data-quarter="2"] {
-            left: 50%;
-            width: 25%;
-        }
-
-        .quarter-slot[data-quarter="3"] {
-            left: 75%;
-            width: 25%;
-        }
-
+        .quarter-slot[data-quarter="0"] { left: 0; width: 25%; }
+        .quarter-slot[data-quarter="1"] { left: 25%; width: 25%; }
+        .quarter-slot[data-quarter="2"] { left: 50%; width: 25%; }
+        .quarter-slot[data-quarter="3"] { left: 75%; width: 25%; }
         .events-container {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        /* Week View Styles */
+        .week-view { display: none; }
+        .week-view.active { display: block; }
+        
+        .week-header {
+            display: grid;
+            grid-template-columns: 80px repeat(7, 1fr);
+            border-bottom: 2px solid #e5e7eb;
+            background: white;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+        .week-header-corner {
+            border-right: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+        .week-day-header {
+            padding: 15px 10px;
+            text-align: center;
+            border-right: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+        .week-day-header:last-child { border-right: none; }
+        .week-day-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .week-day-date {
+            font-size: 16px;
+            font-weight: 500;
+            color: #1f2937;
+        }
+        .week-day-header.today { background: #dbeafe; }
+        .week-day-header.today .week-day-date {
+            color: #1e40af;
+            font-weight: 700;
+        }
+        .week-all-day {
+            display: grid;
+            grid-template-columns: 80px repeat(7, 1fr);
+            min-height: 50px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #fafafa;
+        }
+        .week-all-day-label {
+            padding: 10px;
+            font-size: 12px;
+            color: #6b7280;
+            border-right: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+        }
+        .week-all-day-cell {
+            border-right: 1px solid #e5e7eb;
+            position: relative;
+            min-height: 50px;
+        }
+        .week-all-day-cell:last-child { border-right: none; }
+        .week-grid-container { position: relative; }
+        .week-time-grid {
+            display: grid;
+            grid-template-columns: 80px repeat(7, 1fr);
+        }
+        .week-time-label {
+            padding: 0 10px;
+            text-align: right;
+            font-size: 12px;
+            color: #6b7280;
+            border-right: 1px solid #e5e7eb;
+            height: 60px;
+            display: flex;
+            align-items: flex-start;
+            padding-top: 5px;
+            background: #fafafa;
+        }
+        .week-day-column {
+            border-right: 1px solid #e5e7eb;
+            position: relative;
+            height: 60px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .week-day-column:last-child { border-right: none; }
+        .week-day-column:hover { background: #f9fafb; }
+        
+        .week-quarter-lines {
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
             pointer-events: none;
+        }
+        .week-quarter-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 0;
+            border-top: 1px dotted #d1d5db;
+        }
+        
+        .week-quarter-slot {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 15px;
+            pointer-events: auto;
+        }
+        .week-events-layer {
+            position: absolute;
+            top: 0;
+            left: 80px;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
             z-index: 10;
         }
-
+        
+        /* Event Styles */
         .event {
             position: absolute;
             background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
@@ -681,16 +761,11 @@
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-
         .event:hover {
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            z-index: 10;
+            z-index: 20;
         }
-
-        .event.dragging {
-            opacity: 0.5;
-        }
-
+        .event.dragging { opacity: 0.5; }
         .event-title {
             font-weight: 600;
             margin-bottom: 2px;
@@ -699,62 +774,13 @@
             text-overflow: ellipsis;
             line-height: 1.2;
         }
-
         .event-time {
             font-size: 10px;
             opacity: 0.9;
-            white-space: nowrap;
+            whitespace: nowrap;
             line-height: 1.2;
         }
-
-        .drop-highlight {
-            background-color: rgba(99, 102, 241, 0.15) !important;
-        }
-
-        /* Snackbar Styles */
-        .snackbar {
-            visibility: hidden;
-            min-width: 250px;
-            background-color: #323232;
-            color: #fff;
-            text-align: center;
-            border-radius: 4px;
-            padding: 16px;
-            position: fixed;
-            z-index: 300;
-            left: 50%;
-            bottom: 30px;
-            transform: translateX(-50%);
-            font-size: 14px;
-            box-shadow: 0 3px 5px -1px rgba(0,0,0,0.2), 0 6px 10px 0 rgba(0,0,0,0.14), 0 1px 18px 0 rgba(0,0,0,0.12);
-        }
-
-        .snackbar.show {
-            visibility: visible;
-            animation: fadein 0.3s, fadeout 0.3s 2.7s;
-        }
-
-        @keyframes fadein {
-            from {
-                bottom: 0;
-                opacity: 0;
-            }
-            to {
-                bottom: 30px;
-                opacity: 1;
-            }
-        }
-
-        @keyframes fadeout {
-            from {
-                bottom: 30px;
-                opacity: 1;
-            }
-            to {
-                bottom: 0;
-                opacity: 0;
-            }
-        }
+        .drop-highlight { background-color: rgba(99, 102, 241, 0.15) !important; }
     </style>
 </head>
 <body>
@@ -789,20 +815,17 @@
                                 <div class="filter-option" onclick="selectFilterOption('eType', 'isNot', this)">Is Not</div>
                                 <div class="filter-option" onclick="selectFilterOption('eType', 'isEmpty', this)">Is Empty</div>
                                 <div class="filter-option" onclick="selectFilterOption('eType', 'isNotEmpty', this)">Is Not Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('eType', 'startsWith', this)">Starts With</div>
-                                <div class="filter-option" onclick="selectFilterOption('eType', 'endsWith', this)">Ends With</div>
                             </div>
                             <input type="hidden" id="eType-filter" value="contains">
                         </div>
                     </div>
-                    <div class="filter-input-group">
+                    <div class="filter-input-group" id="eType-tags-group">
                         <div class="tags-input-container" id="eType-tags-container" onclick="focusTagInput('eType')">
                             <input type="text" id="eType-tags-input" placeholder="" onkeydown="handleTagInput(event, 'eType')">
                         </div>
                     </div>
                 </div>
             </div>
-            
             
             <div class="search-filter">
                 <label>
@@ -824,13 +847,11 @@
                                 <div class="filter-option" onclick="selectFilterOption('persons', 'isNot', this)">Is Not</div>
                                 <div class="filter-option" onclick="selectFilterOption('persons', 'isEmpty', this)">Is Empty</div>
                                 <div class="filter-option" onclick="selectFilterOption('persons', 'isNotEmpty', this)">Is Not Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('persons', 'startsWith', this)">Starts With</div>
-                                <div class="filter-option" onclick="selectFilterOption('persons', 'endsWith', this)">Ends With</div>
                             </div>
                             <input type="hidden" id="persons-filter" value="contains">
                         </div>
                     </div>
-                    <div class="filter-input-group">
+                    <div class="filter-input-group" id="persons-tags-group">
                         <div class="tags-input-container" id="persons-tags-container" onclick="focusTagInput('persons')">
                             <input type="text" id="persons-tags-input" placeholder="" onkeydown="handleTagInput(event, 'persons')">
                         </div>
@@ -853,18 +874,16 @@
                                 </svg>
                             </div>
                             <div class="filter-options" id="from-filter-options">
-                                <div class="filter-option " onclick="selectFilterOption('from', 'contains', this)">Contains</div>
+                                <div class="filter-option" onclick="selectFilterOption('from', 'contains', this)">Contains</div>
                                 <div class="filter-option" onclick="selectFilterOption('from', 'is', this)">Is</div>
                                 <div class="filter-option" onclick="selectFilterOption('from', 'isNot', this)">Is Not</div>
                                 <div class="filter-option" onclick="selectFilterOption('from', 'isEmpty', this)">Is Empty</div>
                                 <div class="filter-option" onclick="selectFilterOption('from', 'isNotEmpty', this)">Is Not Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('from', 'startsWith', this)">Starts With</div>
-                                <div class="filter-option" onclick="selectFilterOption('from', 'endsWith', this)">Ends With</div>
                             </div>
                             <input type="hidden" id="from-filter" value="contains">
                         </div>
                     </div>
-                    <div class="filter-input-group">
+                    <div class="filter-input-group" id="from-tags-group">
                         <div class="tags-input-container" id="from-tags-container" onclick="focusTagInput('from')">
                             <input type="text" id="from-tags-input" placeholder="" onkeydown="handleTagInput(event, 'from')">
                         </div>
@@ -887,18 +906,16 @@
                                 </svg>
                             </div>
                             <div class="filter-options" id="to-filter-options">
-                                <div class="filter-option " onclick="selectFilterOption('to', 'contains', this)">Contains</div>
+                                <div class="filter-option" onclick="selectFilterOption('to', 'contains', this)">Contains</div>
                                 <div class="filter-option" onclick="selectFilterOption('to', 'is', this)">Is</div>
                                 <div class="filter-option" onclick="selectFilterOption('to', 'isNot', this)">Is Not</div>
                                 <div class="filter-option" onclick="selectFilterOption('to', 'isEmpty', this)">Is Empty</div>
                                 <div class="filter-option" onclick="selectFilterOption('to', 'isNotEmpty', this)">Is Not Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('to', 'startsWith', this)">Starts With</div>
-                                <div class="filter-option" onclick="selectFilterOption('to', 'endsWith', this)">Ends With</div>
                             </div>
                             <input type="hidden" id="to-filter" value="contains">
                         </div>
                     </div>
-                    <div class="filter-input-group">
+                    <div class="filter-input-group" id="to-tags-group">
                         <div class="tags-input-container" id="to-tags-container" onclick="focusTagInput('to')">
                             <input type="text" id="to-tags-input" placeholder="" onkeydown="handleTagInput(event, 'to')">
                         </div>
@@ -921,18 +938,16 @@
                                 </svg>
                             </div>
                             <div class="filter-options" id="type-filter-options">
-                                <div class="filter-option " onclick="selectFilterOption('type', 'contains', this)">Contains</div>
+                                <div class="filter-option" onclick="selectFilterOption('type', 'contains', this)">Contains</div>
                                 <div class="filter-option" onclick="selectFilterOption('type', 'is', this)">Is</div>
                                 <div class="filter-option" onclick="selectFilterOption('type', 'isNot', this)">Is Not</div>
                                 <div class="filter-option" onclick="selectFilterOption('type', 'isEmpty', this)">Is Empty</div>
                                 <div class="filter-option" onclick="selectFilterOption('type', 'isNotEmpty', this)">Is Not Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('type', 'startsWith', this)">Starts With</div>
-                                <div class="filter-option" onclick="selectFilterOption('type', 'endsWith', this)">Ends With</div>
                             </div>
                             <input type="hidden" id="type-filter" value="contains">
                         </div>
                     </div>
-                    <div class="filter-input-group">
+                    <div class="filter-input-group" id="type-tags-group">
                         <div class="tags-input-container" id="type-tags-container" onclick="focusTagInput('type')">
                             <input type="text" id="type-tags-input" placeholder="" onkeydown="handleTagInput(event, 'type')">
                         </div>
@@ -955,18 +970,16 @@
                                 </svg>
                             </div>
                             <div class="filter-options" id="service-filter-options">
-                                <div class="filter-option " onclick="selectFilterOption('service', 'contains', this)">Contains</div>
+                                <div class="filter-option" onclick="selectFilterOption('service', 'contains', this)">Contains</div>
                                 <div class="filter-option" onclick="selectFilterOption('service', 'is', this)">Is</div>
                                 <div class="filter-option" onclick="selectFilterOption('service', 'isNot', this)">Is Not</div>
                                 <div class="filter-option" onclick="selectFilterOption('service', 'isEmpty', this)">Is Empty</div>
                                 <div class="filter-option" onclick="selectFilterOption('service', 'isNotEmpty', this)">Is Not Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('service', 'startsWith', this)">Starts With</div>
-                                <div class="filter-option" onclick="selectFilterOption('service', 'endsWith', this)">Ends With</div>
                             </div>
                             <input type="hidden" id="service-filter" value="contains">
                         </div>
                     </div>
-                    <div class="filter-input-group">
+                    <div class="filter-input-group" id="service-tags-group">
                         <div class="tags-input-container" id="service-tags-container" onclick="focusTagInput('service')">
                             <input type="text" id="service-tags-input" placeholder="" onkeydown="handleTagInput(event, 'service')">
                         </div>
@@ -989,18 +1002,16 @@
                                 </svg>
                             </div>
                             <div class="filter-options" id="staff-filter-options">
-                                <div class="filter-option " onclick="selectFilterOption('staff', 'contains', this)">Contains</div>
+                                <div class="filter-option" onclick="selectFilterOption('staff', 'contains', this)">Contains</div>
                                 <div class="filter-option" onclick="selectFilterOption('staff', 'is', this)">Is</div>
                                 <div class="filter-option" onclick="selectFilterOption('staff', 'isNot', this)">Is Not</div>
                                 <div class="filter-option" onclick="selectFilterOption('staff', 'isEmpty', this)">Is Empty</div>
                                 <div class="filter-option" onclick="selectFilterOption('staff', 'isNotEmpty', this)">Is Not Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('staff', 'startsWith', this)">Starts With</div>
-                                <div class="filter-option" onclick="selectFilterOption('staff', 'endsWith', this)">Ends With</div>
                             </div>
                             <input type="hidden" id="staff-filter" value="contains">
                         </div>
                     </div>
-                    <div class="filter-input-group">
+                    <div class="filter-input-group" id="staff-tags-group">
                         <div class="tags-input-container" id="staff-tags-container" onclick="focusTagInput('staff')">
                             <input type="text" id="staff-tags-input" placeholder="" onkeydown="handleTagInput(event, 'staff')">
                         </div>
@@ -1023,18 +1034,16 @@
                                 </svg>
                             </div>
                             <div class="filter-options" id="activityType-filter-options">
-                                <div class="filter-option " onclick="selectFilterOption('activityType', 'contains', this)">Contains</div>
+                                <div class="filter-option" onclick="selectFilterOption('activityType', 'contains', this)">Contains</div>
                                 <div class="filter-option" onclick="selectFilterOption('activityType', 'is', this)">Is</div>
                                 <div class="filter-option" onclick="selectFilterOption('activityType', 'isNot', this)">Is Not</div>
                                 <div class="filter-option" onclick="selectFilterOption('activityType', 'isEmpty', this)">Is Empty</div>
                                 <div class="filter-option" onclick="selectFilterOption('activityType', 'isNotEmpty', this)">Is Not Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('activityType', 'startsWith', this)">Starts With</div>
-                                <div class="filter-option" onclick="selectFilterOption('activityType', 'endsWith', this)">Ends With</div>
                             </div>
                             <input type="hidden" id="activityType-filter" value="contains">
                         </div>
                     </div>
-                    <div class="filter-input-group">
+                    <div class="filter-input-group" id="activityType-tags-group">
                         <div class="tags-input-container" id="activityType-tags-container" onclick="focusTagInput('activityType')">
                             <input type="text" id="activityType-tags-input" placeholder="" onkeydown="handleTagInput(event, 'activityType')">
                         </div>
@@ -1057,18 +1066,16 @@
                                 </svg>
                             </div>
                             <div class="filter-options" id="location-filter-options">
-                                <div class="filter-option " onclick="selectFilterOption('location', 'contains', this)">Contains</div>
+                                <div class="filter-option" onclick="selectFilterOption('location', 'contains', this)">Contains</div>
                                 <div class="filter-option" onclick="selectFilterOption('location', 'is', this)">Is</div>
                                 <div class="filter-option" onclick="selectFilterOption('location', 'isNot', this)">Is Not</div>
                                 <div class="filter-option" onclick="selectFilterOption('location', 'isEmpty', this)">Is Empty</div>
                                 <div class="filter-option" onclick="selectFilterOption('location', 'isNotEmpty', this)">Is Not Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('location', 'startsWith', this)">Starts With</div>
-                                <div class="filter-option" onclick="selectFilterOption('location', 'endsWith', this)">Ends With</div>
                             </div>
                             <input type="hidden" id="location-filter" value="contains">
                         </div>
                     </div>
-                    <div class="filter-input-group">
+                    <div class="filter-input-group" id="location-tags-group">
                         <div class="tags-input-container" id="location-tags-container" onclick="focusTagInput('location')">
                             <input type="text" id="location-tags-input" placeholder="" onkeydown="handleTagInput(event, 'location')">
                         </div>
@@ -1091,18 +1098,16 @@
                                 </svg>
                             </div>
                             <div class="filter-options" id="activityNotes-filter-options">
-                                <div class="filter-option " onclick="selectFilterOption('activityNotes', 'contains', this)">Contains</div>
+                                <div class="filter-option" onclick="selectFilterOption('activityNotes', 'contains', this)">Contains</div>
                                 <div class="filter-option" onclick="selectFilterOption('activityNotes', 'is', this)">Is</div>
                                 <div class="filter-option" onclick="selectFilterOption('activityNotes', 'isNot', this)">Is Not</div>
                                 <div class="filter-option" onclick="selectFilterOption('activityNotes', 'isEmpty', this)">Is Empty</div>
                                 <div class="filter-option" onclick="selectFilterOption('activityNotes', 'isNotEmpty', this)">Is Not Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('activityNotes', 'startsWith', this)">Starts With</div>
-                                <div class="filter-option" onclick="selectFilterOption('activityNotes', 'endsWith', this)">Ends With</div>
                             </div>
                             <input type="hidden" id="activityNotes-filter" value="contains">
                         </div>
                     </div>
-                    <div class="filter-input-group">
+                    <div class="filter-input-group" id="activityNotes-tags-group">
                         <div class="tags-input-container" id="activityNotes-tags-container" onclick="focusTagInput('activityNotes')">
                             <input type="text" id="activityNotes-tags-input" placeholder="" onkeydown="handleTagInput(event, 'activityNotes')">
                         </div>
@@ -1125,25 +1130,22 @@
                                 </svg>
                             </div>
                             <div class="filter-options" id="healthAppointment-filter-options">
-                                <div class="filter-option " onclick="selectFilterOption('healthAppointment', 'contains', this)">Contains</div>
+                                <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'contains', this)">Contains</div>
                                 <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'is', this)">Is</div>
                                 <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'isNot', this)">Is Not</div>
                                 <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'isEmpty', this)">Is Empty</div>
                                 <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'isNotEmpty', this)">Is Not Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'startsWith', this)">Starts With</div>
-                                <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'endsWith', this)">Ends With</div>
                             </div>
                             <input type="hidden" id="healthAppointment-filter" value="contains">
                         </div>
                     </div>
-                    <div class="filter-input-group">
+                    <div class="filter-input-group" id="healthAppointment-tags-group">
                         <div class="tags-input-container" id="healthAppointment-tags-container" onclick="focusTagInput('healthAppointment')">
                             <input type="text" id="healthAppointment-tags-input" placeholder="" onkeydown="handleTagInput(event, 'healthAppointment')">
                         </div>
                     </div>
                 </div>
             </div>
-
         </div>
         
         <div class="search-footer">
@@ -1154,15 +1156,13 @@
     <div class="calendar-container">
         <div class="calendar-header">
             <div class="view-toggle">
-                <button>Week</button>
-                <button class="active">Day</button>
+                <button id="weekViewBtn" onclick="switchView('week')">Week</button>
+                <button id="dayViewBtn" class="active" onclick="switchView('day')">Day</button>
             </div>
-            
-            <div class="date-title">Wednesday, December 31, 2025</div>
-            
+            <div class="date-title" id="dateTitle">Wednesday, December 31, 2025</div>
             <div class="header-controls">
-                <button class="nav-btn" onclick="changeDay(-1)"> <i class="fa fa-angle-left" style="font-weight: bolder;" ></i> </button>
-                <button class="nav-btn" onclick="changeDay(1)"><i class="fa fa-angle-right" style="font-weight: bolder;" ></i></button>
+                <button class="nav-btn" onclick="navigatePeriod(-1)"><i class="fa fa-angle-left"></i></button>
+                <button class="nav-btn" onclick="navigatePeriod(1)"><i class="fa fa-angle-right"></i></button>
                 <button class="nav-btn" onclick="goToday()">Today</button>
                 <button class="calendar-icon" onclick="toggleSearch()"><i class="fa fa-search fa-lg"></i></button>
                 <button class="calendar-icon" onclick="toggleMiniCalendar()"><i class="fa fa-calendar fa-lg"></i></button>
@@ -1173,40 +1173,50 @@
         <div class="search-filters-section" id="searchFiltersSection">
             <div class="search-filters-container" id="searchFiltersContainer">
                 <span class="search-label">SEARCH</span>
-                <!-- Filter pills will be dynamically added here -->
             </div>
         </div>
 
         <div class="mini-calendar" id="miniCalendar">
             <div class="mini-header">
-                <span id="miniMonthYear">DECEMBER 2025</span>
+                <span id="miniMonthYear">JANUARY 2026</span>
                 <div class="mini-nav">
                     <button class="nav-btn" onclick="changeMiniMonth(-1)">‹</button>
                     <button class="nav-btn" onclick="changeMiniMonth(1)">›</button>
                 </div>
             </div>
             <div class="mini-grid" id="miniGrid">
-                <div class="mini-day-label">SU</div>
-                <div class="mini-day-label">MO</div>
-                <div class="mini-day-label">TU</div>
-                <div class="mini-day-label">WE</div>
-                <div class="mini-day-label">TH</div>
-                <div class="mini-day-label">FR</div>
-                <div class="mini-day-label">SA</div>
+                <div class="mini-day-label">Su</div>
+                <div class="mini-day-label">Mo</div>
+                <div class="mini-day-label">Tu</div>
+                <div class="mini-day-label">We</div>
+                <div class="mini-day-label">Th</div>
+                <div class="mini-day-label">Fr</div>
+                <div class="mini-day-label">Sa</div>
             </div>
         </div>
 
-        <div class="calendar-wrapper">
-            <div class="hour-header" id="hourHeader"></div>
+        <!-- Day View -->
+        <div class="day-view active" id="dayView">
+            <div class="calendar-wrapper">
+                <div class="hour-header" id="hourHeader"></div>
+                <div class="calendar-body">
+                    <div class="calendar-grid" id="calendarGrid"></div>
+                </div>
+            </div>
+        </div>
 
-            <div class="calendar-body">
-                <div class="calendar-grid" id="calendarGrid"></div>
+        <!-- Week View -->
+        <div class="week-view" id="weekView">
+            <div class="week-header" id="weekHeader"></div>
+            <div class="week-all-day" id="weekAllDay">
+                <div class="week-all-day-label">all-day</div>
+            </div>
+            <div class="week-grid-container">
+                <div class="week-time-grid" id="weekTimeGrid"></div>
+                <div class="week-events-layer" id="weekEventsLayer"></div>
             </div>
         </div>
     </div>
-
-    <!-- Snackbar for notifications -->
-    <div id="snackbar" class="snackbar"></div>
 
     <script>
         let currentDate = new Date();
@@ -1214,46 +1224,11 @@
         let draggedElement = null;
         let draggedEventId = null;
         let draggedEventData = null;
-        
-        // Maximum number of tags allowed per filter
-        const MAX_TAGS = 6;
+        let currentView = 'day';
         
         // Store applied filters
         let appliedFilters = [];
         
-        // Initial events database - this is only used to initialize the calendar
-        const initialEventDatabase = {
-            '2025-12-31': [
-                { id: 1, title: 'Team Meeting', startMinutes: 540, endMinutes: 630 }, // 9:00 AM - 10:30 AM
-                { id: 2, title: 'Project Review', startMinutes: 600, endMinutes: 720 }, // 10:00 AM - 12:00 PM (overlaps)
-                { id: 3, title: 'Lunch Break', startMinutes: 720, endMinutes: 780 }, // 12:00 PM - 1:00 PM
-                { id: 4, title: 'Client Call', startMinutes: 840, endMinutes: 900 }, // 2:00 PM - 3:00 PM
-                { id: 5, title: 'Code Review', startMinutes: 870, endMinutes: 960 }, // 2:30 PM - 4:00 PM (overlaps)
-                { id: 6, title: 'Documentation', startMinutes: 930, endMinutes: 1020 } // 3:30 PM - 5:00 PM (overlaps)
-            ],
-            '2025-12-25': [
-                { id: 1, title: 'Christmas Breakfast', startMinutes: 480, endMinutes: 540 }, // 8:00 AM - 9:00 AM
-                { id: 2, title: 'Gift Opening', startMinutes: 540, endMinutes: 660 }, // 9:00 AM - 11:00 AM
-                { id: 3, title: 'Dinner Prep', startMinutes: 780, endMinutes: 900 }, // 1:00 PM - 3:00 PM
-                { id: 4, title: 'Family Dinner', startMinutes: 1080, endMinutes: 1200 } // 6:00 PM - 8:00 PM
-            ]
-        };
-
-        // Working copy of events - this is what gets modified
-        let eventDatabase = JSON.parse(JSON.stringify(initialEventDatabase));
-
-        function getCurrentDateKey() {
-            const year = currentDate.getFullYear();
-            const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-            const day = String(currentDate.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-        function getCurrentEvents() {
-            const dateKey = getCurrentDateKey();
-            return eventDatabase[dateKey] || [];
-        }
-
         // Store tags for each filter
         const filterTags = {
             eType: [],
@@ -1268,7 +1243,7 @@
             activityNotes: [],
             healthAppointment: []
         };
-
+        
         // Store filter values
         const filterValues = {
             eType: 'contains',
@@ -1283,7 +1258,7 @@
             activityNotes: 'contains',
             healthAppointment: 'contains'
         };
-
+        
         // Field name mappings for display
         const fieldDisplayNames = {
             eType: 'EType',
@@ -1298,94 +1273,515 @@
             activityNotes: 'Activity Notes',
             healthAppointment: 'Health Appointment'
         };
-
-        // Filter operator display names
-        const operatorDisplayNames = {
-            contains: 'contains',
-            is: 'is',
-            isNot: 'is not',
-            isEmpty: 'is empty',
-            isNotEmpty: 'is not empty',
-            startsWith: 'starts with',
-            endsWith: 'ends with'
+        
+        const MAX_TAGS = 6;
+        
+        const initialEventDatabase = {
+            '2025-12-31': [
+                { id: 1, title: 'Team Meeting', startMinutes: 540, endMinutes: 630 },
+                { id: 2, title: 'Project Review', startMinutes: 600, endMinutes: 720 },
+                { id: 3, title: 'Lunch Break', startMinutes: 720, endMinutes: 780 },
+                { id: 4, title: 'Client Call', startMinutes: 840, endMinutes: 900 },
+                { id: 5, title: 'Code Review', startMinutes: 870, endMinutes: 960 },
+                { id: 6, title: 'Documentation', startMinutes: 930, endMinutes: 1020 }
+            ],
+            '2025-12-29': [
+                { id: 7, title: 'HARI OM SPARE PARTS', startMinutes: 825, endMinutes: 900 }
+            ],
+            '2026-01-01': [
+                { id: 8, title: 'JALAN AUTO AGENCY (NEW GST)', startMinutes: 960, endMinutes: 1020 }
+            ]
         };
 
-        // Snackbar function to show notifications
-        function showSnackbar(message) {
-            const snackbar = document.getElementById('snackbar');
-            snackbar.textContent = message;
-            snackbar.className = 'snackbar show';
-            
-            setTimeout(function() {
-                snackbar.className = snackbar.className.replace('show', '');
-            }, 3000);
+        let eventDatabase = JSON.parse(JSON.stringify(initialEventDatabase));
+
+        function getDateKey(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
-        function toggleFilterDropdown(filterName) {
-            const display = document.getElementById(`${filterName}-filter-display`);
-            const options = document.getElementById(`${filterName}-filter-options`);
-            
-            // Close all other dropdowns
-            document.querySelectorAll('.filter-options').forEach(opt => {
-                if (opt.id !== `${filterName}-filter-options`) {
-                    opt.classList.remove('active');
-                }
-            });
-            
-            document.querySelectorAll('.filter-select').forEach(sel => {
-                if (sel.id !== `${filterName}-filter-display`) {
-                    sel.classList.remove('active');
-                }
-            });
-            
-            // Toggle current dropdown
-            display.classList.toggle('active');
-            options.classList.toggle('active');
+        function getCurrentDateKey() {
+            return getDateKey(currentDate);
         }
 
-        function selectFilterOption(filterName, value, element) {
-            // Update the hidden input
-            document.getElementById(`${filterName}-filter`).value = value;
-            filterValues[filterName] = value;
+        function getCurrentEvents() {
+            return eventDatabase[getCurrentDateKey()] || [];
+        }
+
+        function getEventsForDate(date) {
+            return eventDatabase[getDateKey(date)] || [];
+        }
+
+        function switchView(view) {
+            currentView = view;
+            const dayViewBtn = document.getElementById('dayViewBtn');
+            const weekViewBtn = document.getElementById('weekViewBtn');
+            const dayView = document.getElementById('dayView');
+            const weekView = document.getElementById('weekView');
             
-            // Update the display text
-            document.getElementById(`${filterName}-filter-text`).textContent = element.textContent;
-            
-            // Update selected state
-            const options = document.getElementById(`${filterName}-filter-options`);
-            options.querySelectorAll('.filter-option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            element.classList.add('selected');
-            
-            // Show or hide tags input container based on filter type
-            const tagsContainer = document.getElementById(`${filterName}-tags-container`);
-            if (value === 'isEmpty' || value === 'isNotEmpty') {
-                tagsContainer.classList.add('hidden');
+            if (view === 'day') {
+                dayViewBtn.classList.add('active');
+                weekViewBtn.classList.remove('active');
+                dayView.classList.add('active');
+                weekView.classList.remove('active');
+                renderDayView();
             } else {
-                tagsContainer.classList.remove('hidden');
+                weekViewBtn.classList.add('active');
+                dayViewBtn.classList.remove('active');
+                weekView.classList.add('active');
+                dayView.classList.remove('active');
+                renderWeekView();
             }
+            updateDateTitle();
             
-            // Close the dropdown
-            toggleFilterDropdown(filterName);
+            // Re-render mini calendar to update week highlighting
+            const miniCal = document.getElementById('miniCalendar');
+            if (miniCal.classList.contains('active')) {
+                renderMiniCalendar();
+            }
         }
 
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(event) {
-            if (!event.target.closest('.filter-select-wrapper')) {
-                document.querySelectorAll('.filter-options').forEach(opt => {
-                    opt.classList.remove('active');
-                });
-                document.querySelectorAll('.filter-select').forEach(sel => {
-                    sel.classList.remove('active');
+        function navigatePeriod(delta) {
+            if (currentView === 'day') {
+                currentDate.setDate(currentDate.getDate() + delta);
+                renderDayView();
+            } else {
+                currentDate.setDate(currentDate.getDate() + (delta * 7));
+                renderWeekView();
+            }
+            updateDateTitle();
+        }
+
+        function goToday() {
+            currentDate = new Date();
+            todayDate = new Date();
+            if (currentView === 'day') {
+                renderDayView();
+            } else {
+                renderWeekView();
+            }
+            updateDateTitle();
+        }
+
+        function updateDateTitle() {
+            if (currentView === 'day') {
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                document.getElementById('dateTitle').textContent = currentDate.toLocaleDateString('en-US', options);
+            } else {
+                const weekStart = new Date(currentDate);
+                weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekStart.getDate() + 6);
+                
+                const startStr = weekStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                const endStr = weekEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                document.getElementById('dateTitle').textContent = `${startStr} – ${endStr}`;
+            }
+        }
+
+        // Day View Rendering
+        function renderDayView() {
+            renderHourHeaders();
+            renderGrid();
+            renderDayEvents();
+        }
+
+        function renderHourHeaders() {
+            const header = document.getElementById('hourHeader');
+            header.innerHTML = '';
+            for (let i = 0; i < 24; i++) {
+                const label = document.createElement('div');
+                label.className = 'hour-label';
+                const hour = i % 12 || 12;
+                const period = i < 12 ? 'am' : 'pm';
+                label.textContent = `${hour}${period}`;
+                header.appendChild(label);
+            }
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+            
+            for (let h = 0; h < 24; h++) {
+                const hourCol = document.createElement('div');
+                hourCol.className = 'hour-column';
+                hourCol.dataset.hour = h;
+                
+                const innerGrid = document.createElement('div');
+                innerGrid.className = 'hour-column-inner';
+                for (let i = 0; i < 4; i++) {
+                    const line = document.createElement('div');
+                    line.className = 'quarter-line';
+                    innerGrid.appendChild(line);
+                }
+                hourCol.appendChild(innerGrid);
+                
+                for (let q = 0; q < 4; q++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'quarter-slot';
+                    slot.dataset.hour = h;
+                    slot.dataset.quarter = q;
+                    slot.addEventListener('dragover', handleDayDragOver);
+                    slot.addEventListener('drop', handleDayDrop);
+                    slot.addEventListener('dragleave', handleDragLeave);
+                    hourCol.appendChild(slot);
+                }
+                grid.appendChild(hourCol);
+            }
+            
+            const eventsContainer = document.createElement('div');
+            eventsContainer.className = 'events-container';
+            eventsContainer.id = 'eventsContainer';
+            grid.appendChild(eventsContainer);
+        }
+
+        function calculateEventLayout(events) {
+            if (events.length === 0) return [];
+            const sorted = [...events].sort((a, b) => a.startMinutes - b.startMinutes);
+            const rows = [];
+            sorted.forEach(event => {
+                let placed = false;
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    const lastEvent = row[row.length - 1];
+                    if (event.startMinutes >= lastEvent.endMinutes) {
+                        row.push(event);
+                        event.row = i;
+                        placed = true;
+                        break;
+                    }
+                }
+                if (!placed) {
+                    event.row = rows.length;
+                    rows.push([event]);
+                }
+            });
+            return sorted;
+        }
+
+        function renderDayEvents() {
+            const eventsContainer = document.getElementById('eventsContainer');
+            if (!eventsContainer) return;
+            eventsContainer.innerHTML = '';
+            
+            const todaysEvents = getCurrentEvents();
+            if (todaysEvents.length === 0) return;
+            
+            const eventsWithLayout = calculateEventLayout(todaysEvents);
+            const eventHeight = 60, eventGap = 4, hourWidth = 100;
+            
+            eventsWithLayout.forEach(evt => {
+                const startHour = Math.floor(evt.startMinutes / 60);
+                const startMinute = evt.startMinutes % 60;
+                const durationInMinutes = evt.endMinutes - evt.startMinutes;
+                
+                const element = document.createElement('div');
+                element.className = 'event';
+                element.draggable = true;
+                element.dataset.eventId = evt.id;
+                element.dataset.viewType = 'day';
+                
+                const leftPosition = (startHour * hourWidth) + ((startMinute / 60) * hourWidth);
+                const top = evt.row * (eventHeight + eventGap);
+                const totalWidth = (durationInMinutes / 60) * hourWidth;
+                
+                element.style.top = `${top}px`;
+                element.style.height = `${eventHeight}px`;
+                element.style.left = `${leftPosition}px`;
+                element.style.width = `${totalWidth}px`;
+                element.style.minWidth = '80px';
+                
+                element.innerHTML = `
+                    <div class="event-title">${evt.title}</div>
+                    <div class="event-time">${formatTimeRange(evt.startMinutes, evt.endMinutes)}</div>
+                `;
+                
+                element.addEventListener('dragstart', handleDragStart);
+                element.addEventListener('dragend', handleDragEnd);
+                eventsContainer.appendChild(element);
+            });
+        }
+
+        // Week View Rendering
+        function renderWeekView() {
+            renderWeekHeader();
+            renderWeekTimeGrid();
+            renderWeekEvents();
+        }
+
+        function renderWeekHeader() {
+            const header = document.getElementById('weekHeader');
+            header.innerHTML = '';
+            
+            const corner = document.createElement('div');
+            corner.className = 'week-header-corner';
+            header.appendChild(corner);
+            
+            const weekStart = new Date(currentDate);
+            weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+            
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            
+            for (let i = 0; i < 7; i++) {
+                const dayDate = new Date(weekStart);
+                dayDate.setDate(weekStart.getDate() + i);
+                
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'week-day-header';
+                
+                if (dayDate.toDateString() === todayDate.toDateString()) {
+                    dayHeader.classList.add('today');
+                }
+                
+                dayHeader.innerHTML = `
+                    <div class="week-day-name">${dayNames[i]}, ${dayDate.getDate()} ${dayDate.toLocaleDateString('en-US', { month: 'short' })}</div>
+                `;
+                header.appendChild(dayHeader);
+            }
+        }
+
+        function renderWeekTimeGrid() {
+            const timeGrid = document.getElementById('weekTimeGrid');
+            timeGrid.innerHTML = '';
+            
+            // 11am to 11pm
+            for (let minutes = 660; minutes <= 1380; minutes += 60) {
+                const hour = Math.floor(minutes / 60);
+                const displayHour = hour % 12 || 12;
+                const period = hour < 12 ? 'am' : 'pm';
+                
+                const timeLabel = document.createElement('div');
+                timeLabel.className = 'week-time-label';
+                timeLabel.textContent = `${displayHour}${period}`;
+                timeGrid.appendChild(timeLabel);
+                
+                const weekStart = new Date(currentDate);
+                weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+                
+                for (let day = 0; day < 7; day++) {
+                    const dayColumn = document.createElement('div');
+                    dayColumn.className = 'week-day-column';
+                    dayColumn.dataset.day = day;
+                    dayColumn.dataset.hour = hour;
+                    dayColumn.dataset.minutes = minutes;
+                    
+                    // Add quarter-hour dotted lines
+                    const quarterLines = document.createElement('div');
+                    quarterLines.className = 'week-quarter-lines';
+                    
+                    for (let q = 1; q < 4; q++) {
+                        const line = document.createElement('div');
+                        line.className = 'week-quarter-line';
+                        line.style.top = `${(q * 25)}%`;
+                        quarterLines.appendChild(line);
+                    }
+                    dayColumn.appendChild(quarterLines);
+                    
+                    // Add quarter-hour drop zones (4 per hour)
+                    for (let q = 0; q < 4; q++) {
+                        const quarterSlot = document.createElement('div');
+                        quarterSlot.className = 'week-quarter-slot';
+                        quarterSlot.dataset.day = day;
+                        quarterSlot.dataset.hour = hour;
+                        quarterSlot.dataset.quarter = q;
+                        quarterSlot.dataset.minutes = minutes + (q * 15);
+                        quarterSlot.style.top = `${q * 25}%`;
+                        
+                        quarterSlot.addEventListener('dragover', handleWeekDragOver);
+                        quarterSlot.addEventListener('drop', handleWeekDrop);
+                        quarterSlot.addEventListener('dragleave', handleDragLeave);
+                        
+                        dayColumn.appendChild(quarterSlot);
+                    }
+                    
+                    timeGrid.appendChild(dayColumn);
+                }
+            }
+        }
+
+        function renderWeekEvents() {
+            const eventsLayer = document.getElementById('weekEventsLayer');
+            eventsLayer.innerHTML = '';
+            
+            const weekStart = new Date(currentDate);
+            weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+            
+            const container = eventsLayer.parentElement;
+            const columnWidth = (container.offsetWidth - 80) / 7;
+            
+            for (let day = 0; day < 7; day++) {
+                const dayDate = new Date(weekStart);
+                dayDate.setDate(weekStart.getDate() + day);
+                const events = getEventsForDate(dayDate);
+                
+                events.forEach(evt => {
+                    if (evt.startMinutes < 660 || evt.startMinutes > 1380) return;
+                    
+                    const element = document.createElement('div');
+                    element.className = 'event';
+                    element.draggable = true;
+                    element.dataset.eventId = evt.id;
+                    element.dataset.viewType = 'week';
+                    element.dataset.eventDate = getDateKey(dayDate);
+                    
+                    const leftPosition = day * columnWidth;
+                    const topPosition = ((evt.startMinutes - 660) / 60) * 60;
+                    const height = ((evt.endMinutes - evt.startMinutes) / 60) * 60;
+                    
+                    element.style.left = `${leftPosition + 5}px`;
+                    element.style.top = `${topPosition}px`;
+                    element.style.width = `${columnWidth - 10}px`;
+                    element.style.height = `${height}px`;
+                    
+                    element.innerHTML = `
+                        <div class="event-title">${evt.title}</div>
+                        <div class="event-time">${formatTimeRange(evt.startMinutes, evt.endMinutes)}</div>
+                    `;
+                    
+                    element.addEventListener('dragstart', handleDragStart);
+                    element.addEventListener('dragend', handleDragEnd);
+                    eventsLayer.appendChild(element);
                 });
             }
-        });
+        }
 
+        function formatTimeRange(startMinutes, endMinutes) {
+            const start = minutesToTime(startMinutes);
+            const end = minutesToTime(endMinutes);
+            const startHour = start.hour % 12 || 12;
+            const startPeriod = start.hour < 12 ? 'AM' : 'PM';
+            const endHour = end.hour % 12 || 12;
+            const endPeriod = end.hour < 12 ? 'AM' : 'PM';
+            return `${startHour}:${start.minute.toString().padStart(2, '0')} ${startPeriod} - ${endHour}:${end.minute.toString().padStart(2, '0')} ${endPeriod}`;
+        }
+
+        function minutesToTime(minutes) {
+            return { hour: Math.floor(minutes / 60), minute: minutes % 60 };
+        }
+
+        // Drag and Drop Handlers
+        function handleDragStart(e) {
+            draggedElement = e.currentTarget;
+            draggedEventId = parseInt(e.currentTarget.dataset.eventId);
+            
+            const viewType = e.currentTarget.dataset.viewType;
+            let dateKey = viewType === 'week' ? e.currentTarget.dataset.eventDate : getCurrentDateKey();
+            
+            const events = eventDatabase[dateKey] || [];
+            draggedEventData = events.find(evt => evt.id === draggedEventId);
+            draggedEventData.originalDateKey = dateKey;
+            
+            e.currentTarget.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(e) {
+            e.currentTarget.classList.remove('dragging');
+            document.querySelectorAll('.drop-highlight').forEach(el => el.classList.remove('drop-highlight'));
+            draggedElement = null;
+            draggedEventId = null;
+            draggedEventData = null;
+        }
+
+        function handleDayDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const slot = e.currentTarget;
+            if (!slot.classList.contains('drop-highlight')) {
+                document.querySelectorAll('.drop-highlight').forEach(el => el.classList.remove('drop-highlight'));
+                slot.classList.add('drop-highlight');
+            }
+        }
+
+        function handleWeekDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const slot = e.currentTarget;
+            if (!slot.classList.contains('drop-highlight')) {
+                document.querySelectorAll('.drop-highlight').forEach(el => el.classList.remove('drop-highlight'));
+                slot.classList.add('drop-highlight');
+            }
+        }
+
+        function handleDragLeave(e) {
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+                e.currentTarget.classList.remove('drop-highlight');
+            }
+        }
+
+        function handleDayDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const slot = e.currentTarget;
+            slot.classList.remove('drop-highlight');
+            
+            if (!draggedElement || !draggedEventId || !draggedEventData) return;
+            
+            const newHour = parseInt(slot.dataset.hour);
+            const newQuarter = parseInt(slot.dataset.quarter);
+            const newStartMinutes = newHour * 60 + newQuarter * 15;
+            const duration = draggedEventData.endMinutes - draggedEventData.startMinutes;
+            
+            const originalDateKey = draggedEventData.originalDateKey;
+            const currentDateKey = getCurrentDateKey();
+            
+            if (eventDatabase[originalDateKey]) {
+                const index = eventDatabase[originalDateKey].findIndex(ev => ev.id === draggedEventId);
+                if (index !== -1) eventDatabase[originalDateKey].splice(index, 1);
+            }
+            
+            if (!eventDatabase[currentDateKey]) eventDatabase[currentDateKey] = [];
+            eventDatabase[currentDateKey].push({
+                ...draggedEventData,
+                startMinutes: newStartMinutes,
+                endMinutes: newStartMinutes + duration
+            });
+            
+            renderDayEvents();
+        }
+
+        function handleWeekDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const slot = e.currentTarget;
+            slot.classList.remove('drop-highlight');
+            
+            if (!draggedElement || !draggedEventId || !draggedEventData) return;
+            
+            const day = parseInt(slot.dataset.day);
+            const minutes = parseInt(slot.dataset.minutes);
+            const duration = draggedEventData.endMinutes - draggedEventData.startMinutes;
+            
+            const weekStart = new Date(currentDate);
+            weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+            const newDate = new Date(weekStart);
+            newDate.setDate(weekStart.getDate() + day);
+            const newDateKey = getDateKey(newDate);
+            
+            const originalDateKey = draggedEventData.originalDateKey;
+            
+            if (eventDatabase[originalDateKey]) {
+                const index = eventDatabase[originalDateKey].findIndex(ev => ev.id === draggedEventId);
+                if (index !== -1) eventDatabase[originalDateKey].splice(index, 1);
+            }
+            
+            if (!eventDatabase[newDateKey]) eventDatabase[newDateKey] = [];
+            eventDatabase[newDateKey].push({
+                ...draggedEventData,
+                startMinutes: minutes,
+                endMinutes: minutes + duration
+            });
+            
+            renderWeekEvents();
+        }
+
+        // Search Panel Functions
         function toggleSearch() {
             const panel = document.getElementById('searchPanel');
             const overlay = document.getElementById('searchOverlay');
-            
             panel.classList.toggle('active');
             overlay.classList.toggle('active');
         }
@@ -1393,71 +1789,60 @@
         function toggleFilterInputs(filterName) {
             const checkbox = document.querySelector(`input[name="${filterName}"]`);
             const inputs = document.getElementById(`${filterName}-inputs`);
-            
             if (checkbox.checked) {
                 inputs.classList.add('active');
             } else {
                 inputs.classList.remove('active');
-                // Clear the filter value
-                const hiddenInput = document.getElementById(`${filterName}-filter`);
-                if (hiddenInput) {
-                    hiddenInput.value = 'contains';
-                }
-                filterValues[filterName] = 'contains';
-                
-                // Reset display text
-                const displayText = document.getElementById(`${filterName}-filter-text`);
-                if (displayText) {
-                    displayText.textContent = 'Contains';
-                }
-                
-                // Reset selected option
-                const options = document.getElementById(`${filterName}-filter-options`);
-                if (options) {
-                    options.querySelectorAll('.filter-option').forEach(opt => {
-                        opt.classList.remove('selected');
-                        if (opt.textContent === 'Contains') {
-                            opt.classList.add('selected');
-                        }
-                    });
-                }
-                
-                // Show tags container (in case it was hidden)
-                const tagsContainer = document.getElementById(`${filterName}-tags-container`);
-                if (tagsContainer) {
-                    tagsContainer.classList.remove('hidden');
-                }
-                
-                // Clear tags
-                clearTags(filterName);
             }
         }
 
+        function toggleFilterDropdown(filterName) {
+            const display = document.getElementById(`${filterName}-filter-display`);
+            const options = document.getElementById(`${filterName}-filter-options`);
+            document.querySelectorAll('.filter-options').forEach(opt => {
+                if (opt.id !== `${filterName}-filter-options`) opt.classList.remove('active');
+            });
+            document.querySelectorAll('.filter-select').forEach(sel => {
+                if (sel.id !== `${filterName}-filter-display`) sel.classList.remove('active');
+            });
+            display.classList.toggle('active');
+            options.classList.toggle('active');
+        }
+
+        function selectFilterOption(filterName, value, element) {
+            document.getElementById(`${filterName}-filter`).value = value;
+            filterValues[filterName] = value;
+            document.getElementById(`${filterName}-filter-text`).textContent = element.textContent;
+            const options = document.getElementById(`${filterName}-filter-options`);
+            options.querySelectorAll('.filter-option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+            
+            // Hide or show tags input based on filter type
+            const tagsGroup = document.getElementById(`${filterName}-tags-group`);
+            if (tagsGroup) {
+                if (value === 'isEmpty' || value === 'isNotEmpty') {
+                    tagsGroup.style.display = 'none';
+                } else {
+                    tagsGroup.style.display = 'block';
+                }
+            }
+            
+            toggleFilterDropdown(filterName);
+        }
+
         function focusTagInput(filterName) {
-            const input = document.getElementById(`${filterName}-tags-input`);
-            input.focus();
+            document.getElementById(`${filterName}-tags-input`).focus();
         }
 
         function handleTagInput(event, filterName) {
             const input = event.target;
             const value = input.value.trim();
-            
-            // Handle Enter key
             if (event.key === 'Enter' && value) {
                 event.preventDefault();
-                
-                // Check if we've reached the maximum number of tags
-                if (filterTags[filterName].length >= MAX_TAGS) {
-                    showSnackbar(`Maximum ${MAX_TAGS} tags allowed per filter. Please remove a tag before adding more.`);
-                    input.value = ''; // Clear the input
-                    return;
-                }
-                
+                if (filterTags[filterName].length >= MAX_TAGS) return;
                 addTag(filterName, value);
                 input.value = '';
             }
-            
-            // Handle Backspace on empty input
             if (event.key === 'Backspace' && !value && filterTags[filterName].length > 0) {
                 event.preventDefault();
                 removeTag(filterName, filterTags[filterName].length - 1);
@@ -1466,12 +1851,7 @@
 
         function addTag(filterName, text) {
             if (!text || filterTags[filterName].includes(text)) return;
-            
-            // Check if we've reached the maximum number of tags
-            if (filterTags[filterName].length >= MAX_TAGS) {
-                return;
-            }
-            
+            if (filterTags[filterName].length >= MAX_TAGS) return;
             filterTags[filterName].push(text);
             renderTags(filterName);
         }
@@ -1481,32 +1861,17 @@
             renderTags(filterName);
         }
 
-        function clearTags(filterName) {
-            filterTags[filterName] = [];
-            renderTags(filterName);
-        }
-
         function renderTags(filterName) {
             const container = document.getElementById(`${filterName}-tags-container`);
             const input = document.getElementById(`${filterName}-tags-input`);
-            
-            if (!container || !input) {
-                console.error(`Container or input not found for ${filterName}`);
-                return;
-            }
-            
-            // Remove all existing tags
+            if (!container || !input) return;
             const existingTags = container.querySelectorAll('.tag');
             existingTags.forEach(tag => tag.remove());
-            
-            // Add new tags
             filterTags[filterName].forEach((text, index) => {
                 const tag = document.createElement('span');
                 tag.className = 'tag';
-                
                 const textSpan = document.createElement('span');
                 textSpan.textContent = text;
-                
                 const removeBtn = document.createElement('button');
                 removeBtn.className = 'tag-remove';
                 removeBtn.textContent = '×';
@@ -1514,34 +1879,53 @@
                     e.stopPropagation();
                     removeTag(filterName, index);
                 };
-                
                 tag.appendChild(textSpan);
                 tag.appendChild(removeBtn);
                 container.insertBefore(tag, input);
             });
         }
 
+        function performSearch() {
+            const checkboxes = document.querySelectorAll('.search-filter input[type="checkbox"]:checked');
+            const filters = [];
+            
+            checkboxes.forEach(checkbox => {
+                const filterName = checkbox.name;
+                const filterType = document.getElementById(`${filterName}-filter`).value;
+                const tags = filterTags[filterName];
+                
+                filters.push({
+                    field: filterName,
+                    filterType: filterType,
+                    searchValues: tags
+                });
+            });
+            
+            appliedFilters = filters;
+            renderAppliedFilters();
+            toggleSearch();
+        }
+        
         function formatFilterText(filter) {
             const fieldName = fieldDisplayNames[filter.field] || filter.field;
-            const operator = operatorDisplayNames[filter.filterType] || filter.filterType;
+            const filterType = filter.filterType;
             
             // Handle isEmpty and isNotEmpty cases
-            if (filter.filterType === 'isEmpty' || filter.filterType === 'isNotEmpty') {
-                return `${fieldName} ${operator}`;
+            if (filterType === 'isEmpty' || filterType === 'isNotEmpty') {
+                return `${fieldName} ${filterType === 'isEmpty' ? 'is empty' : 'is not empty'}`;
             }
             
-            // Handle single or multiple values
+            // Handle cases with values
             if (filter.searchValues.length === 0) {
-                return `${fieldName} ${operator}`;
+                return `${fieldName} ${filterType}`;
             } else if (filter.searchValues.length === 1) {
-                return `${fieldName} ${operator} "${filter.searchValues[0]}"`;
+                return `${fieldName} ${filterType} "${filter.searchValues[0]}"`;
             } else {
-                // Format multiple values with "either ... or ..." pattern
-                const valuesList = filter.searchValues.map(v => `"${v}"`).join(' or ');
-                return `${fieldName} ${operator} either ${valuesList}`;
+                const valuesList = filter.searchValues.map(v => `"${v}"`).join('" or "');
+                return `${fieldName} ${filterType} either "${valuesList}"`;
             }
         }
-
+        
         function renderAppliedFilters() {
             const section = document.getElementById('searchFiltersSection');
             const container = document.getElementById('searchFiltersContainer');
@@ -1579,7 +1963,7 @@
                 container.appendChild(pill);
             });
         }
-
+        
         function removeAppliedFilter(index) {
             const filterToRemove = appliedFilters[index];
             const filterName = filterToRemove.field;
@@ -1621,9 +2005,9 @@
             }
             
             // Show tags container (in case it was hidden)
-            const tagsContainer = document.getElementById(`${filterName}-tags-container`);
-            if (tagsContainer) {
-                tagsContainer.classList.remove('hidden');
+            const tagsGroup = document.getElementById(`${filterName}-tags-group`);
+            if (tagsGroup) {
+                tagsGroup.style.display = 'block';
             }
             
             // Clear all tags for this filter
@@ -1635,368 +2019,22 @@
             // Re-render the filter pills
             renderAppliedFilters();
         }
-
-        function performSearch() {
-            // Get all checked filters
-            const checkboxes = document.querySelectorAll('.search-filter input[type="checkbox"]:checked');
-            const filters = [];
-            
-            checkboxes.forEach(checkbox => {
-                const filterName = checkbox.name;
-                const filterType = document.getElementById(`${filterName}-filter`).value;
-                const tags = filterTags[filterName];
-                
-                filters.push({
-                    field: filterName,
-                    filterType: filterType,
-                    searchValues: tags
-                });
-            });
-            
-            // Create the final JSON object
-            const searchQuery = {
-                filters: filters,
-                timestamp: new Date().toISOString(),
-                totalFilters: filters.length
-            };
-            
-            // Log the JSON to console
-            console.log('=== SEARCH QUERY JSON ===');
-            console.log(JSON.stringify(searchQuery, null, 2));
-            
-            // Update applied filters
-            appliedFilters = filters;
-            
-            // Render the filter pills
-            renderAppliedFilters();
-            
-            // Close the search panel
-            toggleSearch();
-            
-            return searchQuery;
+        
+        function clearTags(filterName) {
+            filterTags[filterName] = [];
+            renderTags(filterName);
         }
 
-        function init() {
-            console.log('=== CALENDAR INITIALIZED ===');
-            renderHourHeaders();
-            renderGrid();
-            updateDateTitle();
-            renderEvents();
-            renderMiniCalendar();
-        }
-
-        function renderHourHeaders() {
-            const header = document.getElementById('hourHeader');
-            if (!header) {
-                console.error('hourHeader element not found');
-                return;
-            }
-            header.innerHTML = '';
-            
-            for (let i = 0; i < 24; i++) {
-                const label = document.createElement('div');
-                label.className = 'hour-label';
-                const hour = i % 12 || 12;
-                const period = i < 12 ? 'am' : 'pm';
-                label.textContent = `${hour}${period}`;
-                header.appendChild(label);
-            }
-        }
-
-        function renderGrid() {
-            const grid = document.getElementById('calendarGrid');
-            if (!grid) {
-                console.error('calendarGrid element not found');
-                return;
-            }
-            grid.innerHTML = '';
-            
-            for (let h = 0; h < 24; h++) {
-                const hourCol = document.createElement('div');
-                hourCol.className = 'hour-column';
-                hourCol.dataset.hour = h;
-                
-                // Create visual grid lines
-                const innerGrid = document.createElement('div');
-                innerGrid.className = 'hour-column-inner';
-                for (let i = 0; i < 4; i++) {
-                    const line = document.createElement('div');
-                    line.className = 'quarter-line';
-                    innerGrid.appendChild(line);
-                }
-                hourCol.appendChild(innerGrid);
-                
-                // Create interactive quarter slots for drop zones
-                for (let q = 0; q < 4; q++) {
-                    const slot = document.createElement('div');
-                    slot.className = 'quarter-slot';
-                    slot.dataset.hour = h;
-                    slot.dataset.quarter = q;
-                    
-                    slot.addEventListener('dragover', handleDragOver);
-                    slot.addEventListener('drop', handleDrop);
-                    slot.addEventListener('dragleave', handleDragLeave);
-                    
-                    hourCol.appendChild(slot);
-                }
-                
-                grid.appendChild(hourCol);
-            }
-            
-            // Create a single events container that spans the entire grid
-            const eventsContainer = document.createElement('div');
-            eventsContainer.className = 'events-container';
-            eventsContainer.id = 'eventsContainer';
-            grid.appendChild(eventsContainer);
-        }
-
-        // Detect overlapping events and assign rows (vertical stacking)
-        function calculateEventLayout(events) {
-            console.log("This is");
-            
-            if (events.length === 0) return [];
-            
-            const sorted = [...events].sort((a, b) => a.startMinutes - b.startMinutes);
-            const rows = [];
-            
-            sorted.forEach(event => {
-                // Find a row where this event fits (no overlap)
-                let placed = false;
-                for (let i = 0; i < rows.length; i++) {
-                    const row = rows[i];
-                    const lastEvent = row[row.length - 1];
-                    
-                    // Check if this event starts after the last event in this row ends
-                    if (event.startMinutes >= lastEvent.endMinutes) {
-                        row.push(event);
-                        event.row = i;
-                        placed = true;
-                        break;
-                    }
-                }
-                
-                // If no row found, create a new one
-                if (!placed) {
-                    event.row = rows.length;
-                    rows.push([event]);
-                }
-            });
-            
-            return sorted;
-        }
-
-        function renderEvents() {
-            console.log('===== RENDER EVENTS CALLED =====');
-            
-            // Get the single events container
-            const eventsContainer = document.getElementById('eventsContainer');
-            if (!eventsContainer) {
-                console.error('Events container not found');
-                return;
-            }
-            
-            // Clear all existing events
-            eventsContainer.innerHTML = '';
-            
-            const todaysEvents = getCurrentEvents();
-            const dateKey = getCurrentDateKey();
-            
-            console.log('Current Date:', currentDate.toDateString());
-            console.log('Date Key:', dateKey);
-            console.log('Events Found:', todaysEvents.length);
-            
-            if (todaysEvents.length === 0) {
-                console.log('✓ No events to render');
-                return;
-            }
-            
-            // Calculate layout for overlapping events (assigns rows)
-            const eventsWithLayout = calculateEventLayout(todaysEvents);
-            
-            const eventHeight = 60; // Fixed height for each event in pixels
-            const eventGap = 4; // Gap between stacked events
-            const hourWidth = 100; // Width of each hour column in pixels
-            
-            // Render each event
-            eventsWithLayout.forEach((evt, index) => {
-                const startHour = Math.floor(evt.startMinutes / 60);
-                const startMinute = evt.startMinutes % 60;
-                const durationInMinutes = evt.endMinutes - evt.startMinutes;
-                
-                const element = document.createElement('div');
-                element.className = 'event';
-                element.draggable = true;
-                element.dataset.eventId = evt.id;
-                
-                // Calculate absolute horizontal position from the start of the grid (hour 0)
-                const leftPosition = (startHour * hourWidth) + ((startMinute / 60) * hourWidth);
-                
-                // Calculate vertical position
-                // The top should be calculated based on the minute within the hour ONLY
-                // Since each hour column is the same height, we position within that hour
-                // But we need to account for which row (for overlapping events)
-                const top = (evt.row * (eventHeight + eventGap));
-                
-                // Width: total duration in pixels
-                const totalWidth = (durationInMinutes / 60) * hourWidth;
-                
-                element.style.top = `${top}px`;
-                element.style.height = `${eventHeight}px`;
-                element.style.left = `${leftPosition}px`;
-                element.style.width = `${totalWidth}px`;
-                element.style.minWidth = '80px';
-                
-                element.innerHTML = `
-                    <div class="event-title">${evt.title}</div>
-                    <div class="event-time">${formatTimeRange(evt.startMinutes, evt.endMinutes)}</div>
-                `;
-
-                
-                
-                element.addEventListener('dragstart', handleDragStart);
-                element.addEventListener('dragend', handleDragEnd);
-                
-                eventsContainer.appendChild(element);
-                console.log(`✓ Event ${index + 1} rendered:`, evt.title, `at row ${evt.row}, left: ${leftPosition}px, top: ${top}px, width: ${totalWidth}px`);
-            });
-            
-            console.log('===== RENDER COMPLETE =====');
-        }
-
-        function formatTimeRange(startMinutes, endMinutes) {
-            const start = minutesToTime(startMinutes);
-            const end = minutesToTime(endMinutes);
-            
-            const startHour = start.hour % 12 || 12;
-            const startPeriod = start.hour < 12 ? 'AM' : 'PM';
-            const endHour = end.hour % 12 || 12;
-            const endPeriod = end.hour < 12 ? 'AM' : 'PM';
-            
-            return `${startHour}:${start.minute.toString().padStart(2, '0')} ${startPeriod} - ${endHour}:${end.minute.toString().padStart(2, '0')} ${endPeriod}`;
-        }
-
-        function minutesToTime(minutes) {
-            const hour = Math.floor(minutes / 60);
-            const minute = minutes % 60;
-            return { hour, minute };
-        }
-
-        function handleDragStart(e) {
-            draggedElement = e.currentTarget;
-            draggedEventId = parseInt(e.currentTarget.dataset.eventId);
-            
-            // Store the event data
-            const dateKey = getCurrentDateKey();
-            const events = eventDatabase[dateKey] || [];
-            draggedEventData = events.find(evt => evt.id === draggedEventId);
-            
-            e.currentTarget.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-            
-            console.log('Drag started for event:', draggedEventData);
-        }
-
-        function handleDragEnd(e) {
-            e.currentTarget.classList.remove('dragging');
-            
-            // Clear highlights
-            document.querySelectorAll('.drop-highlight').forEach(el => {
-                el.classList.remove('drop-highlight');
-            });
-            
-            draggedElement = null;
-            draggedEventId = null;
-            draggedEventData = null;
-            console.log("Drag Ended as soon as possible MSD");
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            
-            const slot = e.currentTarget;
-            if (!slot.classList.contains('drop-highlight')) {
-                document.querySelectorAll('.drop-highlight').forEach(el => {
-                    el.classList.remove('drop-highlight');
-                });
-                slot.classList.add('drop-highlight');
-            }
-        }
-
-        function handleDragLeave(e) {
-            if (!e.currentTarget.contains(e.relatedTarget)) {
-                e.currentTarget.classList.remove('drop-highlight');
-            }
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const slot = e.currentTarget;
-            slot.classList.remove('drop-highlight');
-            
-            if (!draggedElement || !draggedEventId || !draggedEventData) return;
-            
-            const newHour = parseInt(slot.dataset.hour);
-            const newQuarter = parseInt(slot.dataset.quarter);
-            const newStartMinutes = newHour * 60 + newQuarter * 15;
-            
-            // Calculate the duration of the event
-            const duration = draggedEventData.endMinutes - draggedEventData.startMinutes;
-            
-            // Update ONLY this event in the database
-            const dateKey = getCurrentDateKey();
-            if (!eventDatabase[dateKey]) {
-                eventDatabase[dateKey] = [];
-            }
-            
-            const eventIndex = eventDatabase[dateKey].findIndex(ev => ev.id === draggedEventId);
-            if (eventIndex !== -1) {
-                // Update only the specific event
-                eventDatabase[dateKey][eventIndex] = {
-                    ...eventDatabase[dateKey][eventIndex],
-                    startMinutes: newStartMinutes,
-                    endMinutes: newStartMinutes + duration
-                };
-                
-                console.log('Event updated:', eventDatabase[dateKey][eventIndex]);
-                console.log('New time:', formatTimeRange(newStartMinutes, newStartMinutes + duration));
-            }
-            
-            // Re-render all events to recalculate row positions
-            renderEvents();
-        }
-
-        function changeDay(delta) {
-            currentDate.setDate(currentDate.getDate() + delta);
-            updateDateTitle();
-            renderEvents();
-            renderMiniCalendar();
-        }
-
-        function goToday() {
-            currentDate = new Date();
-            todayDate = new Date();
-            updateDateTitle();
-            renderEvents();
-            renderMiniCalendar();
-        }
-
-        function updateDateTitle() {
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            const dateString = currentDate.toLocaleDateString('en-US', options);
-            document.querySelector('.date-title').textContent = dateString;
-            
-            const dateKey = getCurrentDateKey();
-            const eventCount = getCurrentEvents().length;
-            console.log('DATE CHANGED TO:', dateString);
-            console.log('Date Key:', dateKey);
-            console.log('Events for this date:', eventCount);
-        }
-
+        // Mini Calendar Functions
         function toggleMiniCalendar() {
-            document.getElementById('miniCalendar').classList.toggle('active');
+            const miniCal = document.getElementById('miniCalendar');
+            const wasActive = miniCal.classList.contains('active');
+            miniCal.classList.toggle('active');
+            
+            // Re-render when opening to ensure week highlighting is current
+            if (!wasActive && miniCal.classList.contains('active')) {
+                renderMiniCalendar();
+            }
         }
 
         function renderMiniCalendar() {
@@ -2014,11 +2052,34 @@
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const prevMonthDays = new Date(year, month, 0).getDate();
             
+            // Calculate current week dates if in week view
+            let currentWeekDates = [];
+            if (currentView === 'week') {
+                const weekStart = new Date(currentDate);
+                weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date(weekStart);
+                    date.setDate(weekStart.getDate() + i);
+                    currentWeekDates.push(date.getTime());
+                }
+            }
+            
             // Previous month days
             for (let i = firstDay - 1; i >= 0; i--) {
                 const day = document.createElement('div');
                 day.className = 'mini-day other-month';
                 day.textContent = prevMonthDays - i;
+                
+                const prevMonth = month === 0 ? 11 : month - 1;
+                const prevYear = month === 0 ? year - 1 : year;
+                const dayDate = new Date(prevYear, prevMonth, prevMonthDays - i);
+                
+                day.dataset.day = prevMonthDays - i;
+                day.dataset.month = prevMonth;
+                day.dataset.year = prevYear;
+                day.dataset.timestamp = dayDate.getTime();
+                
+                setupDayEvents(day, dayDate, currentWeekDates);
                 grid.appendChild(day);
             }
             
@@ -2030,6 +2091,14 @@
                 day.dataset.day = i;
                 day.dataset.month = month;
                 day.dataset.year = year;
+                
+                const dayDate = new Date(year, month, i);
+                day.dataset.timestamp = dayDate.getTime();
+                
+                // Check if this day is in the current week (week view only)
+                if (currentView === 'week' && currentWeekDates.includes(dayDate.getTime())) {
+                    day.classList.add('week-highlighted');
+                }
                 
                 if (i === todayDate.getDate() && 
                     month === todayDate.getMonth() && 
@@ -2043,10 +2112,7 @@
                     day.classList.add('selected');
                 }
                 
-                day.addEventListener('click', function() {
-                    selectDate(parseInt(this.dataset.day), parseInt(this.dataset.month), parseInt(this.dataset.year));
-                });
-                
+                setupDayEvents(day, dayDate, currentWeekDates);
                 grid.appendChild(day);
             }
             
@@ -2056,14 +2122,84 @@
                 const day = document.createElement('div');
                 day.className = 'mini-day other-month';
                 day.textContent = i;
+                
+                const nextMonth = month === 11 ? 0 : month + 1;
+                const nextYear = month === 11 ? year + 1 : year;
+                const dayDate = new Date(nextYear, nextMonth, i);
+                
+                day.dataset.day = i;
+                day.dataset.month = nextMonth;
+                day.dataset.year = nextYear;
+                day.dataset.timestamp = dayDate.getTime();
+                
+                setupDayEvents(day, dayDate, currentWeekDates);
                 grid.appendChild(day);
             }
+        }
+        
+        function setupDayEvents(dayElement, dayDate, currentWeekDates) {
+            // Click event
+            dayElement.addEventListener('click', function() {
+                selectDate(parseInt(this.dataset.day), parseInt(this.dataset.month), parseInt(this.dataset.year));
+            });
+            
+            // Hover events for week view
+            if (currentView === 'week') {
+                dayElement.addEventListener('mouseenter', function() {
+                    highlightWeekOnHover(dayDate);
+                });
+                
+                dayElement.addEventListener('mouseleave', function() {
+                    clearWeekHover();
+                });
+            }
+        }
+        
+        function highlightWeekOnHover(date) {
+            if (currentView !== 'week') return;
+            
+            // Calculate the week start (Sunday) for the hovered date
+            const weekStart = new Date(date);
+            weekStart.setDate(date.getDate() - date.getDay());
+            
+            // Get all days in that week
+            const weekDates = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(weekStart);
+                d.setDate(weekStart.getDate() + i);
+                weekDates.push(d.getTime());
+            }
+            
+            // Highlight all days in the mini calendar that belong to this week
+            const allDays = document.querySelectorAll('.mini-day');
+            allDays.forEach(day => {
+                const timestamp = parseInt(day.dataset.timestamp);
+                if (weekDates.includes(timestamp)) {
+                    day.classList.add('week-hover');
+                }
+            });
+        }
+        
+        function clearWeekHover() {
+            const allDays = document.querySelectorAll('.mini-day');
+            allDays.forEach(day => {
+                day.classList.remove('week-hover');
+            });
         }
 
         function selectDate(day, month, year) {
             currentDate = new Date(year, month, day);
-            updateDateTitle();  
-            renderEvents();        
+            
+            // If in week view, adjust to show the week containing this date
+            if (currentView === 'week') {
+                // Keep the selected date but the week view will show its entire week
+                updateDateTitle();
+                renderWeekView();
+            } else {
+                updateDateTitle();
+                renderDayEvents();
+            }
+            
             renderMiniCalendar();
             toggleMiniCalendar();
         }
@@ -2073,15 +2209,22 @@
             renderMiniCalendar();
         }
 
+        // Close mini calendar when clicking outside
         document.addEventListener('click', (e) => {
             const miniCal = document.getElementById('miniCalendar');
-            const calIcon = document.querySelector('.calendar-icon');
+            const calIcon = document.querySelectorAll('.calendar-icon')[1]; // Second icon is calendar
             if (miniCal && calIcon && miniCal.classList.contains('active') && 
                 !miniCal.contains(e.target) && 
                 !calIcon.contains(e.target)) {
                 miniCal.classList.remove('active');
             }
         });
+
+        // Initialize
+        function init() {
+            switchView('day');
+            renderMiniCalendar();
+        }
 
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
