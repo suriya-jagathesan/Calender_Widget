@@ -39,6 +39,76 @@
             border-bottom: 1px solid #e5e7eb;
         }
 
+        /* Search Filters Display Section */
+        .search-filters-section {
+            padding: 15px 30px;
+            background: #fafafa;
+            border-bottom: 1px solid #e5e7eb;
+            display: none;
+        }
+
+        .search-filters-section.active {
+            display: block;
+        }
+
+        .search-filters-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .search-label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #374151;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .search-filter-pill {
+            display: inline-flex;
+            align-items: center;
+            background: #e5e7eb;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 13px;
+            color: #1f2937;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .search-filter-pill:hover {
+            background: #d1d5db;
+        }
+
+        .filter-pill-text {
+            line-height: 1.4;
+        }
+
+        .filter-pill-remove {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6b7280;
+            font-size: 18px;
+            line-height: 1;
+            padding: 0;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .filter-pill-remove:hover {
+            background: #9ca3af;
+            color: white;
+        }
+
         .view-toggle {
             display: flex;
             gap: 0;
@@ -1099,6 +1169,14 @@
             </div>
         </div>
 
+        <!-- Search Filters Display Section -->
+        <div class="search-filters-section" id="searchFiltersSection">
+            <div class="search-filters-container" id="searchFiltersContainer">
+                <span class="search-label">SEARCH</span>
+                <!-- Filter pills will be dynamically added here -->
+            </div>
+        </div>
+
         <div class="mini-calendar" id="miniCalendar">
             <div class="mini-header">
                 <span id="miniMonthYear">DECEMBER 2025</span>
@@ -1139,6 +1217,9 @@
         
         // Maximum number of tags allowed per filter
         const MAX_TAGS = 6;
+        
+        // Store applied filters
+        let appliedFilters = [];
         
         // Initial events database - this is only used to initialize the calendar
         const initialEventDatabase = {
@@ -1201,6 +1282,32 @@
             location: 'contains',
             activityNotes: 'contains',
             healthAppointment: 'contains'
+        };
+
+        // Field name mappings for display
+        const fieldDisplayNames = {
+            eType: 'EType',
+            persons: 'Person(s)',
+            from: 'From',
+            to: 'To',
+            type: 'Type',
+            service: 'Service',
+            staff: 'Staff',
+            activityType: 'Activity Type',
+            location: 'Location',
+            activityNotes: 'Activity Notes',
+            healthAppointment: 'Health Appointment'
+        };
+
+        // Filter operator display names
+        const operatorDisplayNames = {
+            contains: 'contains',
+            is: 'is',
+            isNot: 'is not',
+            isEmpty: 'is empty',
+            isNotEmpty: 'is not empty',
+            startsWith: 'starts with',
+            endsWith: 'ends with'
         };
 
         // Snackbar function to show notifications
@@ -1414,6 +1521,121 @@
             });
         }
 
+        function formatFilterText(filter) {
+            const fieldName = fieldDisplayNames[filter.field] || filter.field;
+            const operator = operatorDisplayNames[filter.filterType] || filter.filterType;
+            
+            // Handle isEmpty and isNotEmpty cases
+            if (filter.filterType === 'isEmpty' || filter.filterType === 'isNotEmpty') {
+                return `${fieldName} ${operator}`;
+            }
+            
+            // Handle single or multiple values
+            if (filter.searchValues.length === 0) {
+                return `${fieldName} ${operator}`;
+            } else if (filter.searchValues.length === 1) {
+                return `${fieldName} ${operator} "${filter.searchValues[0]}"`;
+            } else {
+                // Format multiple values with "either ... or ..." pattern
+                const valuesList = filter.searchValues.map(v => `"${v}"`).join(' or ');
+                return `${fieldName} ${operator} either ${valuesList}`;
+            }
+        }
+
+        function renderAppliedFilters() {
+            const section = document.getElementById('searchFiltersSection');
+            const container = document.getElementById('searchFiltersContainer');
+            
+            // Clear existing pills (except the SEARCH label)
+            const existingPills = container.querySelectorAll('.search-filter-pill');
+            existingPills.forEach(pill => pill.remove());
+            
+            if (appliedFilters.length === 0) {
+                section.classList.remove('active');
+                return;
+            }
+            
+            // Show the section
+            section.classList.add('active');
+            
+            // Add filter pills
+            appliedFilters.forEach((filter, index) => {
+                const pill = document.createElement('div');
+                pill.className = 'search-filter-pill';
+                
+                const text = document.createElement('span');
+                text.className = 'filter-pill-text';
+                text.textContent = formatFilterText(filter);
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'filter-pill-remove';
+                removeBtn.innerHTML = '×';
+                removeBtn.onclick = function() {
+                    removeAppliedFilter(index);
+                };
+                
+                pill.appendChild(text);
+                pill.appendChild(removeBtn);
+                container.appendChild(pill);
+            });
+        }
+
+        function removeAppliedFilter(index) {
+            const filterToRemove = appliedFilters[index];
+            const filterName = filterToRemove.field;
+            
+            // Uncheck the checkbox in the search panel
+            const checkbox = document.querySelector(`input[name="${filterName}"]`);
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+            
+            // Hide the filter inputs
+            const inputs = document.getElementById(`${filterName}-inputs`);
+            if (inputs) {
+                inputs.classList.remove('active');
+            }
+            
+            // Reset the filter value to default
+            const hiddenInput = document.getElementById(`${filterName}-filter`);
+            if (hiddenInput) {
+                hiddenInput.value = 'contains';
+            }
+            filterValues[filterName] = 'contains';
+            
+            // Reset display text
+            const displayText = document.getElementById(`${filterName}-filter-text`);
+            if (displayText) {
+                displayText.textContent = 'Contains';
+            }
+            
+            // Reset selected option in dropdown
+            const options = document.getElementById(`${filterName}-filter-options`);
+            if (options) {
+                options.querySelectorAll('.filter-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                    if (opt.textContent === 'Contains') {
+                        opt.classList.add('selected');
+                    }
+                });
+            }
+            
+            // Show tags container (in case it was hidden)
+            const tagsContainer = document.getElementById(`${filterName}-tags-container`);
+            if (tagsContainer) {
+                tagsContainer.classList.remove('hidden');
+            }
+            
+            // Clear all tags for this filter
+            clearTags(filterName);
+            
+            // Remove from applied filters array
+            appliedFilters.splice(index, 1);
+            
+            // Re-render the filter pills
+            renderAppliedFilters();
+        }
+
         function performSearch() {
             // Get all checked filters
             const checkboxes = document.querySelectorAll('.search-filter input[type="checkbox"]:checked');
@@ -1442,7 +1664,13 @@
             console.log('=== SEARCH QUERY JSON ===');
             console.log(JSON.stringify(searchQuery, null, 2));
             
-           
+            // Update applied filters
+            appliedFilters = filters;
+            
+            // Render the filter pills
+            renderAppliedFilters();
+            
+            // Close the search panel
             toggleSearch();
             
             return searchQuery;
