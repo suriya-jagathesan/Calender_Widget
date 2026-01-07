@@ -122,7 +122,7 @@
             border-radius: 8px;
             padding: 15px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 100;
+            z-index: 200;
             display: none;
             width: 320px;
         }
@@ -1545,14 +1545,31 @@ min-width: 100px;
                     services.push(rec.ID); // KEEP AS STRING
                 });
             }
-           let booking_detail = await getBookings();
-        //    console.log(booking_detail);
+          await getBookings();
            
         }
 
 
-        async function getBookings() {
-             const serviceList = `[${services.join(",")}]`;
+        async function getBookings() { 
+            employees.length = 0;  
+            employees.push('');    
+            employees.push('Test');
+             employees.push('asda ');    
+            employees.push('Test');
+             employees.push('asda ');    
+            employees.push('Test');
+             employees.push('asda ');    
+            employees.push('Test');   
+             employees.push('asda ');    
+            employees.push('Test');
+             employees.push('Test');
+             employees.push('asda ');    
+            employees.push('Test');
+             employees.push('asda ');    
+            employees.push('Test');   
+             employees.push('asda ');    
+            employees.push('Test');
+            const serviceList = `[${services.join(",")}]`;
             let cur_date = formatDateDDMMYYYY( currentDate );
             const criteria_1 = `Site_Name.ID == ${serviceList} && Date_field1 == '${cur_date}'`;
             var booking = {
@@ -1560,15 +1577,36 @@ min-width: 100px;
                 report_name: "Bookings_Backend",
                 criteria: criteria_1
             };
-            let booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
-            if( booking_resp.code === 3000 ) {
-                console.log(booking_resp.data);
-                
+            try {
+                booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
+            } catch (err) {
+                console.error("Creator error:", err);
+                return; 
+            }
+            console.log(booking_resp);
+            try{
+            if( booking_resp.status === 400 ){
+               
+            }
+            else if( booking_resp.code === 3000 ) {
+                booking_resp.data.forEach(function (rec) {
+                    
+                    rec.Care_Providers.forEach(function (emp) {
+                       
+                       
+                        employees.push(emp.zc_display_value);
+                        console.log(cur_date, emp.zc_display_value);
+                    });
+                });
+               
+
+                              
             } else {
                 console.log("No bookings found or error in fetching bookings.");
+            }}
+            catch(err){
+                console.log(err);
             }
-            
-            return booking_resp;
         }
 
         function formatDateDDMMYYYY(date) {
@@ -1682,23 +1720,19 @@ min-width: 100px;
         
         const MAX_TAGS = 6;
         
-        const employees = ['John Smith', 'Sarah Johnson', 'Mike Wilson', 'Emily Davis', 'David Brown', 'Arun', 'Kamalam', 'Surya', 'Mugil', 'Nirmal', 'Sofia', 'Shiva'];
-        // const employees=['John Smith'];
+        // const employees = ['John Smith', 'Sarah Johnson', 'Mike Wilson', 'Emily Davis', 'David Brown', 'Arun', 'Kamalam', 'Surya', 'Mugil', 'Nirmal', 'Sofia', 'Shiva'];
+        const employees=[];
         const initialEventDatabase = {
-            '2025-12-31': [
-                { id: 1, title: 'Team Meeting', startMinutes: 540, endMinutes: 630, employee: 'John Smith' },
-                { id: 2, title: 'Project Review', startMinutes: 600, endMinutes: 720, employee: 'Sarah Johnson' },
-                { id: 3, title: 'Lunch Break', startMinutes: 720, endMinutes: 780, employee: 'John Smith' },
-                { id: 4, title: 'Client Call', startMinutes: 840, endMinutes: 900, employee: 'Mike Wilson' },
-                { id: 5, title: 'Code Review', startMinutes: 870, endMinutes: 960, employee: 'Emily Davis' },
-                { id: 6, title: 'Documentation', startMinutes: 930, endMinutes: 1020, employee: 'David Brown' },
-                { id: 7, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: 'Arun' },
-                { id: 8, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: 'Kamalam' },
-                { id: 9, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: 'surya' },
-                { id: 10, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: 'mugil' },
-                { id: 11, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: 'nirmal' },
-                { id: 12, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: 'sofia' },
-                { id: 13, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: 'shiva' }
+            '2026-01-07': [
+                { id: 1, title: 'Team Meeting', startMinutes: 540, endMinutes: 630, employee: 'Sophia Roome' },
+                { id: 2, title: 'Project Review', startMinutes: 600, endMinutes: 720, employee: 'Sophia Roome' },
+                { id: 3, title: 'Lunch Break', startMinutes: 720, endMinutes: 780, employee: 'Sophie Hallas' },
+                { id: 4, title: 'Client Call', startMinutes: 840, endMinutes: 900, employee: 'Sophie Hallas' },
+                { id: 5, title: 'Code Review', startMinutes: 870, endMinutes: 960, employee: '' },
+                { id: 6, title: 'Documentation', startMinutes: 930, endMinutes: 1020, employee: '' },
+                { id: 7, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: '' },
+                { id: 8, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: '' },
+                { id: 9, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: '' },
             ],
             '2025-12-29': [
                 { id: 7, title: 'HARI OM SPARE PARTS', startMinutes: 825, endMinutes: 900, employee: 'Sarah Johnson' }
@@ -1767,10 +1801,12 @@ min-width: 100px;
             }
         }
 
-        function navigatePeriod(delta) {
+         async function navigatePeriod(delta) {
             if (currentView === 'day') {
                 currentDate.setDate(currentDate.getDate() + delta);
+                await getBookings();
                 renderDayView();
+                startAt6();
             } else {
                 currentDate.setDate(currentDate.getDate() + (delta * 7));
                 renderWeekView();
@@ -1807,11 +1843,13 @@ min-width: 100px;
 
         // DAY VIEW RENDERING
         function renderDayView() {
+            console.log("EMployees " , employees);
+            
             renderHourHeaders();
             renderEmployeeRows();
             syncScroll();
-            
-            
+        }
+        function startAt6(){
             const scrollWrapper = document.getElementById('calendarScrollWrapper');
             const startScrollLeft = DEFAULT_DAY_START_HOUR * PIXELS_PER_HOUR;
  
@@ -1869,8 +1907,7 @@ min-width: 100px;
     // Calculate how much height each row needs to fill the screen
     const fillHeight = calculateFillHeight();
 
-    const displayList = employees.length > 0 ? employees : ['—'];
-
+    const displayList = employees.length > 0 ? employees : ['—'];            
     displayList.forEach(employee => {
         const rawEvents = employee === '—' ? [] : getEventsForEmployee(employee, dateKey);
         const events = detectOverlaps([...rawEvents]);
@@ -2892,10 +2929,12 @@ formatFilterText = function(filter) {
         });
 
         // INITIALIZATION
-        function init() {
+        async function init() {
+           await getZohoData();
             switchView('day');
             renderMiniCalendar();
-             getZohoData();
+            
+            startAt6();
         }
 
         if (document.readyState === 'loading') {
