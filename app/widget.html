@@ -712,7 +712,9 @@
             border-right: 1px solid #e5e7eb;
             position: relative;
             height: 100%;
-            min-height: 100vh;
+            /* min-height: 100vh; */
+             display: flex;
+    flex-direction: column;
         }
         
         .hour-column-inner {
@@ -721,6 +723,7 @@
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             pointer-events: none;
+            height: 100%;
         }
         
         .quarter-line { 
@@ -1552,23 +1555,10 @@ min-width: 100px;
 
         async function getBookings() { 
             employees.length = 0;  
-            employees.push('');    
+            employees.push('');
+            employees.push('Sophie Hallas');
             employees.push('Test');
-             employees.push('asda ');    
-            employees.push('Test');
-             employees.push('asda ');    
-            employees.push('Test');
-             employees.push('asda ');    
-            employees.push('Test');   
-             employees.push('asda ');    
-            employees.push('Test');
-             employees.push('Test');
-             employees.push('asda ');    
-            employees.push('Test');
-             employees.push('asda ');    
-            employees.push('Test');   
-             employees.push('asda ');    
-            employees.push('Test');
+            
             const serviceList = `[${services.join(",")}]`;
             let cur_date = formatDateDDMMYYYY( currentDate );
             const criteria_1 = `Site_Name.ID == ${serviceList} && Date_field1 == '${cur_date}'`;
@@ -1730,9 +1720,9 @@ min-width: 100px;
                 { id: 4, title: 'Client Call', startMinutes: 840, endMinutes: 900, employee: 'Sophie Hallas' },
                 { id: 5, title: 'Code Review', startMinutes: 870, endMinutes: 960, employee: '' },
                 { id: 6, title: 'Documentation', startMinutes: 930, endMinutes: 1020, employee: '' },
-                { id: 7, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: '' },
-                { id: 8, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: '' },
-                { id: 9, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: '' },
+                { id: 7, title: 'Documentation', startMinutes: 120, endMinutes: 530, employee: '' },
+                { id: 8, title: 'Documentation', startMinutes: 120, endMinutes: 530, employee: '' },
+                { id: 9, title: 'Documentation', startMinutes: 120, endMinutes: 530, employee: '' },
             ],
             '2025-12-29': [
                 { id: 7, title: 'HARI OM SPARE PARTS', startMinutes: 825, endMinutes: 900, employee: 'Sarah Johnson' }
