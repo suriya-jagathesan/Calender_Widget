@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Day & Week Calendar View - With Employees</title>
+    <script src="https://js.zohostatic.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -101,7 +102,7 @@
             font-size: 14px;
             text-transform: uppercase;
         }
-
+/* //updatedArun */
         .mini-nav {
             display: flex;
             gap: 10px;
@@ -1367,6 +1368,28 @@
         let resizeStartX = 0;
         let originalStart = 0;
         let originalEnd = 0;
+        let loginUser = null;
+        let userService = null;
+        let services = [];
+
+       async function getZohoData() {
+        let initparam = await ZOHO.CREATOR.UTIL.getInitParams();
+            loginUser = initparam.loginUser;
+           var get_service = {
+                app_name: "thg-sandbox",
+                report_name: "Sites_Access_Details_Report",
+                criteria: "(Staff_Email.contains(\"" + loginUser + "\"))"
+            };
+            
+
+            let service_resp = await ZOHO.CREATOR.DATA.getRecords(get_service);
+            if( service_resp.code === 3000 ){
+                service_resp.data.forEach(function(rec){
+                    services.push(rec.ID);
+                });
+            }
+            console.log(services);     
+        }
 
         function startResize(e, evt, direction) {
             resizeEvent = evt;
@@ -2539,6 +2562,7 @@
         function init() {
             switchView('day');
             renderMiniCalendar();
+            getZohoData();
         }
 
         if (document.readyState === 'loading') {
