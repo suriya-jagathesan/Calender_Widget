@@ -1556,9 +1556,6 @@ min-width: 100px;
         async function getBookings() { 
             employees.length = 0;  
             employees.push('');
-            employees.push('Sophie Hallas');
-            employees.push('Test');
-            
             const serviceList = `[${services.join(",")}]`;
             let cur_date = formatDateDDMMYYYY( currentDate );
             const criteria_1 = `Site_Name.ID == ${serviceList} && Date_field1 == '${cur_date}'`;
@@ -1583,9 +1580,18 @@ min-width: 100px;
                     
                     rec.Care_Providers.forEach(function (emp) {
                        
-                       
+                       let cur_book = {};
+                       cur_book.id = rec.ID;
+                       cur_book.date = rec.Date_field1;
+                        const [, stime] = rec.From_Date_Time.split(" "); 
+                        const [shours, sminutes] = stime.split(":").map(Number);
+                        cur_book.startMinutes = shours * 60 + sminutes;
+                        
+                        const [, etime] = rec.To_Date_Time.split(" "); 
+                        const [ehours, eminutes] = etime.split(":").map(Number);
+                        cur_book.endMinutes = ehours * 60 + eminutes;
                         employees.push(emp.zc_display_value);
-                        console.log(cur_date, emp.zc_display_value);
+                       
                     });
                 });
                
