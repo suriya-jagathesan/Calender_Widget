@@ -3,24 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Day & Week Calendar View - With Employees</title>
     <script src="https://js.zohostatic.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
+    <title>Day & Week Calendar View - With Employees</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background: #f5f7fa;
-            padding: 20px;
         }
-        .calendar-container {
-            max-width: 1600px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
+        .filter-option-header {
+    background: #f3f4f6;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-top: 1px solid #e5e7eb;
+}
+.filter-date-input, .filter-n-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+.filter-n-input {
+    width: 80px;
+}
+        /* Container that holds the header and the scrollable area */
+.calendar-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    /* overflow: hidden; Keeps the rounded corners clean */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Add this class to the div containing your rows */
+.calendar-body-scrollable {
+    flex: 1;
+    overflow-y: auto;   /* ✅ vertical scroll lives here */
+    overflow-x: hidden;
+    position: relative;
+}
+
+
+/* Make the header sticky so it stays visible while scrolling down */
+.calendar-header-grid, .week-days-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f9fafb;
+    border-bottom: 2px solid #e5e7eb;
+}
         .calendar-header {
             display: flex;
             justify-content: space-between;
@@ -102,7 +140,7 @@
             font-size: 14px;
             text-transform: uppercase;
         }
-/* //updatedArun */
+
         .mini-nav {
             display: flex;
             gap: 10px;
@@ -180,7 +218,7 @@
         
         /* Search Filters Display Section */
         .search-filters-section {
-            padding: 15px 30px;
+            padding-left: 15px;
             background: #fafafa;
             border-bottom: 1px solid #e5e7eb;
             display: none;
@@ -195,14 +233,6 @@
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
-        }
-
-        .search-label {
-            font-weight: 600;
-            font-size: 13px;
-            color: #374151;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
         .search-filter-pill {
@@ -266,6 +296,26 @@
         .search-panel.active {
             right: 0;
         }
+
+.sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: #ffffff;
+}
+
+/* Prevent overlap shadow glitch */
+.day-header-row {
+    border-bottom: 2px solid #e5e7eb;
+}
+.day-header-row.sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #ffffff;
+}
+
+
 
         .search-header {
             padding: 20px;
@@ -565,7 +615,7 @@
         .day-view-container {
             display: flex;
             flex-direction: column;
-            height: 600px;
+            height: 87vh;
         }
         
         .day-header-row {
@@ -577,7 +627,7 @@
         
         .employee-header {
             flex: 0 0 150px;
-            min-width: 150px;
+            min-width: 12.5%;
             padding: 12px 15px;
             text-align: center;
             font-size: 15px;
@@ -616,7 +666,7 @@
         
         .employee-column {
             flex: 0 0 150px;
-            min-width: 150px;
+            min-width: 12.5%;
             border-right: 2px solid #e5e7eb;
             background: #f9fafb;
             overflow: hidden;
@@ -637,6 +687,8 @@
         .calendar-scroll-wrapper { 
             flex: 1;
             overflow: auto;
+                overflow-y: hidden; /* ❗IMPORTANT */
+
         }
         
         .calendar-rows {
@@ -660,6 +712,7 @@
             border-right: 1px solid #e5e7eb;
             position: relative;
             height: 100%;
+            min-height: 100vh;
         }
         
         .hour-column-inner {
@@ -711,7 +764,7 @@
         .week-view-container {
             display: flex;
             flex-direction: column;
-            height: 600px;
+            height: 87vh;
         }
         
         /* Week header with days */
@@ -724,7 +777,7 @@
         
         .week-employee-header {
             flex: 0 0 150px;
-            min-width: 150px;
+            min-width: 12.5%;
             padding: 12px 15px;
             text-align: center;
             font-size: 15px;
@@ -733,6 +786,19 @@
             border-right: 2px solid #e5e7eb;
             background: #f9fafb;
         }
+
+        
+        .employee-header, .employee-column {
+    flex: 0 0 150px;
+    /* Remove min-width: 12.5% if you want a fixed 150px sidebar */
+    /* Or keep it if you want the sidebar itself to be responsive */
+    border-right: 2px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+  
+
+        
         
         .week-days-container {
             flex: 1;
@@ -741,17 +807,17 @@
         
         .week-days-header {
             display: flex;
-            min-width: calc(7 * 150px);
+            width: 100%;
         }
         
         .week-day-header {
-            flex: 0 0;
-            min-width: 150px;
-            padding: 12px 8px;
-            text-align: center;
-            border-right: 1px solid #e5e7eb;
-            background: #f9fafb;
-        }
+    flex: 1; /* This ensures all 7 columns share equal space and fill the container */
+    min-width: 100px; /* Provides a minimum size for responsiveness */
+    padding: 12px 8px;
+    text-align: center;
+    border-right: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
         
         .week-day-header:last-child {
             border-right: none;
@@ -789,7 +855,7 @@
         
         .week-employee-column {
             flex: 0 0 150px;
-            min-width: 150px;
+            min-width: 12.5%;
             border-right: 2px solid #e5e7eb;
             background: #f9fafb;
             overflow: hidden;
@@ -809,13 +875,16 @@
         
         .week-scroll-wrapper {
             flex: 1;
-            overflow: auto;
+            overflow-x: auto;
+                overflow-y: auto;
+
+
         }
         
         .week-calendar-rows {
-            min-width: calc(7 * 150px);
+            width: 100%;
         }
-        
+
         .week-employee-calendar-row {
             position: relative;
             border-bottom: 1px solid #e5e7eb;
@@ -823,8 +892,8 @@
         }
         
         .week-day-column {
-            flex: 0 0 150px;
-            min-width: 150px;
+            flex:1;
+min-width: 100px;
             border-right: 1px solid #e5e7eb;
             position: relative;
         }
@@ -933,10 +1002,52 @@
         .event-time {
             font-size: 9px;
             opacity: 0.9;
-            whitespace: nowrap;
             line-height: 1.2;
         }
         .drop-highlight { background-color: rgba(99, 102, 241, 0.15) !important; }
+        .week-employee-header, .week-employee-column {
+    flex: 0 0 150px;
+    /* Remove min-width: 12.5% if you want a fixed 150px sidebar */
+    /* Or keep it if you want the sidebar itself to be responsive */
+    border-right: 2px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+/* 1. Force the sidebar widths to be identical and use border-box */
+.week-employee-header, .week-employee-column {
+    flex: 0 0 150px !important;
+    width: 150px !important;
+    min-width: 150px !important;
+    max-width: 150px !important;
+    border-right: 2px solid #e5e7eb;
+    box-sizing: border-box;
+}
+
+/* 2. Important: Add a "gutter" to the header to account for the scrollbar width */
+.week-days-container {
+    flex: 1;
+    overflow-y: scroll; /* Force a scrollbar area */
+    scrollbar-color: transparent transparent; /* Make it invisible */
+}
+
+/* For Chrome/Safari/Edge to hide that ghost scrollbar in the header */
+.week-days-container::-webkit-scrollbar {
+    width: 12px; /* Match this to your system scrollbar width if possible, or use a standard 12-16px */
+    background: transparent;
+}
+
+/* 3. Ensure the columns use a shared flex logic */
+.week-days-header, .week-employee-calendar-row {
+    display: flex;
+    width: 100%;
+}
+
+.week-day-header, .week-day-column {
+    flex: 1 1 0; /* Ensure they all grow and shrink from 0 equally */
+    min-width: 0; /* Allow columns to shrink below content size */
+    box-sizing: border-box;
+}
+
     </style>
 </head>
 <body>
@@ -951,317 +1062,339 @@
         </div>
         
         <div class="search-body">
-             <div class="search-filter">
-                <label>
-                    <input type="checkbox" name="persons" onchange="toggleFilterInputs('persons')">
-                    Persons
-                </label>
-                <div class="filter-inputs" id="persons-inputs">
-                    <div class="filter-input-group">
-                        <div class="filter-select-wrapper">
-                            <div class="filter-select" id="persons-filter-display" onclick="toggleFilterDropdown('persons')">
-                                <span id="persons-filter-text">Contains</span>
-                                <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12">
-                                    <path fill="#6b7280" d="M6 9L1 4h10z"/>
-                                </svg>
-                            </div>
-                            <div class="filter-options" id="persons-filter-options">
-                                <div class="filter-option" onclick="selectFilterOption('persons', 'contains', this)">Contains</div>
-                                <div class="filter-option" onclick="selectFilterOption('persons', 'is', this)">Is</div>
-                                <div class="filter-option" onclick="selectFilterOption('persons', 'isNot', this)">Is Not</div>
-                                <div class="filter-option" onclick="selectFilterOption('persons', 'isEmpty', this)">Is Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('persons', 'isNotEmpty', this)">Is Not Empty</div>
-                            </div>
-                            <input type="hidden" id="persons-filter" value="contains">
-                        </div>
+    <!-- 1. Persons Filter (Restored) -->
+    <div class="search-filter">
+        <label>
+            <input type="checkbox" name="persons" onchange="toggleFilterInputs('persons')">
+            Persons
+        </label>
+        <div class="filter-inputs" id="persons-inputs">
+            <div class="filter-input-group">
+                <div class="filter-select-wrapper">
+                    <div class="filter-select" id="persons-filter-display" onclick="toggleFilterDropdown('persons')">
+                        <span id="persons-filter-text">Contains</span>
+                        <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12"><path fill="#6b7280" d="M6 9L1 4h10z"/></svg>
                     </div>
-                    <div class="filter-input-group" id="persons-tags-group">
-                        <div class="tags-input-container" id="persons-tags-container" onclick="focusTagInput('persons')">
-                            <input type="text" id="persons-tags-input" placeholder="" onkeydown="handleTagInput(event, 'persons')">
-                        </div>
+                    <div class="filter-options" id="persons-filter-options">
+                        <div class="filter-option" onclick="selectFilterOption('persons', 'contains', this)">Contains</div>
+                        <div class="filter-option" onclick="selectFilterOption('persons', 'is', this)">Is</div>
+                        <div class="filter-option" onclick="selectFilterOption('persons', 'isNot', this)">Is Not</div>
+                        <div class="filter-option" onclick="selectFilterOption('persons', 'isEmpty', this)">Is Empty</div>
+                        <div class="filter-option" onclick="selectFilterOption('persons', 'isNotEmpty', this)">Is Not Empty</div>
                     </div>
+                    <input type="hidden" id="persons-filter" value="contains">
                 </div>
             </div>
-             <div class="search-filter">
-                <label>
-                    <input type="checkbox" name="from" onchange="toggleFilterInputs('from')">
-                    From
-                </label>
-                <div class="filter-inputs" id="from-inputs">
-                    <div class="filter-input-group">
-                        <div class="filter-select-wrapper">
-                            <div class="filter-select" id="from-filter-display" onclick="toggleFilterDropdown('from')">
-                                <span id="from-filter-text">Contains</span>
-                                <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12">
-                                    <path fill="#6b7280" d="M6 9L1 4h10z"/>
-                                </svg>
-                            </div>
-                            <div class="filter-options" id="from-filter-options">
-                                <div class="filter-option" onclick="selectFilterOption('from', 'contains', this)">Contains</div>
-                                <div class="filter-option" onclick="selectFilterOption('from', 'is', this)">Is</div>
-                                <div class="filter-option" onclick="selectFilterOption('from', 'isNot', this)">Is Not</div>
-                                <div class="filter-option" onclick="selectFilterOption('from', 'isEmpty', this)">Is Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('from', 'isNotEmpty', this)">Is Not Empty</div>
-                            </div>
-                            <input type="hidden" id="from-filter" value="contains">
-                        </div>
-                    </div>
-                    <div class="filter-input-group" id="from-tags-group">
-                        <div class="tags-input-container" id="from-tags-container" onclick="focusTagInput('from')">
-                            <input type="text" id="from-tags-input" placeholder="" onkeydown="handleTagInput(event, 'from')">
-                        </div>
-                    </div>
-                </div>
-            </div>
-             <div class="search-filter">
-                <label>
-                    <input type="checkbox" name="to" onchange="toggleFilterInputs('to')">
-                    To
-                </label>
-                <div class="filter-inputs" id="to-inputs">
-                    <div class="filter-input-group">
-                        <div class="filter-select-wrapper">
-                            <div class="filter-select" id="to-filter-display" onclick="toggleFilterDropdown('to')">
-                                <span id="to-filter-text">Contains</span>
-                                <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12">
-                                    <path fill="#6b7280" d="M6 9L1 4h10z"/>
-                                </svg>
-                            </div>
-                            <div class="filter-options" id="to-filter-options">
-                                <div class="filter-option" onclick="selectFilterOption('to', 'contains', this)">Contains</div>
-                                <div class="filter-option" onclick="selectFilterOption('to', 'is', this)">Is</div>
-                                <div class="filter-option" onclick="selectFilterOption('to', 'isNot', this)">Is Not</div>
-                                <div class="filter-option" onclick="selectFilterOption('to', 'isEmpty', this)">Is Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('to', 'isNotEmpty', this)">Is Not Empty</div>
-                            </div>
-                            <input type="hidden" id="to-filter" value="contains">
-                        </div>
-                    </div>
-                    <div class="filter-input-group" id="to-tags-group">
-                        <div class="tags-input-container" id="to-tags-container" onclick="focusTagInput('to')">
-                            <input type="text" id="to-tags-input" placeholder="" onkeydown="handleTagInput(event, 'to')">
-                        </div>
-                    </div>
-                </div>
-            </div>
-             <div class="search-filter">
-                <label>
-                    <input type="checkbox" name="type" onchange="toggleFilterInputs('type')">
-                    Type
-                </label>
-                <div class="filter-inputs" id="type-inputs">
-                    <div class="filter-input-group">
-                        <div class="filter-select-wrapper">
-                            <div class="filter-select" id="type-filter-display" onclick="toggleFilterDropdown('type')">
-                                <span id="type-filter-text">Contains</span>
-                                <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12">
-                                    <path fill="#6b7280" d="M6 9L1 4h10z"/>
-                                </svg>
-                            </div>
-                            <div class="filter-options" id="type-filter-options">
-                                <div class="filter-option" onclick="selectFilterOption('type', 'contains', this)">Contains</div>
-                                <div class="filter-option" onclick="selectFilterOption('type', 'is', this)">Is</div>
-                                <div class="filter-option" onclick="selectFilterOption('type', 'isNot', this)">Is Not</div>
-                                <div class="filter-option" onclick="selectFilterOption('type', 'isEmpty', this)">Is Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('type', 'isNotEmpty', this)">Is Not Empty</div>
-                            </div>
-                            <input type="hidden" id="type-filter" value="contains">
-                        </div>
-                    </div>
-                    <div class="filter-input-group" id="type-tags-group">
-                        <div class="tags-input-container" id="type-tags-container" onclick="focusTagInput('type')">
-                            <input type="text" id="type-tags-input" placeholder="" onkeydown="handleTagInput(event, 'type')">
-                        </div>
-                    </div>
-                </div>
-            </div>
-             <div class="search-filter">
-                <label>
-                    <input type="checkbox" name="service" onchange="toggleFilterInputs('service')">
-                    Service
-                </label>
-                <div class="filter-inputs" id="service-inputs">
-                    <div class="filter-input-group">
-                        <div class="filter-select-wrapper">
-                            <div class="filter-select" id="service-filter-display" onclick="toggleFilterDropdown('service')">
-                                <span id="service-filter-text">Contains</span>
-                                <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12">
-                                    <path fill="#6b7280" d="M6 9L1 4h10z"/>
-                                </svg>
-                            </div>
-                            <div class="filter-options" id="service-filter-options">
-                                <div class="filter-option" onclick="selectFilterOption('service', 'contains', this)">Contains</div>
-                                <div class="filter-option" onclick="selectFilterOption('service', 'is', this)">Is</div>
-                                <div class="filter-option" onclick="selectFilterOption('service', 'isNot', this)">Is Not</div>
-                                <div class="filter-option" onclick="selectFilterOption('service', 'isEmpty', this)">Is Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('service', 'isNotEmpty', this)">Is Not Empty</div>
-                            </div>
-                            <input type="hidden" id="service-filter" value="contains">
-                        </div>
-                    </div>
-                    <div class="filter-input-group" id="service-tags-group">
-                        <div class="tags-input-container" id="service-tags-container" onclick="focusTagInput('service')">
-                            <input type="text" id="service-tags-input" placeholder="" onkeydown="handleTagInput(event, 'service')">
-                        </div>
-                    </div>
-                </div>
-            </div>
-             <div class="search-filter">
-                <label>
-                    <input type="checkbox" name="staff" onchange="toggleFilterInputs('staff')">
-                    Staff
-                </label>
-                <div class="filter-inputs" id="staff-inputs">
-                    <div class="filter-input-group">
-                        <div class="filter-select-wrapper">
-                            <div class="filter-select" id="staff-filter-display" onclick="toggleFilterDropdown('staff')">
-                                <span id="staff-filter-text">Contains</span>
-                                <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12">
-                                    <path fill="#6b7280" d="M6 9L1 4h10z"/>
-                                </svg>
-                            </div>
-                            <div class="filter-options" id="staff-filter-options">
-                                <div class="filter-option" onclick="selectFilterOption('staff', 'contains', this)">Contains</div>
-                                <div class="filter-option" onclick="selectFilterOption('staff', 'is', this)">Is</div>
-                                <div class="filter-option" onclick="selectFilterOption('staff', 'isNot', this)">Is Not</div>
-                                <div class="filter-option" onclick="selectFilterOption('staff', 'isEmpty', this)">Is Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('staff', 'isNotEmpty', this)">Is Not Empty</div>
-                            </div>
-                            <input type="hidden" id="staff-filter" value="contains">
-                        </div>
-                    </div>
-                    <div class="filter-input-group" id="staff-tags-group">
-                        <div class="tags-input-container" id="staff-tags-container" onclick="focusTagInput('staff')">
-                            <input type="text" id="staff-tags-input" placeholder="" onkeydown="handleTagInput(event, 'staff')">
-                        </div>
-                    </div>
-                </div>
-            </div>
-             <div class="search-filter">
-                <label>
-                    <input type="checkbox" name="activityType" onchange="toggleFilterInputs('activityType')">
-                    Activity Type
-                </label>
-                <div class="filter-inputs" id="activityType-inputs">
-                    <div class="filter-input-group">
-                        <div class="filter-select-wrapper">
-                            <div class="filter-select" id="activityType-filter-display" onclick="toggleFilterDropdown('activityType')">
-                                <span id="activityType-filter-text">Contains</span>
-                                <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12">
-                                    <path fill="#6b7280" d="M6 9L1 4h10z"/>
-                                </svg>
-                            </div>
-                            <div class="filter-options" id="activityType-filter-options">
-                                <div class="filter-option" onclick="selectFilterOption('activityType', 'contains', this)">Contains</div>
-                                <div class="filter-option" onclick="selectFilterOption('activityType', 'is', this)">Is</div>
-                                <div class="filter-option" onclick="selectFilterOption('activityType', 'isNot', this)">Is Not</div>
-                                <div class="filter-option" onclick="selectFilterOption('activityType', 'isEmpty', this)">Is Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('activityType', 'isNotEmpty', this)">Is Not Empty</div>
-                            </div>
-                            <input type="hidden" id="activityType-filter" value="contains">
-                        </div>
-                    </div>
-                    <div class="filter-input-group" id="activityType-tags-group">
-                        <div class="tags-input-container" id="activityType-tags-container" onclick="focusTagInput('activityType')">
-                            <input type="text" id="activityType-tags-input" placeholder="" onkeydown="handleTagInput(event, 'activityType')">
-                        </div>
-                    </div>
-                </div>
-            </div>
-             <div class="search-filter">
-                <label>
-                    <input type="checkbox" name="location" onchange="toggleFilterInputs('location')">
-                    Location
-                </label>
-                <div class="filter-inputs" id="location-inputs">
-                    <div class="filter-input-group">
-                        <div class="filter-select-wrapper">
-                            <div class="filter-select" id="location-filter-display" onclick="toggleFilterDropdown('location')">
-                                <span id="location-filter-text">Contains</span>
-                                <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12">
-                                    <path fill="#6b7280" d="M6 9L1 4h10z"/>
-                                </svg>
-                            </div>
-                            <div class="filter-options" id="location-filter-options">
-                                <div class="filter-option" onclick="selectFilterOption('location', 'contains', this)">Contains</div>
-                                <div class="filter-option" onclick="selectFilterOption('location', 'is', this)">Is</div>
-                                <div class="filter-option" onclick="selectFilterOption('location', 'isNot', this)">Is Not</div>
-                                <div class="filter-option" onclick="selectFilterOption('location', 'isEmpty', this)">Is Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('location', 'isNotEmpty', this)">Is Not Empty</div>
-                            </div>
-                            <input type="hidden" id="location-filter" value="contains">
-                        </div>
-                    </div>
-                    <div class="filter-input-group" id="location-tags-group">
-                        <div class="tags-input-container" id="location-tags-container" onclick="focusTagInput('location')">
-                            <input type="text" id="location-tags-input" placeholder="" onkeydown="handleTagInput(event, 'location')">
-                        </div>
-                    </div>
-                </div>
-            </div>
-             <div class="search-filter">
-                <label>
-                    <input type="checkbox" name="activityNotes" onchange="toggleFilterInputs('activityNotes')">
-                    Activity Notes
-                </label>
-                <div class="filter-inputs" id="activityNotes-inputs">
-                    <div class="filter-input-group">
-                        <div class="filter-select-wrapper">
-                            <div class="filter-select" id="activityNotes-filter-display" onclick="toggleFilterDropdown('activityNotes')">
-                                <span id="activityNotes-filter-text">Contains</span>
-                                <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12">
-                                    <path fill="#6b7280" d="M6 9L1 4h10z"/>
-                                </svg>
-                            </div>
-                            <div class="filter-options" id="activityNotes-filter-options">
-                                <div class="filter-option" onclick="selectFilterOption('activityNotes', 'contains', this)">Contains</div>
-                                <div class="filter-option" onclick="selectFilterOption('activityNotes', 'is', this)">Is</div>
-                                <div class="filter-option" onclick="selectFilterOption('activityNotes', 'isNot', this)">Is Not</div>
-                                <div class="filter-option" onclick="selectFilterOption('activityNotes', 'isEmpty', this)">Is Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('activityNotes', 'isNotEmpty', this)">Is Not Empty</div>
-                            </div>
-                            <input type="hidden" id="activityNotes-filter" value="contains">
-                        </div>
-                    </div>
-                    <div class="filter-input-group" id="activityNotes-tags-group">
-                        <div class="tags-input-container" id="activityNotes-tags-container" onclick="focusTagInput('activityNotes')">
-                            <input type="text" id="activityNotes-tags-input" placeholder="" onkeydown="handleTagInput(event, 'activityNotes')">
-                        </div>
-                    </div>
-                </div>
-            </div>
-             <div class="search-filter">
-                <label>
-                    <input type="checkbox" name="healthAppointment" onchange="toggleFilterInputs('healthAppointment')">
-                    Health Appointment
-                </label>
-                <div class="filter-inputs" id="healthAppointment-inputs">
-                    <div class="filter-input-group">
-                        <div class="filter-select-wrapper">
-                            <div class="filter-select" id="healthAppointment-filter-display" onclick="toggleFilterDropdown('healthAppointment')">
-                                <span id="healthAppointment-filter-text">Contains</span>
-                                <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12">
-                                    <path fill="#6b7280" d="M6 9L1 4h10z"/>
-                                </svg>
-                            </div>
-                            <div class="filter-options" id="healthAppointment-filter-options">
-                                <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'contains', this)">Contains</div>
-                                <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'is', this)">Is</div>
-                                <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'isNot', this)">Is Not</div>
-                                <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'isEmpty', this)">Is Empty</div>
-                                <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'isNotEmpty', this)">Is Not Empty</div>
-                            </div>
-                            <input type="hidden" id="healthAppointment-filter" value="contains">
-                        </div>
-                    </div>
-                    <div class="filter-input-group" id="healthAppointment-tags-group">
-                        <div class="tags-input-container" id="healthAppointment-tags-container" onclick="focusTagInput('healthAppointment')">
-                            <input type="text" id="healthAppointment-tags-input" placeholder="" onkeydown="handleTagInput(event, 'healthAppointment')">
-                        </div>
-                    </div>
+            <div class="filter-input-group" id="persons-tags-group">
+                <div class="tags-input-container" id="persons-tags-container" onclick="focusTagInput('persons')">
+                    <input type="text" id="persons-tags-input" placeholder="" onkeydown="handleTagInput(event, 'persons')">
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- 2. Advanced From Filter -->
+    <div class="search-filter">
+        <label><input type="checkbox" name="from" onchange="toggleFilterInputs('from')"> From</label>
+        <div class="filter-inputs" id="from-inputs">
+            <div class="filter-input-group">
+                <div class="filter-select-wrapper">
+                    <div class="filter-select" id="from-filter-display" onclick="toggleFilterDropdown('from')">
+                        <span id="from-filter-text">Is</span>
+                        <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12"><path fill="#6b7280" d="M6 9L1 4h10z"/></svg>
+                    </div>
+                    <div class="filter-options" id="from-filter-options">
+                        <div class="filter-option-header">Basic</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'is', this)">Is</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'isNot', this)">Is Not</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'isEmpty', this)">Is Empty</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'isNotEmpty', this)">Is Not Empty</div>
+                        <div class="filter-option-header">Comparison</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'gtDate', this)">Is greater than specific date</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'ltDate', this)">Is lesser than specific date</div>
+                        <div class="filter-option-header">Dynamic "n" Based</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'gtNDays', this)">Is > n days from today</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'gtNMonths', this)">Is > n months from today</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'gtNYears', this)">Is > n years from today</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'ltNDays', this)">Is < n days from today</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'ltNMonths', this)">Is < n months from today</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'ltNYears', this)">Is < n years from today</div>
+                        <div class="filter-option-header">Relative</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'today', this)">Today</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'yesterday', this)">Yesterday</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'tomorrow', this)">Tomorrow</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'thisWeek', this)">This Week</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'lastWeek', this)">Last Week</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'nextWeek', this)">Next Week</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'thisMonth', this)">This Month</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'lastMonth', this)">Last Month</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'nextMonth', this)">Next Month</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'thisYear', this)">This Year</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'lastYear', this)">Last Year</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'nextYear', this)">Next Year</div>
+                        <div class="filter-option-header">Rolling</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'last7', this)">Last 7 Days</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'last30', this)">Last 30 Days</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'last60', this)">Last 60 Days</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('from', 'last90', this)">Last 90 Days</div>
+                    </div>
+                    <input type="hidden" id="from-filter" value="is">
+                </div>
+            </div>
+            <div class="filter-input-group date-input-container" id="from-date-group" style="display:none;"><input type="date" id="from-date-val" class="filter-date-input"></div>
+            <div class="filter-input-group n-input-container" id="from-n-group" style="display:none;"><label>Enter "n" value:</label><input type="number" id="from-n-val" class="filter-n-input" value="1" min="1"></div>
+        </div>
+    </div>
+
+    <!-- 3. Advanced To Filter -->
+    <div class="search-filter">
+        <label><input type="checkbox" name="to" onchange="toggleFilterInputs('to')"> To</label>
+        <div class="filter-inputs" id="to-inputs">
+            <div class="filter-input-group">
+                <div class="filter-select-wrapper">
+                    <div class="filter-select" id="to-filter-display" onclick="toggleFilterDropdown('to')">
+                        <span id="to-filter-text">Is</span>
+                        <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12"><path fill="#6b7280" d="M6 9L1 4h10z"/></svg>
+                    </div>
+                    <div class="filter-options" id="to-filter-options">
+                        <div class="filter-option-header">Basic</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'is', this)">Is</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'isNot', this)">Is Not</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'isEmpty', this)">Is Empty</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'isNotEmpty', this)">Is Not Empty</div>
+                        <div class="filter-option-header">Comparison</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'gtDate', this)">Is greater than specific date</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'ltDate', this)">Is lesser than specific date</div>
+                        <div class="filter-option-header">Dynamic "n" Based</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'gtNDays', this)">Is > n days from today</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'gtNMonths', this)">Is > n months from today</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'gtNYears', this)">Is > n years from today</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'ltNDays', this)">Is < n days from today</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'ltNMonths', this)">Is < n months from today</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'ltNYears', this)">Is < n years from today</div>
+                        <div class="filter-option-header">Relative</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'today', this)">Today</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'yesterday', this)">Yesterday</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'tomorrow', this)">Tomorrow</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'thisWeek', this)">This Week</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'lastWeek', this)">Last Week</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'nextWeek', this)">Next Week</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'thisMonth', this)">This Month</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'lastMonth', this)">Last Month</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'nextMonth', this)">Next Month</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'thisYear', this)">This Year</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'lastYear', this)">Last Year</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'nextYear', this)">Next Year</div>
+                        <div class="filter-option-header">Rolling</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'last7', this)">Last 7 Days</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'last30', this)">Last 30 Days</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'last60', this)">Last 60 Days</div>
+                        <div class="filter-option" onclick="selectDateFilterOption('to', 'last90', this)">Last 90 Days</div>
+                    </div>
+                    <input type="hidden" id="to-filter" value="is">
+                </div>
+            </div>
+            <div class="filter-input-group date-input-container" id="to-date-group" style="display:none;"><input type="date" id="to-date-val" class="filter-date-input"></div>
+            <div class="filter-input-group n-input-container" id="to-n-group" style="display:none;"><label>Enter "n" value:</label><input type="number" id="to-n-val" class="filter-n-input" value="1" min="1"></div>
+        </div>
+    </div>
+
+    <!-- 4. Type Filter -->
+    <div class="search-filter">
+        <label><input type="checkbox" name="type" onchange="toggleFilterInputs('type')"> Type</label>
+        <div class="filter-inputs" id="type-inputs">
+            <div class="filter-input-group">
+                <div class="filter-select-wrapper">
+                    <div class="filter-select" id="type-filter-display" onclick="toggleFilterDropdown('type')">
+                        <span id="type-filter-text">Contains</span>
+                        <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12"><path fill="#6b7280" d="M6 9L1 4h10z"/></svg>
+                    </div>
+                    <div class="filter-options" id="type-filter-options">
+                        <div class="filter-option" onclick="selectFilterOption('type', 'contains', this)">Contains</div>
+                        <div class="filter-option" onclick="selectFilterOption('type', 'is', this)">Is</div>
+                        <div class="filter-option" onclick="selectFilterOption('type', 'isNot', this)">Is Not</div>
+                        <div class="filter-option" onclick="selectFilterOption('type', 'isEmpty', this)">Is Empty</div>
+                        <div class="filter-option" onclick="selectFilterOption('type', 'isNotEmpty', this)">Is Not Empty</div>
+                    </div>
+                    <input type="hidden" id="type-filter" value="contains">
+                </div>
+            </div>
+            <div class="filter-input-group" id="type-tags-group">
+                <div class="tags-input-container" id="type-tags-container" onclick="focusTagInput('type')">
+                    <input type="text" id="type-tags-input" onkeydown="handleTagInput(event, 'type')">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Service Filter -->
+    <div class="search-filter">
+        <label><input type="checkbox" name="service" onchange="toggleFilterInputs('service')"> Service</label>
+        <div class="filter-inputs" id="service-inputs">
+            <div class="filter-input-group">
+                <div class="filter-select-wrapper">
+                    <div class="filter-select" id="service-filter-display" onclick="toggleFilterDropdown('service')">
+                        <span id="service-filter-text">Contains</span>
+                        <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12"><path fill="#6b7280" d="M6 9L1 4h10z"/></svg>
+                    </div>
+                    <div class="filter-options" id="service-filter-options">
+                        <div class="filter-option" onclick="selectFilterOption('service', 'contains', this)">Contains</div>
+                        <div class="filter-option" onclick="selectFilterOption('service', 'is', this)">Is</div>
+                        <div class="filter-option" onclick="selectFilterOption('service', 'isNot', this)">Is Not</div>
+                        <div class="filter-option" onclick="selectFilterOption('service', 'isEmpty', this)">Is Empty</div>
+                        <div class="filter-option" onclick="selectFilterOption('service', 'isNotEmpty', this)">Is Not Empty</div>
+                    </div>
+                    <input type="hidden" id="service-filter" value="contains">
+                </div>
+            </div>
+            <div class="filter-input-group" id="service-tags-group">
+                <div class="tags-input-container" id="service-tags-container" onclick="focusTagInput('service')">
+                    <input type="text" id="service-tags-input" onkeydown="handleTagInput(event, 'service')">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Staff Filter -->
+    <div class="search-filter">
+        <label><input type="checkbox" name="staff" onchange="toggleFilterInputs('staff')"> Staff</label>
+        <div class="filter-inputs" id="staff-inputs">
+            <div class="filter-input-group">
+                <div class="filter-select-wrapper">
+                    <div class="filter-select" id="staff-filter-display" onclick="toggleFilterDropdown('staff')">
+                        <span id="staff-filter-text">Contains</span>
+                        <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12"><path fill="#6b7280" d="M6 9L1 4h10z"/></svg>
+                    </div>
+                    <div class="filter-options" id="staff-filter-options">
+                        <div class="filter-option" onclick="selectFilterOption('staff', 'contains', this)">Contains</div>
+                        <div class="filter-option" onclick="selectFilterOption('staff', 'is', this)">Is</div>
+                        <div class="filter-option" onclick="selectFilterOption('staff', 'isNot', this)">Is Not</div>
+                        <div class="filter-option" onclick="selectFilterOption('staff', 'isEmpty', this)">Is Empty</div>
+                        <div class="filter-option" onclick="selectFilterOption('staff', 'isNotEmpty', this)">Is Not Empty</div>
+                    </div>
+                    <input type="hidden" id="staff-filter" value="contains">
+                </div>
+            </div>
+            <div class="filter-input-group" id="staff-tags-group">
+                <div class="tags-input-container" id="staff-tags-container" onclick="focusTagInput('staff')">
+                    <input type="text" id="staff-tags-input" onkeydown="handleTagInput(event, 'staff')">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. Activity Type Filter -->
+    <div class="search-filter">
+        <label><input type="checkbox" name="activityType" onchange="toggleFilterInputs('activityType')"> Activity Type</label>
+        <div class="filter-inputs" id="activityType-inputs">
+            <div class="filter-input-group">
+                <div class="filter-select-wrapper">
+                    <div class="filter-select" id="activityType-filter-display" onclick="toggleFilterDropdown('activityType')">
+                        <span id="activityType-filter-text">Contains</span>
+                        <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12"><path fill="#6b7280" d="M6 9L1 4h10z"/></svg>
+                    </div>
+                    <div class="filter-options" id="activityType-filter-options">
+                        <div class="filter-option" onclick="selectFilterOption('activityType', 'contains', this)">Contains</div>
+                        <div class="filter-option" onclick="selectFilterOption('activityType', 'is', this)">Is</div>
+                        <div class="filter-option" onclick="selectFilterOption('activityType', 'isNot', this)">Is Not</div>
+                        <div class="filter-option" onclick="selectFilterOption('activityType', 'isEmpty', this)">Is Empty</div>
+                        <div class="filter-option" onclick="selectFilterOption('activityType', 'isNotEmpty', this)">Is Not Empty</div>
+                    </div>
+                    <input type="hidden" id="activityType-filter" value="contains">
+                </div>
+            </div>
+            <div class="filter-input-group" id="activityType-tags-group">
+                <div class="tags-input-container" id="activityType-tags-container" onclick="focusTagInput('activityType')">
+                    <input type="text" id="activityType-tags-input" onkeydown="handleTagInput(event, 'activityType')">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. Location Filter -->
+    <div class="search-filter">
+        <label><input type="checkbox" name="location" onchange="toggleFilterInputs('location')"> Location</label>
+        <div class="filter-inputs" id="location-inputs">
+            <div class="filter-input-group">
+                <div class="filter-select-wrapper">
+                    <div class="filter-select" id="location-filter-display" onclick="toggleFilterDropdown('location')">
+                        <span id="location-filter-text">Contains</span>
+                        <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12"><path fill="#6b7280" d="M6 9L1 4h10z"/></svg>
+                    </div>
+                    <div class="filter-options" id="location-filter-options">
+                        <div class="filter-option" onclick="selectFilterOption('location', 'contains', this)">Contains</div>
+                        <div class="filter-option" onclick="selectFilterOption('location', 'is', this)">Is</div>
+                        <div class="filter-option" onclick="selectFilterOption('location', 'isNot', this)">Is Not</div>
+                        <div class="filter-option" onclick="selectFilterOption('location', 'isEmpty', this)">Is Empty</div>
+                        <div class="filter-option" onclick="selectFilterOption('location', 'isNotEmpty', this)">Is Not Empty</div>
+                    </div>
+                    <input type="hidden" id="location-filter" value="contains">
+                </div>
+            </div>
+            <div class="filter-input-group" id="location-tags-group">
+                <div class="tags-input-container" id="location-tags-container" onclick="focusTagInput('location')">
+                    <input type="text" id="location-tags-input" onkeydown="handleTagInput(event, 'location')">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 9. Activity Notes Filter -->
+    <div class="search-filter">
+        <label><input type="checkbox" name="activityNotes" onchange="toggleFilterInputs('activityNotes')"> Activity Notes</label>
+        <div class="filter-inputs" id="activityNotes-inputs">
+            <div class="filter-input-group">
+                <div class="filter-select-wrapper">
+                    <div class="filter-select" id="activityNotes-filter-display" onclick="toggleFilterDropdown('activityNotes')">
+                        <span id="activityNotes-filter-text">Contains</span>
+                        <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12"><path fill="#6b7280" d="M6 9L1 4h10z"/></svg>
+                    </div>
+                    <div class="filter-options" id="activityNotes-filter-options">
+                        <div class="filter-option" onclick="selectFilterOption('activityNotes', 'contains', this)">Contains</div>
+                        <div class="filter-option" onclick="selectFilterOption('activityNotes', 'is', this)">Is</div>
+                        <div class="filter-option" onclick="selectFilterOption('activityNotes', 'isNot', this)">Is Not</div>
+                        <div class="filter-option" onclick="selectFilterOption('activityNotes', 'isEmpty', this)">Is Empty</div>
+                        <div class="filter-option" onclick="selectFilterOption('activityNotes', 'isNotEmpty', this)">Is Not Empty</div>
+                    </div>
+                    <input type="hidden" id="activityNotes-filter" value="contains">
+                </div>
+            </div>
+            <div class="filter-input-group" id="activityNotes-tags-group">
+                <div class="tags-input-container" id="activityNotes-tags-container" onclick="focusTagInput('activityNotes')">
+                    <input type="text" id="activityNotes-tags-input" onkeydown="handleTagInput(event, 'activityNotes')">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 10. Health Appointment Filter -->
+    <div class="search-filter">
+        <label><input type="checkbox" name="healthAppointment" onchange="toggleFilterInputs('healthAppointment')"> Health Appointment</label>
+        <div class="filter-inputs" id="healthAppointment-inputs">
+            <div class="filter-input-group">
+                <div class="filter-select-wrapper">
+                    <div class="filter-select" id="healthAppointment-filter-display" onclick="toggleFilterDropdown('healthAppointment')">
+                        <span id="healthAppointment-filter-text">Contains</span>
+                        <svg class="filter-select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12"><path fill="#6b7280" d="M6 9L1 4h10z"/></svg>
+                    </div>
+                    <div class="filter-options" id="healthAppointment-filter-options">
+                        <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'contains', this)">Contains</div>
+                        <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'is', this)">Is</div>
+                        <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'isNot', this)">Is Not</div>
+                        <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'isEmpty', this)">Is Empty</div>
+                        <div class="filter-option" onclick="selectFilterOption('healthAppointment', 'isNotEmpty', this)">Is Not Empty</div>
+                    </div>
+                    <input type="hidden" id="healthAppointment-filter" value="contains">
+                </div>
+            </div>
+            <div class="filter-input-group" id="healthAppointment-tags-group">
+                <div class="tags-input-container" id="healthAppointment-tags-container" onclick="focusTagInput('healthAppointment')">
+                    <input type="text" id="healthAppointment-tags-input" onkeydown="handleTagInput(event, 'healthAppointment')">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
         
         <div class="search-footer">
             <button class="search-btn" onclick="performSearch()">Search</button>
@@ -1269,11 +1402,21 @@
     </div>
 
     <div class="calendar-container">
+        
         <div class="calendar-header">
             <div class="view-toggle">
                 <button id="weekViewBtn" onclick="switchView('week')">Week</button>
                 <button id="dayViewBtn" class="active" onclick="switchView('day')">Day</button>
+
+                <div class="search-filters-section" id="searchFiltersSection">
+            <div class="search-filters-container" id="searchFiltersContainer">
+                <span class="search-label">🔍</span>
             </div>
+        </div>
+            </div>
+            <!-- Search Filters Display Section -->
+        
+
             <div class="date-title" id="dateTitle">Wednesday, December 31, 2025</div>
             <div class="header-controls">
                 <button class="nav-btn" onclick="navigatePeriod(-1)"><i class="fa fa-angle-left"></i></button>
@@ -1284,13 +1427,7 @@
             </div>
         </div>
 
-        <!-- Search Filters Display Section -->
-        <div class="search-filters-section" id="searchFiltersSection">
-            <div class="search-filters-container" id="searchFiltersContainer">
-                <span class="search-label">SEARCH</span>
-            </div>
-        </div>
-
+        
         <div class="mini-calendar" id="miniCalendar">
             <div class="mini-header">
                 <span id="miniMonthYear">JANUARY 2026</span>
@@ -1313,7 +1450,9 @@
         <!-- Day View with Employee Rows -->
         <div class="day-view active" id="dayView">
             <div class="day-view-container">
-                <div class="day-header-row">
+                        <div class="calendar-body-scrollable">
+
+                <div class="day-header-row sticky-header">
                     <div class="employee-header">Employee</div>
                     <div class="hour-header-container">
                         <div class="hour-header" id="hourHeader"></div>
@@ -1325,6 +1464,7 @@
                         <div class="calendar-rows" id="calendarRows"></div>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
 
@@ -1345,15 +1485,28 @@
                 </div>
             </div>
         </div>
+        </div>
     </div>
 
     <script>
+
+            // const DEFAULT_DAY_START_HOUR = 6;
+
+        const EMPTY_GRID_HEIGHT = 120;
+
         const MIN_RESIZE_MINUTES = 15;
         const PIXELS_PER_HOUR = 100;
+        const DEFAULT_DAY_START_HOUR = 6;
+                scrollLeft = 6 * PIXELS_PER_HOUR;
+
         const PIXELS_PER_15_MIN = PIXELS_PER_HOUR / 4;
-        const MIN_ROW_HEIGHT = 100;  
+        const MIN_ROW_HEIGHT = 28;  
+
+        const CALENDAR_BODY_SELECTOR = '.calendar-body-scrollable';
+
+
         const EVENT_HEIGHT = 30;
-        const EVENT_GAP = 2;
+        const EVENT_GAP = 4;
         const ROW_PADDING = 6;
 
         let currentDate = new Date();
@@ -1368,12 +1521,13 @@
         let resizeStartX = 0;
         let originalStart = 0;
         let originalEnd = 0;
+
         let loginUser = null;
         let userService = null;
         let services = [];
 
        async function getZohoData() {
-        let initparam = await ZOHO.CREATOR.UTIL.getInitParams();
+            let initparam = await ZOHO.CREATOR.UTIL.getInitParams();
             loginUser = initparam.loginUser;
            var get_service = {
                 app_name: "thg-sandbox",
@@ -1383,13 +1537,65 @@
             
 
             let service_resp = await ZOHO.CREATOR.DATA.getRecords(get_service);
-            if( service_resp.code === 3000 ){
-                service_resp.data.forEach(function(rec){
-                    services.push(rec.ID);
+            
+
+           if (service_resp.code === 3000) {
+                service_resp.data.forEach(function (rec) {
+                    console.log(rec.ID, typeof rec.ID);
+                    services.push(rec.ID); // KEEP AS STRING
                 });
             }
-            console.log(services);     
+           let booking_detail = await getBookings();
+        //    console.log(booking_detail);
+           
         }
+
+
+        async function getBookings() {
+             const serviceList = `[${services.join(",")}]`;
+            let cur_date = formatDateDDMMYYYY( currentDate );
+            const criteria_1 = `Site_Name.ID == ${serviceList} && Date_field1 == '${cur_date}'`;
+            var booking = {
+                app_name: "thg-sandbox",
+                report_name: "Bookings_Backend",
+                criteria: criteria_1
+            };
+            let booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
+            if( booking_resp.code === 3000 ) {
+                console.log(booking_resp.data);
+                
+            } else {
+                console.log("No bookings found or error in fetching bookings.");
+            }
+            
+            return booking_resp;
+        }
+
+        function formatDateDDMMYYYY(date) {
+            const day = String(date.getDate()).padStart(2, "0");
+            const month = String(date.getMonth() + 1).padStart(2, "0"); // months are 0-based
+            const year = date.getFullYear();
+
+            return `${day}-${month}-${year}`;
+        }
+
+
+        function calculateFillHeight() {
+    // Select the container based on which view is currently active
+    const selector = (currentView === 'day') ? '.calendar-body-scrollable' : '.week-view-container';
+    const container = document.querySelector(selector);
+    
+    if (!container) return MIN_ROW_HEIGHT;
+    
+    // Header heights (Day header vs Week header)
+    const headerHeight = (currentView === 'day') ? 45 : 55; 
+    const availableHeight = container.clientHeight - headerHeight;
+    
+    const count = employees.length > 0 ? employees.length : 1;
+    const fillHeight = availableHeight / count;
+    
+    return Math.max(MIN_ROW_HEIGHT, fillHeight);
+}
 
         function startResize(e, evt, direction) {
             resizeEvent = evt;
@@ -1476,8 +1682,8 @@
         
         const MAX_TAGS = 6;
         
-        const employees = ['John Smith', 'Sarah Johnson', 'Mike Wilson', 'Emily Davis', 'David Brown'];
-        
+        const employees = ['John Smith', 'Sarah Johnson', 'Mike Wilson', 'Emily Davis', 'David Brown', 'Arun', 'Kamalam', 'Surya', 'Mugil', 'Nirmal', 'Sofia', 'Shiva'];
+        // const employees=['John Smith'];
         const initialEventDatabase = {
             '2025-12-31': [
                 { id: 1, title: 'Team Meeting', startMinutes: 540, endMinutes: 630, employee: 'John Smith' },
@@ -1485,7 +1691,14 @@
                 { id: 3, title: 'Lunch Break', startMinutes: 720, endMinutes: 780, employee: 'John Smith' },
                 { id: 4, title: 'Client Call', startMinutes: 840, endMinutes: 900, employee: 'Mike Wilson' },
                 { id: 5, title: 'Code Review', startMinutes: 870, endMinutes: 960, employee: 'Emily Davis' },
-                { id: 6, title: 'Documentation', startMinutes: 930, endMinutes: 1020, employee: 'David Brown' }
+                { id: 6, title: 'Documentation', startMinutes: 930, endMinutes: 1020, employee: 'David Brown' },
+                { id: 7, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: 'Arun' },
+                { id: 8, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: 'Kamalam' },
+                { id: 9, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: 'surya' },
+                { id: 10, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: 'mugil' },
+                { id: 11, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: 'nirmal' },
+                { id: 12, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: 'sofia' },
+                { id: 13, title: 'Documentation', startMinutes: 130, endMinutes: 520, employee: 'shiva' }
             ],
             '2025-12-29': [
                 { id: 7, title: 'HARI OM SPARE PARTS', startMinutes: 825, endMinutes: 900, employee: 'Sarah Johnson' }
@@ -1495,6 +1708,9 @@
             ]
         };
 
+
+        ///
+        
         let eventDatabase = JSON.parse(JSON.stringify(initialEventDatabase));
 
         function getDateKey(date) {
@@ -1503,6 +1719,8 @@
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         }
+
+        //chnage
 
         function getCurrentDateKey() {
             return getDateKey(currentDate);
@@ -1592,6 +1810,14 @@
             renderHourHeaders();
             renderEmployeeRows();
             syncScroll();
+            
+            
+            const scrollWrapper = document.getElementById('calendarScrollWrapper');
+            const startScrollLeft = DEFAULT_DAY_START_HOUR * PIXELS_PER_HOUR;
+ 
+            requestAnimationFrame(() => {
+                scrollWrapper.scrollLeft = startScrollLeft;
+            });
         }
 
         function renderHourHeaders() {
@@ -1608,18 +1834,21 @@
         }
         
         function renderEmployeeColumn(rowHeightsMap = {}) {
-            const column = document.getElementById('employeeColumn');
-            column.innerHTML = '';
+    const column = document.getElementById('employeeColumn');
+    column.innerHTML = '';
 
-            employees.forEach(employee => {
-                const row = document.createElement('div');
-                row.className = 'employee-row';
-                row.textContent = employee;
-                const height = rowHeightsMap[employee] || MIN_ROW_HEIGHT;
-                row.style.height = height + 'px';
-                column.appendChild(row);
-            });
-        }
+    // Fallback if no employees
+    const displayList = employees.length > 0 ? employees : ['—'];
+
+    displayList.forEach(employee => {
+        const row = document.createElement('div');
+        row.className = 'employee-row';
+        row.textContent = employee === '—' ? "" : employee; // Keep text empty if no employee
+        const height = rowHeightsMap[employee] || (employees.length === 0 ? 500 : MIN_ROW_HEIGHT);
+        row.style.height = height + 'px';
+        column.appendChild(row);
+    });
+}
         
         function syncScroll() {
             const scrollWrapper = document.getElementById('calendarScrollWrapper');
@@ -1631,77 +1860,76 @@
         }
         
         function renderEmployeeRows() {
-            const rowsContainer = document.getElementById('calendarRows');
-            rowsContainer.innerHTML = '';
+    const rowsContainer = document.getElementById('calendarRows');
+    rowsContainer.innerHTML = '';
 
-            const dateKey = getCurrentDateKey();
-            const rowHeightsMap = {};
+    const dateKey = getCurrentDateKey();
+    const rowHeightsMap = {};
+    
+    // Calculate how much height each row needs to fill the screen
+    const fillHeight = calculateFillHeight();
 
-            employees.forEach(employee => {
-                const rawEvents = getEventsForEmployee(employee, dateKey);
-                const events = detectOverlaps([...rawEvents]);
+    const displayList = employees.length > 0 ? employees : ['—'];
 
-                const maxConcurrent = events.length
-                    ? Math.max(...events.map(e => e.maxConcurrent))
-                    : 1;
+    displayList.forEach(employee => {
+        const rawEvents = employee === '—' ? [] : getEventsForEmployee(employee, dateKey);
+        const events = detectOverlaps([...rawEvents]);
 
-                const dynamicHeight = (maxConcurrent * (EVENT_HEIGHT + EVENT_GAP)) + (ROW_PADDING * 2);
-                const finalRowHeight = Math.max(MIN_ROW_HEIGHT, dynamicHeight);
-                rowHeightsMap[employee] = finalRowHeight;
+        const maxConcurrent = events.length ? Math.max(...events.map(e => e.maxConcurrent)) : 1;
+        const dynamicHeight = (maxConcurrent * (EVENT_HEIGHT + EVENT_GAP)) + (ROW_PADDING * 2);
+        
+        // Logic: Take the larger of (Height needed for events) OR (Height needed to fill screen)
+        const finalRowHeight = Math.max(fillHeight, dynamicHeight);
+        rowHeightsMap[employee] = finalRowHeight;
 
-                const employeeRow = document.createElement('div');
-                employeeRow.className = 'employee-calendar-row';
-                employeeRow.dataset.employee = employee;
-                employeeRow.style.height = finalRowHeight + 'px';
+        const employeeRow = document.createElement('div');
+        employeeRow.className = 'employee-calendar-row';
+        employeeRow.dataset.employee = employee;
+        employeeRow.style.height = finalRowHeight + 'px';
 
-                const grid = document.createElement('div');
-                grid.className = 'calendar-grid';
+        const grid = document.createElement('div');
+        grid.className = 'calendar-grid';
 
-                for (let h = 0; h < 24; h++) {
-                    const hourCol = document.createElement('div');
-                    hourCol.className = 'hour-column';
+        for (let h = 0; h < 24; h++) {
+            const hourCol = document.createElement('div');
+            hourCol.className = 'hour-column';
+            const innerGrid = document.createElement('div');
+            innerGrid.className = 'hour-column-inner';
+            for (let i = 0; i < 4; i++) {
+                const line = document.createElement('div');
+                line.className = 'quarter-line';
+                innerGrid.appendChild(line);
+            }
+            hourCol.appendChild(innerGrid);
 
-                    const innerGrid = document.createElement('div');
-                    innerGrid.className = 'hour-column-inner';
-
-                    for (let i = 0; i < 4; i++) {
-                        const line = document.createElement('div');
-                        line.className = 'quarter-line';
-                        innerGrid.appendChild(line);
-                    }
-
-                    hourCol.appendChild(innerGrid);
-
-                    for (let q = 0; q < 4; q++) {
-                        const slot = document.createElement('div');
-                        slot.className = 'quarter-slot';
-                        slot.dataset.hour = h;
-                        slot.dataset.quarter = q;
-                        slot.dataset.employee = employee;
-
-                        slot.addEventListener('dragover', handleDayDragOver);
-                        slot.addEventListener('drop', handleDayDrop);
-                        slot.addEventListener('dragleave', handleDragLeave);
-
-                        hourCol.appendChild(slot);
-                    }
-
-                    grid.appendChild(hourCol);
+            for (let q = 0; q < 4; q++) {
+                const slot = document.createElement('div');
+                slot.className = 'quarter-slot';
+                slot.dataset.hour = h;
+                slot.dataset.quarter = q;
+                slot.dataset.employee = employee;
+                if (employee !== '—') {
+                    slot.addEventListener('dragover', handleDayDragOver);
+                    slot.addEventListener('drop', handleDayDrop);
+                    slot.addEventListener('dragleave', handleDragLeave);
                 }
-
-                const eventsContainer = document.createElement('div');
-                eventsContainer.className = 'events-container';
-                eventsContainer.dataset.employee = employee;
-
-                renderEventsForEmployee(eventsContainer, events);
-
-                grid.appendChild(eventsContainer);
-                employeeRow.appendChild(grid);
-                rowsContainer.appendChild(employeeRow);
-            });
-
-            renderEmployeeColumn(rowHeightsMap);
+                hourCol.appendChild(slot);
+            }
+            grid.appendChild(hourCol);
         }
+
+        const eventsContainer = document.createElement('div');
+        eventsContainer.className = 'events-container';
+        eventsContainer.dataset.employee = employee;
+        renderEventsForEmployee(eventsContainer, events);
+
+        grid.appendChild(eventsContainer);
+        employeeRow.appendChild(grid);
+        rowsContainer.appendChild(employeeRow);
+    });
+
+    renderEmployeeColumn(rowHeightsMap);
+}
 
         function renderEventsForEmployee(container, events) {
             const hourWidth = 100;
@@ -1832,31 +2060,38 @@
         }
 
         function renderWeekDaysHeader() {
-            const header = document.getElementById('weekDaysHeader');
-            header.innerHTML = '';
-            
-            const weekStart = new Date(currentDate);
-            weekStart.setDate(currentDate.getDate() - currentDate.getDay());
-            
-            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            
-            for (let i = 0; i < 7; i++) {
-                const dayDate = new Date(weekStart);
-                dayDate.setDate(weekStart.getDate() + i);
-                
-                const dayHeader = document.createElement('div');
-                dayHeader.className = 'week-day-header';
-                
-                if (dayDate.toDateString() === todayDate.toDateString()) {
-                    dayHeader.classList.add('today');
-                }
-                
-                dayHeader.innerHTML = `
-                    <div class="week-day-name">${dayNames[i]}, ${dayDate.getDate()} ${dayDate.toLocaleDateString('en-US', { month: 'short' })}</div>
-                `;
-                header.appendChild(dayHeader);
-            }
+    const header = document.getElementById('weekDaysHeader');
+    header.innerHTML = '';
+    
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    for (let i = 0; i < 7; i++) {
+        const dayDate = new Date(weekStart);
+        dayDate.setDate(weekStart.getDate() + i);
+        
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'week-day-header';
+        
+        // Highlight today
+        if (dayDate.toDateString() === todayDate.toDateString()) {
+            dayHeader.classList.add('today');
         }
+        
+        // Match the text format in your screenshot: "TUE, 6 JAN"
+        const dName = dayNames[i].toUpperCase();
+        const dNum = dayDate.getDate();
+        const mName = monthNames[dayDate.getMonth()].toUpperCase();
+        
+        dayHeader.innerHTML = `
+            <div class="week-day-name">${dName}, ${dNum} ${mName}</div>
+        `;
+        header.appendChild(dayHeader);
+    }
+}
 
         function syncWeekScroll() {
             const scrollWrapper = document.getElementById('weekScrollWrapper');
@@ -1867,88 +2102,96 @@
             });
         }
 
-        function renderWeekEmployeeRows() {
-            const rowsContainer = document.getElementById('weekCalendarRows');
-            rowsContainer.innerHTML = '';
+function renderWeekEmployeeRows() {
+    const rowsContainer = document.getElementById('weekCalendarRows');
+    rowsContainer.innerHTML = '';
 
-            const weekStart = new Date(currentDate);
-            weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    const rowHeightsMap = {};
+    
+    // 1. Calculate the height needed to fill the screen
+    const fillHeight = calculateFillHeight();
 
-            const rowHeightsMap = {};
+    const displayList = employees.length > 0 ? employees : ['—'];
 
-            employees.forEach(employee => {
-                let maxEventsInDay = 1;
+    displayList.forEach(employee => {
+        let maxEventsInDay = 1;
 
-                for (let day = 0; day < 7; day++) {
-                    const dayDate = new Date(weekStart);
-                    dayDate.setDate(weekStart.getDate() + day);
-                    const dateKey = getDateKey(dayDate);
-                    
-                    const events = getEventsForEmployee(employee, dateKey);
-                    
-                    if (events.length > 0) {
-                        maxEventsInDay = Math.max(maxEventsInDay, events.length);
-                    }
-                }
-
-                const dynamicHeight = (maxEventsInDay * (EVENT_HEIGHT + EVENT_GAP)) + (ROW_PADDING * 2);
-                const finalRowHeight = Math.max(MIN_ROW_HEIGHT, dynamicHeight);
-                rowHeightsMap[employee] = finalRowHeight;
-
-                const employeeRow = document.createElement('div');
-                employeeRow.className = 'week-employee-calendar-row';
-                employeeRow.dataset.employee = employee;
-                employeeRow.style.height = finalRowHeight + 'px';
-
-                for (let day = 0; day < 7; day++) {
-                    const dayDate = new Date(weekStart);
-                    dayDate.setDate(weekStart.getDate() + day);
-                    const dateKey = getDateKey(dayDate);
-
-                    const dayColumn = document.createElement('div');
-                    dayColumn.className = 'week-day-column';
-                    dayColumn.dataset.day = day;
-                    dayColumn.dataset.dateKey = dateKey;
-                    dayColumn.dataset.employee = employee;
-                    
-                    // Add drag and drop listeners directly to the day column
-                    dayColumn.addEventListener('dragover', handleWeekDragOver);
-                    dayColumn.addEventListener('drop', handleWeekDrop);
-                    dayColumn.addEventListener('dragleave', handleDragLeave);
-
-                    const eventsContainer = document.createElement('div');
-                    eventsContainer.className = 'week-events-container';
-                    eventsContainer.dataset.employee = employee;
-                    eventsContainer.dataset.dateKey = dateKey;
-
-                    const events = getEventsForEmployee(employee, dateKey);
-                    renderWeekEventsForEmployee(eventsContainer, events, dateKey);
-
-                    dayColumn.appendChild(eventsContainer);
-                    employeeRow.appendChild(dayColumn);
-                }
-
-                rowsContainer.appendChild(employeeRow);
-            });
-
-            renderWeekEmployeeColumn(rowHeightsMap);
+        // 2. Check if events require MORE height than the fill height
+        if (employee !== '—') {
+            for (let day = 0; day < 7; day++) {
+                const dayDate = new Date(weekStart);
+                dayDate.setDate(weekStart.getDate() + day);
+                const events = getEventsForEmployee(employee, getDateKey(dayDate));
+                if (events.length > 0) maxEventsInDay = Math.max(maxEventsInDay, events.length);
+            }
         }
+
+        const eventNeededHeight = (maxEventsInDay * (EVENT_HEIGHT + EVENT_GAP)) + (ROW_PADDING * 2);
+        
+        // 3. Set height to whichever is larger: Fill Height or Event Height
+        const finalRowHeight = Math.max(fillHeight, eventNeededHeight);
+        rowHeightsMap[employee] = finalRowHeight;
+
+        const employeeRow = document.createElement('div');
+        employeeRow.className = 'week-employee-calendar-row';
+        employeeRow.style.height = finalRowHeight + 'px';
+
+        for (let day = 0; day < 7; day++) {
+            const dayDate = new Date(weekStart);
+            dayDate.setDate(weekStart.getDate() + day);
+            const dateKey = getDateKey(dayDate);
+
+            const dayColumn = document.createElement('div');
+            dayColumn.className = 'week-day-column';
+                dayColumn.style.flex = "1 1 0"; // Force equal width
+
+            
+            if (employee !== '—') {
+                dayColumn.dataset.day = day;
+                dayColumn.dataset.dateKey = dateKey;
+                dayColumn.dataset.employee = employee;
+                dayColumn.addEventListener('dragover', handleWeekDragOver);
+                dayColumn.addEventListener('drop', handleWeekDrop);
+                dayColumn.addEventListener('dragleave', handleDragLeave);
+            }
+
+            const eventsContainer = document.createElement('div');
+            eventsContainer.className = 'week-events-container';
+            const events = employee === '—' ? [] : getEventsForEmployee(employee, dateKey);
+            renderWeekEventsForEmployee(eventsContainer, events, dateKey);
+
+            dayColumn.appendChild(eventsContainer);
+            employeeRow.appendChild(dayColumn);
+        }
+        rowsContainer.appendChild(employeeRow);
+    });
+
+    // 4. Update the side employee labels to match the new heights
+    renderWeekEmployeeColumn(rowHeightsMap);
+}
+
+window.addEventListener('resize', () => {
+    if (currentView === 'day') renderDayView();
+    else renderWeekView();
+});
 
         function renderWeekEmployeeColumn(rowHeightsMap = {}) {
-            const column = document.getElementById('weekEmployeeColumn');
-            column.innerHTML = '';
+    const column = document.getElementById('weekEmployeeColumn');
+    column.innerHTML = '';
 
-            employees.forEach(employee => {
-                const row = document.createElement('div');
-                row.className = 'week-employee-row';
-                row.textContent = employee;
+    const displayList = employees.length > 0 ? employees : ['—'];
 
-                const height = rowHeightsMap[employee] || MIN_ROW_HEIGHT;
-                row.style.height = height + 'px';
-
-                column.appendChild(row);
-            });
-        }
+    displayList.forEach(employee => {
+        const row = document.createElement('div');
+        row.className = 'week-employee-row';
+        row.textContent = employee === '—' ? "" : employee;
+        const height = rowHeightsMap[employee] || (employees.length === 0 ? 500 : MIN_ROW_HEIGHT);
+        row.style.height = height + 'px';
+        column.appendChild(row);
+    });
+}
 
         function renderWeekEventsForEmployee(container, events, dateKey) {
             events.forEach((evt, index) => {
@@ -2141,6 +2384,96 @@
             renderWeekView();
         }
 
+        // New Function for From/To Date Filter selection
+function selectDateFilterOption(filterName, value, element) {
+    const hiddenInput = document.getElementById(`${filterName}-filter`);
+    hiddenInput.value = value;
+    
+    // Update Display Text
+    document.getElementById(`${filterName}-filter-text`).textContent = element.textContent;
+    
+    // Manage UI Visibility based on selection
+    const dateGroup = document.getElementById(`${filterName}-date-group`);
+    const nGroup = document.getElementById(`${filterName}-n-group`);
+    
+    // Reset displays
+    dateGroup.style.display = 'none';
+    nGroup.style.display = 'none';
+
+    // Show date picker for specific date comparisons
+    if (value === 'is' || value === 'isNot' || value === 'gtDate' || value === 'ltDate') {
+        dateGroup.style.display = 'block';
+    } 
+    // Show number input for dynamic "n"
+    else if (value.includes('NDays') || value.includes('NMonths') || value.includes('NYears')) {
+        nGroup.style.display = 'block';
+    }
+
+    // Close dropdown
+    toggleFilterDropdown(filterName);
+}
+
+// Logic to gather data during performSearch()
+function getFilterDisplayValue(filterName) {
+    const type = document.getElementById(`${filterName}-filter`).value;
+    
+    if (type === 'gtDate' || type === 'ltDate' || type === 'is' || type === 'isNot') {
+        const val = document.getElementById(`${filterName}-date-val`).value;
+        return val ? [val] : [];
+    }
+    
+    if (type.includes('NDays') || type.includes('NMonths') || type.includes('NYears')) {
+        const val = document.getElementById(`${filterName}-n-val`).value;
+        return val ? [val] : [];
+    }
+    
+    // For relative dates (Today, This Month, etc), no additional input is needed
+    return ["Selected"]; 
+}
+
+// Update the existing performSearch function to handle the new date types
+const originalPerformSearch = performSearch;
+performSearch = function() {
+    const fromChecked = document.querySelector('input[name="from"]').checked;
+    const toChecked = document.querySelector('input[name="to"]').checked;
+    
+    if (fromChecked) {
+        const filterType = document.getElementById('from-filter').value;
+        filterTags['from'] = getFilterDisplayValue('from');
+    }
+    
+    if (toChecked) {
+        const filterType = document.getElementById('to-filter').value;
+        filterTags['to'] = getFilterDisplayValue('to');
+    }
+    
+    originalPerformSearch();
+};
+
+// Update label formatting to handle date-specific text
+const originalFormatFilterText = formatFilterText;
+formatFilterText = function(filter) {
+    if (filter.field === 'from' || filter.field === 'to') {
+        const typeMap = {
+            gtDate: 'is after',
+            ltDate: 'is before',
+            gtNDays: `is > ${filter.searchValues[0]} days from today`,
+            ltNDays: `is < ${filter.searchValues[0]} days from today`,
+            today: 'is Today',
+            thisWeek: 'is This Week',
+            last7: 'is within Last 7 Days'
+            // ... you can add more friendly mappings here
+        };
+        const label = typeMap[filter.filterType] || filter.filterType;
+        const fieldName = filter.field.charAt(0).toUpperCase() + filter.field.slice(1);
+        
+        if (['isEmpty', 'isNotEmpty', 'today', 'yesterday', 'tomorrow', 'thisWeek', 'lastWeek', 'nextWeek', 'thisMonth', 'lastMonth', 'nextMonth', 'thisYear', 'lastYear', 'nextYear', 'last7', 'last30', 'last60', 'last90'].includes(filter.filterType)) {
+             return `${fieldName} ${label}`;
+        }
+        return `${fieldName} ${label} "${filter.searchValues[0]}"`;
+    }
+    return originalFormatFilterText(filter);
+};
         // SEARCH FUNCTIONALITY
         function toggleSearch() {
             const panel = document.getElementById('searchPanel');
@@ -2562,7 +2895,7 @@
         function init() {
             switchView('day');
             renderMiniCalendar();
-            getZohoData();
+             getZohoData();
         }
 
         if (document.readyState === 'loading') {
