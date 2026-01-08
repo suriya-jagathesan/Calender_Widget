@@ -71,7 +71,7 @@
             gap: 0;
             background: #f3f4f6;
             border-radius: 6px;
-            overflow: hidden;
+            /* overflow: hidden; */
         }
         .view-toggle button {
             padding: 8px 20px;
@@ -661,7 +661,7 @@
         .day-body {
             display: flex;
             flex: 1;
-            overflow: hidden;
+            /* overflow: hidden; */
         }
         
         .employee-column {
@@ -669,7 +669,7 @@
             min-width: 12.5%;
             border-right: 2px solid #e5e7eb;
             background: #f9fafb;
-            overflow: hidden;
+            /* overflow: hidden; */
         }
         
         .employee-row {
@@ -772,10 +772,12 @@
         
         /* Week header with days */
         .week-header-row {
+            position: sticky;
+            top: 0;
             display: flex;
             border-bottom: 2px solid #e5e7eb;
             background: white;
-            z-index: 30;
+            z-index: 100;
         }
         
         .week-employee-header {
@@ -803,10 +805,10 @@
 
         
         
-        .week-days-container {
+        /* .week-days-container {
             flex: 1;
             overflow: hidden;
-        }
+        } */
         
         .week-days-header {
             display: flex;
@@ -853,15 +855,15 @@
         .week-body {
             display: flex;
             flex: 1;
-            overflow: hidden;
+            /* overflow: hidden; */
         }
         
         .week-employee-column {
             flex: 0 0 150px;
-            min-width: 12.5%;
-            border-right: 2px solid #e5e7eb;
+            /* min-width: 12.5%;
+            border-right: 2px solid #e5e7eb; */
             background: #f9fafb;
-            overflow: hidden;
+            /* overflow: hidden; */
         }
         
         .week-employee-row {
@@ -877,15 +879,15 @@
         }
         
         .week-scroll-wrapper {
-            flex: 1;
-            overflow-x: auto;
+                display: block;  
                 overflow-y: auto;
-
-
+                overflow-x: auto;
+                flex: 1;
+                position: relative;
         }
         
         .week-calendar-rows {
-            width: 100%;
+           flex:1;
         }
 
         .week-employee-calendar-row {
@@ -977,7 +979,7 @@ min-width: 100px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.12);
             user-select: none;
             pointer-events: auto;
-            overflow: hidden;
+            /* overflow: hidden; */
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
@@ -998,7 +1000,7 @@ min-width: 100px;
             font-weight: 600;
             margin-bottom: 1px;
             white-space: nowrap;
-            overflow: hidden;
+            /* overflow: hidden; */
             text-overflow: ellipsis;
             line-height: 1.2;
         }
@@ -1050,6 +1052,22 @@ min-width: 100px;
     min-width: 0; /* Allow columns to shrink below content size */
     box-sizing: border-box;
 }
+
+.event-edit {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 11px;
+    cursor: pointer;
+    opacity: 0.85;
+    z-index: 40;
+}
+
+.event-edit:hover {
+    opacity: 1;
+}
+
 
     </style>
 </head>
@@ -1472,7 +1490,7 @@ min-width: 100px;
         </div>
 
         <!-- Week View with Employee Rows -->
-        <div class="week-view" id="weekView">
+        <!-- <div class="week-view" id="weekView">
             <div class="week-view-container">
                 <div class="week-header-row">
                     <div class="week-employee-header">Employee</div>
@@ -1487,8 +1505,32 @@ min-width: 100px;
                     </div>
                 </div>
             </div>
+        </div> -->
+    <!-- Week View with Employee Rows -->
+        <div class="week-view" id="weekView">
+            <div class="week-view-container">
+    <div class="week-scroll-wrapper" id="weekScrollWrapper">
+ 
+        <!-- STICKY HEADER INSIDE SCROLL -->
+        <div class="week-header-row sticky-header">
+            <div class="week-employee-header">Employee</div>
+            <div class="week-days-container">
+                <div class="week-days-header" id="weekDaysHeader"></div>
+            </div>
         </div>
+ 
+        <!-- SCROLLING BODY -->
+        <div class="week-body">
+            <div class="week-employee-column" id="weekEmployeeColumn"></div>
+            <div class="week-calendar-rows" id="weekCalendarRows"></div>
         </div>
+ 
+    </div>
+</div>
+ 
+        </div>    
+    
+    </div>
     </div>
 
     <script>
@@ -1544,8 +1586,8 @@ min-width: 100px;
 
            if (service_resp.code === 3000) {
                 service_resp.data.forEach(function (rec) {
-                    console.log(rec.ID, typeof rec.ID);
-                    services.push(rec.ID); // KEEP AS STRING
+                    
+                    services.push(rec.ID); 
                 });
             }
           await getBookings();
@@ -1554,6 +1596,8 @@ min-width: 100px;
 
 
         async function getBookings() { 
+            
+            
             employees.length = 0;  
             employees.push('');
             const serviceList = `[${services.join(",")}]`;
@@ -1570,19 +1614,18 @@ min-width: 100px;
                 console.error("Creator error:", err);
                 return; 
             }
-            console.log(booking_resp);
             try{
             if( booking_resp.status === 400 ){
                
             }
             else if( booking_resp.code === 3000 ) {
+                let date_booking = [];
                 booking_resp.data.forEach(function (rec) {
-                    
-                    rec.Care_Providers.forEach(function (emp) {
-                       
-                       let cur_book = {};
-                       cur_book.id = rec.ID;
-                       cur_book.date = rec.Date_field1;
+                    if( rec.Care_Providers.length === 0 ){
+                        let cur_book = {};
+                        cur_book.id = Number(rec.ID);
+                        cur_book.title = rec.Care_Service_User.zc_display_value;
+                        cur_book.date = rec.Date_field1;
                         const [, stime] = rec.From_Date_Time.split(" "); 
                         const [shours, sminutes] = stime.split(":").map(Number);
                         cur_book.startMinutes = shours * 60 + sminutes;
@@ -1590,13 +1633,37 @@ min-width: 100px;
                         const [, etime] = rec.To_Date_Time.split(" "); 
                         const [ehours, eminutes] = etime.split(":").map(Number);
                         cur_book.endMinutes = ehours * 60 + eminutes;
-                        employees.push(emp.zc_display_value);
-                       
+                        cur_book.employee = '';
+                        date_booking.push(cur_book); 
+                    }
+                    
+                    rec.Care_Providers.forEach(function (emp) {
+                       let cur_book = {};
+                       cur_book.id = Number(rec.ID);
+                       cur_book.date = rec.Date_field1;
+                       cur_book.title = rec.Care_Service_User.zc_display_value;
+                        const [, stime] = rec.From_Date_Time.split(" "); 
+                        const [shours, sminutes] = stime.split(":").map(Number);
+                        cur_book.startMinutes = shours * 60 + sminutes;
+                        
+                        const [, etime] = rec.To_Date_Time.split(" "); 
+                        const [ehours, eminutes] = etime.split(":").map(Number);
+                        cur_book.endMinutes = ehours * 60 + eminutes;
+                        cur_book.employee = emp.zc_display_value;
+                        date_booking.push(cur_book);
+                        if( !employees.includes( emp.zc_display_value ) ){
+                            employees.push(emp.zc_display_value);
+                        }
                     });
                 });
-               
+                   
+                const key = formatDateYYYYMMDD(currentDate);
 
-                              
+if (!eventDatabase[key]) {
+    eventDatabase[key] = [];
+}
+
+eventDatabase[key].push(...date_booking);            
             } else {
                 console.log("No bookings found or error in fetching bookings.");
             }}
@@ -1605,6 +1672,12 @@ min-width: 100px;
             }
         }
 
+        function formatDateYYYYMMDD(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
         function formatDateDDMMYYYY(date) {
             const day = String(date.getDate()).padStart(2, "0");
             const month = String(date.getMonth() + 1).padStart(2, "0"); // months are 0-based
@@ -1839,8 +1912,6 @@ min-width: 100px;
 
         // DAY VIEW RENDERING
         function renderDayView() {
-            console.log("EMployees " , employees);
-            
             renderHourHeaders();
             renderEmployeeRows();
             syncScroll();
@@ -1903,7 +1974,8 @@ min-width: 100px;
     // Calculate how much height each row needs to fill the screen
     const fillHeight = calculateFillHeight();
 
-    const displayList = employees.length > 0 ? employees : ['—'];            
+    const displayList = employees.length >= 0 ? employees : ['—'];   
+             
     displayList.forEach(employee => {
         const rawEvents = employee === '—' ? [] : getEventsForEmployee(employee, dateKey);
         const events = detectOverlaps([...rawEvents]);
@@ -1982,6 +2054,7 @@ min-width: 100px;
 
                 const left = (startHour * hourWidth) + ((startMinute / 60) * hourWidth);
                 const width = (duration / 60) * hourWidth;
+                console.log(evt.stackLevel);
                 const top = ROW_PADDING + (evt.stackLevel * (EVENT_HEIGHT + EVENT_GAP));
 
                 el.style.left = left + 'px';
@@ -1993,9 +2066,9 @@ min-width: 100px;
                 title.className = 'event-title';
                 title.textContent = evt.title;
 
-                const time = document.createElement('div');
-                time.className = 'event-time';
-                time.textContent = formatTimeRange(evt.startMinutes, evt.endMinutes);
+                // const time = document.createElement('div');
+                // time.className = 'event-time';
+                // time.textContent = formatTimeRange(evt.startMinutes, evt.endMinutes);
 
                 const leftHandle = document.createElement('div');
                 leftHandle.className = 'resize-handle left';
@@ -2016,7 +2089,6 @@ min-width: 100px;
                 el.appendChild(leftHandle);
                 el.appendChild(rightHandle);
                 el.appendChild(title);
-                el.appendChild(time);
 
                 el.addEventListener('dragstart', handleDragStart);
                 el.addEventListener('dragend', handleDragEnd);
@@ -2026,66 +2098,41 @@ min-width: 100px;
         }
 
         function detectOverlaps(events) {
-            if (events.length === 0) return [];
-            
-            const sorted = [...events].sort((a, b) => a.startMinutes - b.startMinutes);
-            
-            sorted.forEach(event => {
-                event.stackLevel = 0;
-                event.maxConcurrent = 1;
-            });
-            
-            for (let i = 0; i < sorted.length; i++) {
-                const currentEvent = sorted[i];
-                const overlappingEvents = [currentEvent];
-                
-                for (let j = 0; j < sorted.length; j++) {
-                    if (i !== j) {
-                        const otherEvent = sorted[j];
-                        const overlap = !(currentEvent.endMinutes <= otherEvent.startMinutes || 
-                                         currentEvent.startMinutes >= otherEvent.endMinutes);
-                        if (overlap) {
-                            if (!overlappingEvents.includes(otherEvent)) {
-                                overlappingEvents.push(otherEvent);
-                            }
-                        }
-                    }
-                }
-                
-                overlappingEvents.sort((a, b) => a.startMinutes - b.startMinutes);
-                
-                overlappingEvents.forEach((event, index) => {
-                    let level = 0;
-                    let levelTaken = true;
-                    
-                    while (levelTaken) {
-                        levelTaken = false;
-                        for (let k = 0; k < index; k++) {
-                            const prevEvent = overlappingEvents[k];
-                            if (prevEvent.stackLevel === level) {
-                                if (!(event.startMinutes >= prevEvent.endMinutes || 
-                                      event.endMinutes <= prevEvent.startMinutes)) {
-                                    levelTaken = true;
-                                    level++;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    
-                    event.stackLevel = level;
-                });
-                
-                const maxLevel = Math.max(...overlappingEvents.map(e => e.stackLevel));
-                overlappingEvents.forEach(event => {
-                    event.maxConcurrent = Math.max(event.maxConcurrent, maxLevel + 1);
-                });
+    if (!events || events.length === 0) return [];
+
+    // 1. Sort by start time
+    const sorted = [...events].sort((a, b) => a.startMinutes - b.startMinutes);
+
+    const columns = []; 
+
+    sorted.forEach(evt => {
+        
+        for (let i = 0; i < columns.length; i++) {
+            if (columns[i] && columns[i].endMinutes <= evt.startMinutes) {
+                columns[i] = null;
             }
-            
-            return sorted;
+        }
+        let colIndex = columns.findIndex(c => c === null);
+
+        if (colIndex === -1) {
+            colIndex = columns.length;
+            columns.push(evt);
+        } else {
+            columns[colIndex] = evt;
         }
 
-        // WEEK VIEW RENDERING
+        evt.stackLevel = colIndex;
+        evt._tempColumns = columns.length;
+        evt.endMinutes = evt.endMinutes; 
+    });
+    sorted.forEach(evt => {
+        evt.maxConcurrent = evt._tempColumns;
+        delete evt._tempColumns;
+    });
+
+    return sorted;
+}
+               
         function renderWeekView() {
             renderWeekDaysHeader();
             renderWeekEmployeeRows();
@@ -2288,6 +2335,8 @@ window.addEventListener('resize', () => {
             
             const events = eventDatabase[dateKey] || [];
             draggedEventData = events.find(evt => evt.id === draggedEventId);
+            console.log(events);
+            
             if (draggedEventData) {
                 draggedEventData.originalDateKey = dateKey;
             }
@@ -2355,6 +2404,8 @@ window.addEventListener('resize', () => {
             e.stopPropagation();
             const slot = e.currentTarget;
             slot.classList.remove('drop-highlight');
+            console.log(draggedElement, draggedEventId, draggedEventData);
+            
             
             if (!draggedElement || !draggedEventId || !draggedEventData) return;
             
