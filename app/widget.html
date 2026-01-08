@@ -674,10 +674,10 @@
         
         .employee-row {
             display: flex;
-            align-items: center;
-            justify-content: center;
+            align-items: start;
+            justify-content: start;
             border-bottom: 1px solid #e5e7eb;
-            padding: 10px;
+            padding: 1px;
             font-size: 14px;
             font-weight: 500;
             color: #374151;
@@ -687,7 +687,7 @@
         .calendar-scroll-wrapper { 
             flex: 1;
             overflow: auto;
-                overflow-y: hidden; /* ❗IMPORTANT */
+            overflow-y: hidden; /* ❗IMPORTANT */
 
         }
         
@@ -1067,11 +1067,52 @@ min-width: 100px;
 .event-edit:hover {
     opacity: 1;
 }
+/* ===== GLOBAL LOADING OVERLAY ===== */
+#loadingOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.9);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Spinner */
+.loader {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #e5e7eb;
+    border-top-color: #4f46e5;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+}
+
+.loading-text {
+    margin-top: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Hide helper */
+#loadingOverlay.hidden {
+    display: none;
+}
 
 
     </style>
 </head>
 <body>
+    <div id="loadingOverlay">
+    <div class="loader"></div>
+    <div class="loading-text">Loading calendar…</div>
+</div>
     <!-- Search Overlay -->
     <div class="search-overlay" id="searchOverlay" onclick="toggleSearch()"></div>
 
@@ -1438,7 +1479,7 @@ min-width: 100px;
             <!-- Search Filters Display Section -->
         
 
-            <div class="date-title" id="dateTitle">Wednesday, December 31, 2025</div>
+            <div class="date-title" id="dateTitle"></div>
             <div class="header-controls">
                 <button class="nav-btn" onclick="navigatePeriod(-1)"><i class="fa fa-angle-left"></i></button>
                 <button class="nav-btn" onclick="navigatePeriod(1)"><i class="fa fa-angle-right"></i></button>
@@ -1474,7 +1515,7 @@ min-width: 100px;
                         <div class="calendar-body-scrollable">
 
                 <div class="day-header-row sticky-header">
-                    <div class="employee-header">Employee</div>
+                    <div class="employee-header">Staffs</div>
                     <div class="hour-header-container">
                         <div class="hour-header" id="hourHeader"></div>
                     </div>
@@ -1535,6 +1576,9 @@ min-width: 100px;
 
     <script>
 
+let mouseDownX = 0;
+let mouseDownY = 0;
+const CLICK_TOLERANCE = 5;
             // const DEFAULT_DAY_START_HOUR = 6;
 
         const EMPTY_GRID_HEIGHT = 120;
@@ -1571,6 +1615,17 @@ min-width: 100px;
         let userService = null;
         let services = [];
 
+        function showLoader() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.classList.remove('hidden');
+}
+
+function hideLoader() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.classList.add('hidden');
+}
+
+
        async function getZohoData() {
             let initparam = await ZOHO.CREATOR.UTIL.getInitParams();
             loginUser = initparam.loginUser;
@@ -1593,11 +1648,83 @@ min-width: 100px;
           await getBookings();
            
         }
-
+        async function getBookingsForWeek(){
+            const weekStart = new Date(currentDate);
+            weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            let zoho_start_date = formatDateDDMMYYYY( weekStart );
+            let zoho_end_date = formatDateDDMMYYYY( weekEnd );
+            console.log(zoho_start_date,zoho_end_date);
+            
+            employees.length = 0;  
+            employees.push('');
+            console.log(services);
+            const serviceList = `[${services.join(",")}]`;
+            const criteria_2 = `Site_Name.ID == ${serviceList} && Date_field1 >= '${zoho_start_date}' && Date_field1 <= '${zoho_end_date}'`;
+            console.log(criteria_2);
+            
+            var booking = {
+                app_name: "thg-sandbox",
+                report_name: "Bookings_Backend",
+                criteria: criteria_2
+            };
+           
+            booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
+            
+            eventDatabase = {};
+                booking_resp.data.forEach(function (rec) {
+                    let date_booking = [];
+                    if( rec.Care_Providers.length === 0 ){
+                        let cur_book = {};
+                        cur_book.id = Number(rec.ID);
+                        cur_book.zoho_id = BigInt(rec.ID);
+                        cur_book.title = rec.Care_Service_User.zc_display_value;
+                        cur_book.date = rec.Date_field1;
+                        const [, stime] = rec.From_Date_Time.split(" "); 
+                        const [shours, sminutes] = stime.split(":").map(Number);
+                        cur_book.startMinutes = shours * 60 + sminutes;
+                        
+                        const [, etime] = rec.To_Date_Time.split(" "); 
+                        const [ehours, eminutes] = etime.split(":").map(Number);
+                        cur_book.endMinutes = ehours * 60 + eminutes;
+                        cur_book.employee = '';
+                        date_booking.push(cur_book); 
+                    }
+                    
+                    rec.Care_Providers.forEach(function (emp) {
+                       let cur_book = {};
+                       cur_book.id = Number(rec.ID);
+                       cur_book.zoho_id = BigInt(rec.ID);
+                       cur_book.date = rec.Date_field1;
+                       cur_book.title = rec.Care_Service_User.zc_display_value;
+                        const [, stime] = rec.From_Date_Time.split(" "); 
+                        const [shours, sminutes] = stime.split(":").map(Number);
+                        cur_book.startMinutes = shours * 60 + sminutes;
+                        
+                        const [, etime] = rec.To_Date_Time.split(" "); 
+                        const [ehours, eminutes] = etime.split(":").map(Number);
+                        cur_book.endMinutes = ehours * 60 + eminutes;
+                        cur_book.employee = emp.zc_display_value;
+                        date_booking.push(cur_book);
+                        if( !employees.includes( emp.zc_display_value ) ){
+                            employees.push(emp.zc_display_value);
+                        }
+                    });
+                    
+                    const key = toYYYYMMDD( rec.Date_field1 );            
+                    if (!eventDatabase[key]) {
+                        eventDatabase[key] = [];
+                    }
+                    eventDatabase[key].push(...date_booking);  
+                });
+            }
+        function toYYYYMMDD(ddmmyyyy) {
+            const [dd, mm, yyyy] = ddmmyyyy.split('-');
+            return `${yyyy}-${mm}-${dd}`;
+        }
 
         async function getBookings() { 
-            
-            
             employees.length = 0;  
             employees.push('');
             const serviceList = `[${services.join(",")}]`;
@@ -1656,13 +1783,12 @@ min-width: 100px;
                         }
                     });
                 });
-                   
                 const key = formatDateYYYYMMDD(currentDate);
 
 if (!eventDatabase[key]) {
     eventDatabase[key] = [];
 }
-
+ eventDatabase[key] = [];
 eventDatabase[key].push(...date_booking);            
             } else {
                 console.log("No bookings found or error in fetching bookings.");
@@ -1672,7 +1798,7 @@ eventDatabase[key].push(...date_booking);
             }
         }
 
-        function formatDateYYYYMMDD(date) {
+        function formatDateYYYYMMDD(date) {    
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
@@ -1842,7 +1968,7 @@ eventDatabase[key].push(...date_booking);
             return allEvents.filter(evt => evt.employee === employee);
         }
 
-        function switchView(view) {
+        async function switchView(view) {
             currentView = view;
             const dayViewBtn = document.getElementById('dayViewBtn');
             const weekViewBtn = document.getElementById('weekViewBtn');
@@ -1850,12 +1976,14 @@ eventDatabase[key].push(...date_booking);
             const weekView = document.getElementById('weekView');
             
             if (view === 'day') {
+                await getBookings();
                 dayViewBtn.classList.add('active');
                 weekViewBtn.classList.remove('active');
                 dayView.classList.add('active');
                 weekView.classList.remove('active');
                 renderDayView();
             } else {
+                await getBookingsForWeek();
                 weekViewBtn.classList.add('active');
                 dayViewBtn.classList.remove('active');
                 weekView.classList.add('active');
@@ -1911,10 +2039,13 @@ eventDatabase[key].push(...date_booking);
         }
 
         // DAY VIEW RENDERING
-        function renderDayView() {
+        async function renderDayView() {
+            // await getBookings();
             renderHourHeaders();
             renderEmployeeRows();
+            console.log("Call");
             syncScroll();
+            startAt6();
         }
         function startAt6(){
             const scrollWrapper = document.getElementById('calendarScrollWrapper');
@@ -1955,14 +2086,24 @@ eventDatabase[key].push(...date_booking);
     });
 }
         
-        function syncScroll() {
-            const scrollWrapper = document.getElementById('calendarScrollWrapper');
-            const hourHeaderContainer = document.querySelector('.hour-header-container');
-            
-            scrollWrapper.addEventListener('scroll', function() {
-                hourHeaderContainer.scrollLeft = this.scrollLeft;
-            });
-        }
+       let scrollSynced = false;
+
+function syncScroll() {
+    console.log("Called");
+    
+    if (scrollSynced) return; 
+
+    const scrollWrapper = document.getElementById('calendarScrollWrapper');
+    const hourHeaderContainer = document.querySelector('.hour-header-container');
+
+    if (!scrollWrapper || !hourHeaderContainer) return;
+
+    scrollWrapper.addEventListener('scroll', () => {
+        hourHeaderContainer.scrollLeft = scrollWrapper.scrollLeft;
+    });
+
+    scrollSynced = true;
+}
         
         function renderEmployeeRows() {
     const rowsContainer = document.getElementById('calendarRows');
@@ -2054,7 +2195,6 @@ eventDatabase[key].push(...date_booking);
 
                 const left = (startHour * hourWidth) + ((startMinute / 60) * hourWidth);
                 const width = (duration / 60) * hourWidth;
-                console.log(evt.stackLevel);
                 const top = ROW_PADDING + (evt.stackLevel * (EVENT_HEIGHT + EVENT_GAP));
 
                 el.style.left = left + 'px';
@@ -2093,6 +2233,30 @@ eventDatabase[key].push(...date_booking);
                 el.addEventListener('dragstart', handleDragStart);
                 el.addEventListener('dragend', handleDragEnd);
 
+                el.addEventListener('mousedown', (e) => {
+    mouseDownX = e.clientX;
+    mouseDownY = e.clientY;
+});
+
+el.addEventListener('mouseup', (e) => {
+    // Ignore resize handles
+    if (e.target.closest('.resize-handle')) return;
+
+    // Ignore edit icon
+    if (e.target.closest('.event-edit')) return;
+
+    const dx = Math.abs(e.clientX - mouseDownX);
+    const dy = Math.abs(e.clientY - mouseDownY);
+
+    // If mouse moved → it was a drag, not a click
+    if (dx > CLICK_TOLERANCE || dy > CLICK_TOLERANCE) return;
+      window.open(
+  `https://creatorapp.zoho.eu/homegroup/thg-sandbox/#Form:Bookings?recLinkID=${evt.zoho_id}&viewLinkName=Bookings_Backend`,
+  '_blank',
+  'noopener'
+);
+
+});
                 container.appendChild(el);
             });
         }
@@ -2133,7 +2297,8 @@ eventDatabase[key].push(...date_booking);
     return sorted;
 }
                
-        function renderWeekView() {
+        async function renderWeekView() {
+            // await getBookingsForWeek();
             renderWeekDaysHeader();
             renderWeekEmployeeRows();
             syncWeekScroll();
@@ -2193,8 +2358,7 @@ function renderWeekEmployeeRows() {
     // 1. Calculate the height needed to fill the screen
     const fillHeight = calculateFillHeight();
 
-    const displayList = employees.length > 0 ? employees : ['—'];
-
+    const displayList = employees.length >= 0 ? employees : ['—'];
     displayList.forEach(employee => {
         let maxEventsInDay = 1;
 
@@ -2240,6 +2404,7 @@ function renderWeekEmployeeRows() {
             const eventsContainer = document.createElement('div');
             eventsContainer.className = 'week-events-container';
             const events = employee === '—' ? [] : getEventsForEmployee(employee, dateKey);
+            console.log(employee,dateKey);
             renderWeekEventsForEmployee(eventsContainer, events, dateKey);
 
             dayColumn.appendChild(eventsContainer);
@@ -2289,8 +2454,8 @@ window.addEventListener('resize', () => {
                 
                 el.style.top = `${topPosition}px`;
                 el.style.height = `${EVENT_HEIGHT}px`;
-                el.style.left = '5px';
-                el.style.right = '5px';
+                el.style.left = '2px';
+                el.style.right = '2px';
                 el.style.width = 'auto';
 
                 const title = document.createElement('div');
@@ -2307,6 +2472,30 @@ window.addEventListener('resize', () => {
                 el.addEventListener('dragstart', handleDragStart);
                 el.addEventListener('dragend', handleDragEnd);
 
+                el.addEventListener('mousedown', (e) => {
+    mouseDownX = e.clientX;
+    mouseDownY = e.clientY;
+});
+
+el.addEventListener('mouseup', (e) => {
+    // Ignore resize handles (future-safe)
+    if (e.target.closest('.resize-handle')) return;
+
+    // Ignore edit icon
+    if (e.target.closest('.event-edit')) return;
+
+    const dx = Math.abs(e.clientX - mouseDownX);
+    const dy = Math.abs(e.clientY - mouseDownY);
+
+    if (dx > CLICK_TOLERANCE || dy > CLICK_TOLERANCE) return;
+
+     window.open(
+  `https://creatorapp.zoho.eu/homegroup/thg-sandbox/#Form:Bookings?recLinkID=${evt.id}&viewLinkName=Bookings_Backend`,
+  '_blank',
+  'noopener'
+);
+
+});
                 container.appendChild(el);
             });
         }
@@ -2329,14 +2518,15 @@ window.addEventListener('resize', () => {
         function handleDragStart(e) {
             draggedElement = e.currentTarget;
             draggedEventId = parseInt(e.currentTarget.dataset.eventId);
+            console.log(draggedEventId);
             
             const viewType = e.currentTarget.dataset.viewType;
             let dateKey = viewType === 'week' ? e.currentTarget.dataset.eventDate : getCurrentDateKey();
             
             const events = eventDatabase[dateKey] || [];
-            draggedEventData = events.find(evt => evt.id === draggedEventId);
             console.log(events);
             
+            draggedEventData = events.find(evt => evt.id === draggedEventId);
             if (draggedEventData) {
                 draggedEventData.originalDateKey = dateKey;
             }
@@ -2405,8 +2595,6 @@ window.addEventListener('resize', () => {
             const slot = e.currentTarget;
             slot.classList.remove('drop-highlight');
             console.log(draggedElement, draggedEventId, draggedEventData);
-            
-            
             if (!draggedElement || !draggedEventId || !draggedEventData) return;
             
             const newHour = parseInt(slot.dataset.hour);
@@ -2430,6 +2618,7 @@ window.addEventListener('resize', () => {
                 endMinutes: newStartMinutes + duration,
                 employee: newEmployee
             });
+            console.log("all called");
             
             renderDayView();
         }
@@ -2439,6 +2628,7 @@ window.addEventListener('resize', () => {
             e.stopPropagation();
             const slot = e.currentTarget;
             slot.classList.remove('drop-highlight');
+            
             
             if (!draggedElement || !draggedEventId || !draggedEventData) return;
             
@@ -2805,7 +2995,7 @@ formatFilterText = function(filter) {
             }
         }
 
-        function renderMiniCalendar() {
+        async function renderMiniCalendar() {
             const grid = document.getElementById('miniGrid');
             const monthYear = document.getElementById('miniMonthYear');
             
@@ -2819,7 +3009,6 @@ formatFilterText = function(filter) {
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const prevMonthDays = new Date(year, month, 0).getDate();
-            
             let currentWeekDates = [];
             if (currentView === 'week') {
                 const weekStart = new Date(currentDate);
@@ -2945,9 +3134,9 @@ formatFilterText = function(filter) {
             });
         }
 
-        function selectDate(day, month, year) {
+        async function selectDate(day, month, year) {
             currentDate = new Date(year, month, day);
-            
+            await getBookings();
             if (currentView === 'week') {
                 updateDateTitle();
                 renderWeekView();
@@ -2977,11 +3166,12 @@ formatFilterText = function(filter) {
 
         // INITIALIZATION
         async function init() {
-           await getZohoData();
-            switchView('day');
-            renderMiniCalendar();
-            
+             showLoader();
+            await getZohoData();
+            await switchView('day');
+            await renderMiniCalendar();
             startAt6();
+            hideLoader();
         }
 
         if (document.readyState === 'loading') {
