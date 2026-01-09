@@ -977,7 +977,7 @@ min-width: 100px;
         /* Event Styles - Modified for stacking */
         .event {
             position: absolute;
-            /* background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); */
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             border-radius: 4px;
             padding: 4px 6px;
             color: white;
@@ -989,16 +989,6 @@ min-width: 100px;
             /* overflow: hidden; */
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        .event.status-Not_Started {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-}
-.event.status-Missed {
-    background: linear-gradient(135deg, #ef4444, #b91c1c);
-}
-
-.event.status-Completed {
-    background: linear-gradient(135deg, #22c55e, #16a34a);
-}
         
         .event.dragging {
             opacity: 0.5;
@@ -1121,6 +1111,17 @@ min-width: 100px;
 #loadingOverlay.hidden {
     display: none;
 }
+.event.status-Not_Started {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+}
+.event.status-Missed {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+}
+
+.event.status-Completed {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
 .employee-header-controls {
     display: flex;
     align-items: center;
@@ -1217,40 +1218,6 @@ min-width: 100px;
 .employee-dropdown-item:hover {
     background: #eef2ff;
 }
-
-.calendar-filters-row {
-    width: 100%;
-    background: #fafafa;
-    border-bottom: 1px solid #e5e7eb;
-    display: none;
-}
-
-.calendar-filters-row.active {
-    display: block;
-}
-
-.calendar-filters-scroll {
-    display: flex;
-    gap: 8px;
-
-    padding: 8px 12px;
-
-    width: max-content;  /* KEY */
-    max-width: 100%;     /* KEY */
-
-    overflow-x: auto;
-    overflow-y: hidden;
-    white-space: nowrap;
-}
-/* Optional: nicer scrollbar */
-.calendar-filters-scroll::-webkit-scrollbar {
-    height: 6px;
-}
-.calendar-filters-scroll::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 4px;
-}
-
     </style>
 </head>
 <body>
@@ -1615,10 +1582,11 @@ min-width: 100px;
                 <button id="weekViewBtn" onclick="switchView('week')">Week</button>
                 <button id="dayViewBtn" class="active" onclick="switchView('day')">Day</button>
 
-                <!-- <div class="search-filters-section" id="searchFiltersSection">
-                    <div class="search-filters-container" id="searchFiltersContainer">
-                    </div>
-                </div> -->
+                <div class="search-filters-section" id="searchFiltersSection">
+            <div class="search-filters-container" id="searchFiltersContainer">
+                <span class="search-label">🔍</span>
+            </div>
+        </div>
             </div>
             <!-- Search Filters Display Section -->
         
@@ -1632,9 +1600,7 @@ min-width: 100px;
                 <button class="calendar-icon" onclick="toggleMiniCalendar()"><i class="fa fa-calendar fa-lg"></i></button>
             </div>
         </div>
-        <div class="calendar-filters-row" id="searchFiltersSection">
-            <div class="calendar-filters-scroll" id="searchFiltersContainer"></div>
-        </div>
+
         
         <div class="mini-calendar" id="miniCalendar">
             <div class="mini-header">
@@ -1680,7 +1646,6 @@ min-width: 100px;
         <div class="employee-dropdown-list" id="employeeDropdownList"></div>
     </div>
 </div>
-
                     <div class="hour-header-container">
                         <div class="hour-header" id="hourHeader"></div>
                     </div>
@@ -1863,8 +1828,6 @@ function hideLoader() {
                         else{
                             cur_book.status = "Not_Started";
                         }
-                        
-                        
                         date_booking.push(cur_book); 
                     }
                     
@@ -1882,7 +1845,7 @@ function hideLoader() {
                         const [ehours, eminutes] = etime.split(":").map(Number);
                         cur_book.endMinutes = ehours * 60 + eminutes;
                         cur_book.employee = emp.zc_display_value;
-                       if( rec.Status === "Missed" ){
+                        if( rec.Status === "Missed" ){
                             cur_book.status = "Missed";
                         }
                         else if( rec.Status === "Completed" ){
@@ -1947,7 +1910,6 @@ function hideLoader() {
             const serviceList = `[${services.join(",")}]`;
             let cur_date = formatDateDDMMYYYY( currentDate );
             const criteria_1 = `Site_Name.ID == ${serviceList} && Date_field1 == '${cur_date}'`;
-            console.log(appliedFilters);
             var booking = {
                 app_name: "thg-sandbox",
                 report_name: "Bookings_Backend",
@@ -2205,7 +2167,6 @@ eventDatabase[key].push(...date_booking);
         }
 
         async function switchView(view) {
-            showLoader();
             currentView = view;
             const dayViewBtn = document.getElementById('dayViewBtn');
             const weekViewBtn = document.getElementById('weekViewBtn');
@@ -2233,7 +2194,6 @@ eventDatabase[key].push(...date_booking);
             if (miniCal.classList.contains('active')) {
                 renderMiniCalendar();
             }
-            hideLoader();
         }
 
          async function navigatePeriod(delta) {
@@ -2281,6 +2241,7 @@ eventDatabase[key].push(...date_booking);
             // await getBookings();
             renderHourHeaders();
             renderEmployeeRows();
+            console.log("Call");
             syncScroll();
             startAt6();
         }
@@ -2425,7 +2386,7 @@ function syncScroll() {
                 const el = document.createElement('div');
                 el.className = `event status-${evt.status}`;
                 el.draggable = true;
-                // el.classList.add("event.status-pending");
+
                 el.dataset.eventId = evt.id;
                 el.dataset.viewType = 'day';
                 el.dataset.employee = evt.employee;
@@ -2641,6 +2602,7 @@ function renderWeekEmployeeRows() {
             const eventsContainer = document.createElement('div');
             eventsContainer.className = 'week-events-container';
             const events = employee === '—' ? [] : getEventsForEmployee(employee, dateKey);
+            console.log(employee,dateKey);
             renderWeekEventsForEmployee(eventsContainer, events, dateKey);
 
             dayColumn.appendChild(eventsContainer);
@@ -2754,7 +2716,7 @@ el.addEventListener('mouseup', (e) => {
         function handleDragStart(e) {
             draggedElement = e.currentTarget;
             draggedEventId = parseInt(e.currentTarget.dataset.eventId);
-            
+            console.log(draggedEventId);
             
             const viewType = e.currentTarget.dataset.viewType;
             let dateKey = viewType === 'week' ? e.currentTarget.dataset.eventDate : getCurrentDateKey();
@@ -3108,8 +3070,7 @@ formatFilterText = function(filter) {
                 filters.push({
                     field: filterName,
                     filterType: filterType,
-                    searchValues: tags,
-                    filterType: "Advanced Search"
+                    searchValues: tags
                 });
             });
             
@@ -3151,7 +3112,6 @@ formatFilterText = function(filter) {
             section.classList.add('active');
             
             appliedFilters.forEach((filter, index) => {
-                if( filter.filterType !== "Advanced Search"  ) return;
                 const pill = document.createElement('div');
                 pill.className = 'search-filter-pill';
                 
@@ -3165,6 +3125,7 @@ formatFilterText = function(filter) {
                 removeBtn.onclick = function() {
                     removeAppliedFilter(index);
                 };
+                
                 pill.appendChild(text);
                 pill.appendChild(removeBtn);
                 container.appendChild(pill);
