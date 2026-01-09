@@ -690,7 +690,14 @@
             overflow-y: hidden; /* ❗IMPORTANT */
 
         }
-        
+        .hour-header-container {
+    cursor: grab;
+}
+
+.hour-header-container.grabbing {
+    cursor: grabbing;
+    user-select: none;
+}        
         .calendar-rows {
             min-width: 2400px;
         }
@@ -970,7 +977,7 @@ min-width: 100px;
         /* Event Styles - Modified for stacking */
         .event {
             position: absolute;
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            /* background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); */
             border-radius: 4px;
             padding: 4px 6px;
             color: white;
@@ -982,6 +989,16 @@ min-width: 100px;
             /* overflow: hidden; */
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
+        .event.status-Not_Started {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+}
+.event.status-Missed {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+}
+
+.event.status-Completed {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+}
         
         .event.dragging {
             opacity: 0.5;
@@ -1104,7 +1121,135 @@ min-width: 100px;
 #loadingOverlay.hidden {
     display: none;
 }
+.employee-header-controls {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    position: relative;
+    padding: 0;
+}
 
+.employee-header-controls input {
+    flex: 1;
+    min-width: 0; /* IMPORTANT: prevents overflow in flex containers */
+
+    padding: 7px 10px;
+    font-size: 12.5px;
+    font-weight: 500;
+
+    color: #111827;
+    background: #ffffff;
+
+    border: none;
+    border-bottom: 2px solid #e5e7eb;
+    border-radius: 0;
+
+    outline: none;
+    transition: 
+        border-color 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.employee-header-controls input::placeholder {
+    color: #9ca3af;
+    font-weight: 400;
+}
+
+/* Focus state */
+.employee-header-controls input:focus {
+    border-bottom-color: #4f46e5; /* Indigo */
+    background-color: #f9fafb;
+}
+
+/* Hover (subtle, not noisy) */
+.employee-header-controls input:hover:not(:focus) {
+    border-bottom-color: #c7d2fe;
+}
+
+.employee-add-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #d1d5db;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.employee-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    padding: 6px;
+    z-index: 200;
+    display: none;
+}
+
+.employee-dropdown.active {
+    display: block;
+}
+
+.employee-dropdown input {
+    width: 100%;
+    padding: 6px;
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+
+.employee-dropdown-list {
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.employee-dropdown-item {
+    padding: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.employee-dropdown-item:hover {
+    background: #eef2ff;
+}
+
+.calendar-filters-row {
+    width: 100%;
+    background: #fafafa;
+    border-bottom: 1px solid #e5e7eb;
+    display: none;
+}
+
+.calendar-filters-row.active {
+    display: block;
+}
+
+.calendar-filters-scroll {
+    display: flex;
+    gap: 8px;
+
+    padding: 8px 12px;
+
+    width: max-content;  /* KEY */
+    max-width: 100%;     /* KEY */
+
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+}
+/* Optional: nicer scrollbar */
+.calendar-filters-scroll::-webkit-scrollbar {
+    height: 6px;
+}
+.calendar-filters-scroll::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+}
 
     </style>
 </head>
@@ -1470,11 +1615,10 @@ min-width: 100px;
                 <button id="weekViewBtn" onclick="switchView('week')">Week</button>
                 <button id="dayViewBtn" class="active" onclick="switchView('day')">Day</button>
 
-                <div class="search-filters-section" id="searchFiltersSection">
-            <div class="search-filters-container" id="searchFiltersContainer">
-                <span class="search-label">🔍</span>
-            </div>
-        </div>
+                <!-- <div class="search-filters-section" id="searchFiltersSection">
+                    <div class="search-filters-container" id="searchFiltersContainer">
+                    </div>
+                </div> -->
             </div>
             <!-- Search Filters Display Section -->
         
@@ -1488,7 +1632,9 @@ min-width: 100px;
                 <button class="calendar-icon" onclick="toggleMiniCalendar()"><i class="fa fa-calendar fa-lg"></i></button>
             </div>
         </div>
-
+        <div class="calendar-filters-row" id="searchFiltersSection">
+            <div class="calendar-filters-scroll" id="searchFiltersContainer"></div>
+        </div>
         
         <div class="mini-calendar" id="miniCalendar">
             <div class="mini-header">
@@ -1515,7 +1661,26 @@ min-width: 100px;
                         <div class="calendar-body-scrollable">
 
                 <div class="day-header-row sticky-header">
-                    <div class="employee-header">Staffs</div>
+                    <div class="employee-header employee-header-controls">
+    <input 
+        type="text" 
+        id="employeeSearchInput" 
+        placeholder="Search staff"
+        oninput="filterEmployees(this.value)"
+    />
+
+    <button class="employee-add-btn" onclick="toggleEmployeeDropdown(event)">+</button>
+
+    <div class="employee-dropdown" id="employeeDropdown">
+        <input 
+            type="text" 
+            placeholder="Add staff"
+            oninput="filterDropdownEmployees(this.value)"
+        />
+        <div class="employee-dropdown-list" id="employeeDropdownList"></div>
+    </div>
+</div>
+
                     <div class="hour-header-container">
                         <div class="hour-header" id="hourHeader"></div>
                     </div>
@@ -1689,6 +1854,17 @@ function hideLoader() {
                         const [ehours, eminutes] = etime.split(":").map(Number);
                         cur_book.endMinutes = ehours * 60 + eminutes;
                         cur_book.employee = '';
+                        if( rec.Status === "Missed" ){
+                            cur_book.status = "Missed";
+                        }
+                        else if( rec.Status === "Completed" ){
+                            cur_book.status = "Completed";
+                        }
+                        else{
+                            cur_book.status = "Not_Started";
+                        }
+                        
+                        
                         date_booking.push(cur_book); 
                     }
                     
@@ -1706,6 +1882,15 @@ function hideLoader() {
                         const [ehours, eminutes] = etime.split(":").map(Number);
                         cur_book.endMinutes = ehours * 60 + eminutes;
                         cur_book.employee = emp.zc_display_value;
+                       if( rec.Status === "Missed" ){
+                            cur_book.status = "Missed";
+                        }
+                        else if( rec.Status === "Completed" ){
+                            cur_book.status = "Completed";
+                        }
+                        else{
+                            cur_book.status = "Not_Started";
+                        }
                         date_booking.push(cur_book);
                         if( !employees.includes( emp.zc_display_value ) ){
                             employees.push(emp.zc_display_value);
@@ -1723,6 +1908,38 @@ function hideLoader() {
             const [dd, mm, yyyy] = ddmmyyyy.split('-');
             return `${yyyy}-${mm}-${dd}`;
         }
+        (function enableHeaderGrabScroll() {
+    const header = document.querySelector('.hour-header-container');
+    const scroller = document.getElementById('calendarScrollWrapper');
+
+    if (!header || !scroller) return;
+
+    let isDown = false;
+    let startX;
+    let startScrollLeft;
+
+    header.addEventListener('mousedown', (e) => {
+        isDown = true;
+        header.classList.add('grabbing');
+        startX = e.pageX;
+        startScrollLeft = scroller.scrollLeft;
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (!isDown) return;
+        isDown = false;
+        header.classList.remove('grabbing');
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+
+        e.preventDefault();
+        const deltaX = e.pageX - startX;
+        scroller.scrollLeft = startScrollLeft - deltaX;
+    });
+})();
+
 
         async function getBookings() { 
             employees.length = 0;  
@@ -1730,6 +1947,7 @@ function hideLoader() {
             const serviceList = `[${services.join(",")}]`;
             let cur_date = formatDateDDMMYYYY( currentDate );
             const criteria_1 = `Site_Name.ID == ${serviceList} && Date_field1 == '${cur_date}'`;
+            console.log(appliedFilters);
             var booking = {
                 app_name: "thg-sandbox",
                 report_name: "Bookings_Backend",
@@ -1761,6 +1979,15 @@ function hideLoader() {
                         const [ehours, eminutes] = etime.split(":").map(Number);
                         cur_book.endMinutes = ehours * 60 + eminutes;
                         cur_book.employee = '';
+                        if( rec.Status === "Missed" ){
+                            cur_book.status = "Missed";
+                        }
+                        else if( rec.Status === "Completed" ){
+                            cur_book.status = "Completed";
+                        }
+                        else{
+                            cur_book.status = "Not_Started";
+                        }
                         date_booking.push(cur_book); 
                     }
                     
@@ -1777,6 +2004,15 @@ function hideLoader() {
                         const [ehours, eminutes] = etime.split(":").map(Number);
                         cur_book.endMinutes = ehours * 60 + eminutes;
                         cur_book.employee = emp.zc_display_value;
+                        if( rec.Status === "Missed" ){
+                            cur_book.status = "Missed";
+                        }
+                        else if( rec.Status === "Completed" ){
+                            cur_book.status = "Completed";
+                        }
+                        else{
+                            cur_book.status = "Not_Started";
+                        }
                         date_booking.push(cur_book);
                         if( !employees.includes( emp.zc_display_value ) ){
                             employees.push(emp.zc_display_value);
@@ -1969,6 +2205,7 @@ eventDatabase[key].push(...date_booking);
         }
 
         async function switchView(view) {
+            showLoader();
             currentView = view;
             const dayViewBtn = document.getElementById('dayViewBtn');
             const weekViewBtn = document.getElementById('weekViewBtn');
@@ -1996,6 +2233,7 @@ eventDatabase[key].push(...date_booking);
             if (miniCal.classList.contains('active')) {
                 renderMiniCalendar();
             }
+            hideLoader();
         }
 
          async function navigatePeriod(delta) {
@@ -2043,7 +2281,6 @@ eventDatabase[key].push(...date_booking);
             // await getBookings();
             renderHourHeaders();
             renderEmployeeRows();
-            console.log("Call");
             syncScroll();
             startAt6();
         }
@@ -2186,9 +2423,9 @@ function syncScroll() {
                 const duration = evt.endMinutes - evt.startMinutes;
 
                 const el = document.createElement('div');
-                el.className = 'event';
+                el.className = `event status-${evt.status}`;
                 el.draggable = true;
-
+                // el.classList.add("event.status-pending");
                 el.dataset.eventId = evt.id;
                 el.dataset.viewType = 'day';
                 el.dataset.employee = evt.employee;
@@ -2404,7 +2641,6 @@ function renderWeekEmployeeRows() {
             const eventsContainer = document.createElement('div');
             eventsContainer.className = 'week-events-container';
             const events = employee === '—' ? [] : getEventsForEmployee(employee, dateKey);
-            console.log(employee,dateKey);
             renderWeekEventsForEmployee(eventsContainer, events, dateKey);
 
             dayColumn.appendChild(eventsContainer);
@@ -2441,7 +2677,7 @@ window.addEventListener('resize', () => {
         function renderWeekEventsForEmployee(container, events, dateKey) {
             events.forEach((evt, index) => {
                 const el = document.createElement('div');
-                el.className = 'event';
+                el.className = `event status-${evt.status}`;
                 el.draggable = true;
 
                 el.dataset.eventId = evt.id;
@@ -2518,7 +2754,7 @@ el.addEventListener('mouseup', (e) => {
         function handleDragStart(e) {
             draggedElement = e.currentTarget;
             draggedEventId = parseInt(e.currentTarget.dataset.eventId);
-            console.log(draggedEventId);
+            
             
             const viewType = e.currentTarget.dataset.viewType;
             let dateKey = viewType === 'week' ? e.currentTarget.dataset.eventDate : getCurrentDateKey();
@@ -2872,7 +3108,8 @@ formatFilterText = function(filter) {
                 filters.push({
                     field: filterName,
                     filterType: filterType,
-                    searchValues: tags
+                    searchValues: tags,
+                    filterType: "Advanced Search"
                 });
             });
             
@@ -2914,6 +3151,7 @@ formatFilterText = function(filter) {
             section.classList.add('active');
             
             appliedFilters.forEach((filter, index) => {
+                if( filter.filterType !== "Advanced Search"  ) return;
                 const pill = document.createElement('div');
                 pill.className = 'search-filter-pill';
                 
@@ -2927,7 +3165,6 @@ formatFilterText = function(filter) {
                 removeBtn.onclick = function() {
                     removeAppliedFilter(index);
                 };
-                
                 pill.appendChild(text);
                 pill.appendChild(removeBtn);
                 container.appendChild(pill);
