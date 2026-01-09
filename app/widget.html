@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://js.zohostatic.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
     <title>Day & Week Calendar View - With Employees</title>
+    <link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+/>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -82,7 +87,7 @@
             transition: all 0.2s;
         }
         .view-toggle button.active {
-            background: #4f46e5;
+            background: #682987;
             color: white;
         }
         .date-title {
@@ -1486,6 +1491,93 @@ min-width: 100px;
   border: 1px solid #d1d5db;
   border-radius: 4px;
 }
+.modal-card,
+.modal-card * {
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.modal-card .fa,
+.modal-card .fas,
+.modal-card .fa-solid,
+.modal-card .far,
+.modal-card .fab {
+  font-family: "Font Awesome 6 Free" !important;
+  font-weight: 900; /* REQUIRED for solid icons */
+}
+.modal-card *:not(.fa):not(.fas):not(.fa-solid):not(.far):not(.fab) {
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.employee-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    width: 100%;
+    padding: 6px 8px;
+}
+
+.employee-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.employee-count {
+    min-width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: #682987;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.employee-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 6px 8px;
+}
+
+.employee-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.employee-count {
+    min-width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: #4f46e5;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ICON */
+.employee-status-icon {
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+}
+
+/* optional colors */
+.employee-status-icon.car { color: #2563eb; }      /* blue */
+.employee-status-icon.error { color: #dc2626; }    /* red */
+
 
     </style>
 </head>
@@ -1904,17 +1996,6 @@ min-width: 100px;
         placeholder="Search staff"
         oninput="filterEmployees(this.value)"
     />
-
-    <button class="employee-add-btn" onclick="toggleEmployeeDropdown(event)">+</button>
-
-    <div class="employee-dropdown" id="employeeDropdown">
-        <input 
-            type="text" 
-            placeholder="Add staff"
-            oninput="filterDropdownEmployees(this.value)"
-        />
-        <div class="employee-dropdown-list" id="employeeDropdownList"></div>
-    </div>
 </div>
                     <div class="hour-header-container">
                         <div class="hour-header" id="hourHeader"></div>
@@ -2034,7 +2115,7 @@ min-width: 100px;
   <div class="custom-dropdown" data-field="status">
     <div class="custom-dropdown-display" onclick="toggleCustomDropdown(this)">
       <span id="mStatusText">Not Started</span>
-      <i class="fa fa-chevron-down"></i>
+     <i class="fa fa-chevron-down"></i>
     </div>
 
     <div class="custom-dropdown-options">
@@ -2441,6 +2522,31 @@ function hideLoader() {
     });
 })();
 
+function getEmployeeIconByCondition(employee, events) {
+    
+
+    const hasCarCondition = events.some(e => e.service_type === 'Home Visit');
+    const hasErrorCondition = events.some(e => e.status === 'Missed');
+
+    return {
+            icon: 'fa-car',
+            cls: 'car',
+            title: 'Travel required'
+        };
+    if (hasErrorCondition) {
+        return {
+            icon: 'fa-circle-xmark',
+            cls: 'error',
+            title: 'Error condition'
+        };
+    }
+
+    if (hasCarCondition) {
+        
+    }
+
+    return null; // no icon
+}
 
         async function getBookings() { 
             employees.length = 0;  
@@ -2815,18 +2921,47 @@ eventDatabase[key].push(...date_booking);
     const column = document.getElementById('employeeColumn');
     column.innerHTML = '';
 
-    // Fallback if no employees
     const displayList = employees.length > 0 ? employees : ['—'];
+    const dateKey = getCurrentDateKey();
 
     displayList.forEach(employee => {
         const row = document.createElement('div');
         row.className = 'employee-row';
-        row.textContent = employee === '—' ? "" : employee; // Keep text empty if no employee
-        const height = rowHeightsMap[employee] || (employees.length === 0 ? 500 : MIN_ROW_HEIGHT);
+
+        if (employee === '—') {
+            row.innerHTML = '';
+        } else {
+            // 🔹 get events for this employee
+            const events = getEventsForEmployee(employee, dateKey);
+            const count = events.length;
+
+            // 🔹 YOUR CONDITION (edit freely)
+            let iconHTML = '';
+            if ( true) {
+                iconHTML = `<i class="fa-solid fa-car"></i>`;
+            } else if (/* your condition */ false) {
+                iconHTML = `<i class="fa-solid fa-circle-xmark"></i>`;
+            }
+
+            row.innerHTML = `
+                <div class="employee-label">
+                    <span class="employee-name">${employee}</span>
+                    ${iconHTML}
+                    <span class="employee-count">${count}</span>
+                    
+                </div>
+            `;
+        }
+
+        const height =
+            rowHeightsMap[employee] ||
+            (employees.length === 0 ? 500 : MIN_ROW_HEIGHT);
+
         row.style.height = height + 'px';
         column.appendChild(row);
     });
 }
+
         
        let scrollSynced = false;
 
