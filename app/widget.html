@@ -3377,6 +3377,59 @@ formatFilterText = function(filter) {
         } else {
             init();
         }
+        function filterEmployees(query) {
+    const q = query.toLowerCase();
+    visibleEmployees = allEmployees.filter(e =>
+        e.toLowerCase().includes(q)
+    );
+    renderDayView();
+}
+async function getAllEmployees() {
+     const serviceList = `[${services.join(",")}]`;
+    const criteria_2 = `Sites.ID == ${serviceList} && Status == "Active"`;
+    var staffs = {
+        app_name: "thg-sandbox",
+        report_name: "Staffs_Details_Backend",
+        criteria: criteria_2
+    };       
+    staff_resp = await ZOHO.CREATOR.DATA.getRecords(staffs);
+    console.log(staff_resp);
+}
+function toggleEmployeeDropdown(e) {
+    e.stopPropagation();
+    const dropdown = document.getElementById('employeeDropdown');
+    dropdown.classList.toggle('active');
+    getAllEmployees();
+    let allEmployees = [...employees];
+    let visibleEmployees = [...employees];
+    renderEmployeeDropdownList(allEmployees);
+}
+
+function renderEmployeeDropdownList(list) {
+    const container = document.getElementById('employeeDropdownList');
+    container.innerHTML = '';
+
+    list.forEach(emp => {
+        const div = document.createElement('div');
+        div.className = 'employee-dropdown-item';
+        div.textContent = emp;
+        div.onclick = () => {
+            if (!visibleEmployees.includes(emp)) {
+                visibleEmployees.push(emp);
+                renderDayView();
+            }
+        };
+        container.appendChild(div);
+    });
+}
+function filterDropdownEmployees(query) {
+    const q = query.toLowerCase();
+    const filtered = allEmployees.filter(e =>
+        e.toLowerCase().includes(q)
+    );
+    renderEmployeeDropdownList(filtered);
+}
+
     </script>
 </body>
 </html>
