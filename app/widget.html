@@ -2508,8 +2508,6 @@ async function saveEvent() {
     return;
   }
    if (!activeEvent) return;
-  console.log(activeEvent);
-  
    activeEvent.startMinutes = timeToMinutes(document.getElementById('mFrom').value);
    activeEvent.endMinutes = timeToMinutes(document.getElementById('mTo').value);
    activeEvent.employee = document.getElementById('mStaff').value;
@@ -2525,7 +2523,11 @@ async function saveEvent() {
    console.log(activeEvent);
   showLoader();
   await updateEventZoho(activeEvent);
-  renderDayView(); // existing function
+  if (currentView === 'day') {
+                renderDayView();
+            } else {
+                renderWeekView();
+            }
   closeEventModal();
   hideLoader();
 }
@@ -2826,6 +2828,7 @@ function hideLoader() {
                 });
             }
         function toYYYYMMDD(ddmmyyyy) {
+            console.log(ddmmyyyy);
             const [dd, mm, yyyy] = ddmmyyyy.split('-');
             return `${yyyy}-${mm}-${dd}`;
         }
@@ -3157,8 +3160,10 @@ function renderWeekSummaryRow() {
 
         async function updateEventZoho(evt){
             
-            
-
+            const key = toYYYYMMDD( evt.date );            
+            if (!eventDatabase[key]) {
+                eventDatabase[key] = [];
+            }
             let emp_id;
             if( evt.employee ){
                emp_id =  employeeDetails.find(emp => emp.name === evt.employee).id;
@@ -3195,6 +3200,7 @@ function renderWeekSummaryRow() {
             catch(err){
                 console.log(err);
             }
+            // eventDatabase[key].push(evt);
         }
 
         function onResizeMove(e) {
