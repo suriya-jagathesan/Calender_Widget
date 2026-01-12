@@ -791,6 +791,11 @@
             background: white;
             z-index: 100;
         }
+        .week-days-container {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
         
         .week-employee-header {
             flex: 0 0 150px;
@@ -1578,6 +1583,74 @@ min-width: 100px;
 .employee-status-icon.car { color: #2563eb; }      /* blue */
 .employee-status-icon.error { color: #dc2626; }    /* red */
 
+/* ===============================
+   WEEK VIEW – SECOND FIXED ROW
+   =============================== */
+
+/* Header wrapper already sticky – DO NOT REMOVE */
+.week-header-row {
+    position: sticky;
+    top: 0;
+    z-index: 120;
+    background: #ffffff;
+}
+
+/* Holds date row + summary row */
+.week-days-container {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ===== DATE ROW (already exists) ===== */
+.week-days-header {
+    display: flex;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* ===== NEW SUMMARY ROW ===== */
+.week-days-summary {
+    display: flex;
+    background: #f3f4f6;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+/* IMPORTANT: SAME WIDTH RULE */
+.week-day-header,
+.week-day-summary-cell,
+.week-day-column {
+    flex: 1 1 0;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+/* Summary cell look */
+.week-day-summary-cell {
+    padding: 6px 8px;
+    text-align: center;
+    font-size: 11px;
+    border-right: 1px solid #e5e7eb;
+}
+
+.week-day-summary-cell:last-child {
+    border-right: none;
+}
+
+/* Text lines */
+.week-summary-line {
+    font-size: 11px;
+    line-height: 1.2;
+    font-weight: 600;
+}
+
+.week-summary-line.unfilled {
+    color: #dc2626; /* red */
+}
+
+.week-summary-line.mismatch {
+    color: #7c2d12; /* dark amber */
+}
 
     </style>
 </head>
@@ -2038,6 +2111,7 @@ min-width: 100px;
             <div class="week-employee-header">Employee</div>
             <div class="week-days-container">
                 <div class="week-days-header" id="weekDaysHeader"></div>
+                <div class="week-days-summary" id="weekDaysSummary"></div>
             </div>
         </div>
  
@@ -2676,6 +2750,34 @@ eventDatabase[key].push(...date_booking);
     
     return Math.max(MIN_ROW_HEIGHT, fillHeight);
 }
+function renderWeekSummaryRow() {
+    const summary = document.getElementById('weekDaysSummary');
+    summary.innerHTML = '';
+
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        const key = getDateKey(d);
+
+        const events = eventDatabase[key] || [];
+
+        const unfilled = events.filter(e => !e.employee).length;
+        const mismatches = events.filter(e => e.status === 'Missed').length;
+
+        const cell = document.createElement('div');
+        cell.className = 'week-day-summary-cell';
+        cell.innerHTML = `
+            <div class="week-summary-line">${unfilled} unfilled</div>
+            <div class="week-summary-line">${mismatches} mismatches</div>
+        `;
+
+        summary.appendChild(cell);
+    }
+}
+
 
         function startResize(e, evt, direction) {
             resizeEvent = evt;
@@ -2931,11 +3033,10 @@ eventDatabase[key].push(...date_booking);
         if (employee === '—') {
             row.innerHTML = '';
         } else {
-            // 🔹 get events for this employee
+           
             const events = getEventsForEmployee(employee, dateKey);
             const count = events.length;
 
-            // 🔹 YOUR CONDITION (edit freely)
             let iconHTML = '';
             if ( true) {
                 iconHTML = `<i class="fa-solid fa-car"></i>`;
@@ -3174,6 +3275,7 @@ el.addEventListener('mouseup', (e) => {
         async function renderWeekView() {
             // await getBookingsForWeek();
             renderWeekDaysHeader();
+            renderWeekSummaryRow();
             renderWeekEmployeeRows();
             syncWeekScroll();
         }
