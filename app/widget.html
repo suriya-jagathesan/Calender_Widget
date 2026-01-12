@@ -1360,7 +1360,7 @@ min-width: 100px;
   box-shadow: 0 8px 20px rgba(0,0,0,0.15);
   z-index: 2000;
   display: none;
-  max-height: 200px;
+  max-height: 100px;
   overflow-y: auto;
 }
 
@@ -2326,13 +2326,13 @@ min-width: 100px;
 
         <div class="modal-form-row">
   <label>Service</label>
-  <input class="modal-input" type="text" value="" disabled>
+  <input id="mService" class="modal-input" type="text" value="" disabled>
 </div>
       
 
       <div class="modal-form-row">
   <label>Person</label>
-  <input class="modal-input" type="text" value="" disabled>
+  <input id="mPerson" class="modal-input" type="text" value="" disabled>
 </div>
 
 
@@ -2354,7 +2354,7 @@ min-width: 100px;
 
       <div class="modal-form-row">
   <label>Duration</label>
-  <input class="modal-input" type="time" id="mDuration">
+  <input class="modal-input" type="time" id="mDuration" disabled>
 </div>
 
 
@@ -2377,7 +2377,11 @@ min-width: 100px;
     <div class="custom-dropdown-options">
       <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Not Started')">Not Started</div>
       <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Completed')">Completed</div>
+      <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Not Completed')">Not Completed</div>
       <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Missed')">Missed</div>
+      <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Started')">Started</div>
+      <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Inactive')">Inactive</div>
+      <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Cancelled')">Cancelled</div>
     </div>
   </div>
 
@@ -2445,18 +2449,23 @@ min-width: 100px;
         let activeEvent = null;
 
 function openEventModal(evt) {
-  // STATUS
+  
   const status = evt.status ? evt.status.replace('_', ' ') : 'Not Started';
 
   const statusInput = document.getElementById('mStatus');
   const statusText  = document.getElementById('mStatusText');
+  document.getElementById('mPerson').value =
+    evt.title  || '';
+    console.log(evt);
+    
+    document.getElementById('mService').value = evt.service || '';
 
   if (statusInput && statusText) {
     statusInput.value = status;
     statusText.textContent = status;
   }
   activeEvent = evt;
-  // STAFF
+ 
   populateStaffDropdown(evt.employee);
 
   // OTHER FIELDS (example)
@@ -2465,7 +2474,6 @@ function openEventModal(evt) {
 
 
   document.getElementById('eventModal').classList.remove('hidden');
-  console.log("Finished");
   
 }
 
@@ -2722,13 +2730,15 @@ function hideLoader() {
                         const [, stime] = rec.From_Date_Time.split(" "); 
                         const [shours, sminutes] = stime.split(":").map(Number);
                         cur_book.startMinutes = shours * 60 + sminutes;
-                        
+                        cur_book.service = rec.Site_Name.zc_display_value;
                         const [, etime] = rec.To_Date_Time.split(" "); 
                         const [ehours, eminutes] = etime.split(":").map(Number);
                         cur_book.endMinutes = ehours * 60 + eminutes;
                         cur_book.employee = '';
+                        cur_book.overlap = false;
                         if( rec.Overlapped_Booking == "true" ){
                             cur_book.status = "Overlapped";
+                            cur_book.overlap = true;
                         }
                         else if( rec.Status === "Missed" ){
                             cur_book.status = "Missed";
@@ -2760,14 +2770,16 @@ function hideLoader() {
                         const [, stime] = rec.From_Date_Time.split(" "); 
                         const [shours, sminutes] = stime.split(":").map(Number);
                         cur_book.startMinutes = shours * 60 + sminutes;
-                        
+                        cur_book.service = rec.Site_Name.zc_display_value;
                         const [, etime] = rec.To_Date_Time.split(" "); 
                         const [ehours, eminutes] = etime.split(":").map(Number);
                         cur_book.endMinutes = ehours * 60 + eminutes;
                         cur_book.employee = emp.zc_display_value;
                         cur_book.employee_id = emp.ID;
+                        cur_book.overlap = false;
                         if( rec.Overlapped_Booking == "true" ){
                             cur_book.status = "Overlapped";
+                            cur_book.overlap = true;
                         }
                         else if( rec.Status === "Missed" ){
                             cur_book.status = "Missed";
@@ -2886,6 +2898,7 @@ function getEmployeeIconByCondition(employee, events) {
                         cur_book.id = Number(rec.ID);
                         cur_book.title = rec.Care_Service_User.zc_display_value;
                         cur_book.date = rec.Date_field1;
+                        cur_book.service = rec.Site_Name.zc_display_value;
                         const [, stime] = rec.From_Date_Time.split(" "); 
                         const [shours, sminutes] = stime.split(":").map(Number);
                         cur_book.startMinutes = shours * 60 + sminutes;
@@ -2894,8 +2907,10 @@ function getEmployeeIconByCondition(employee, events) {
                         const [ehours, eminutes] = etime.split(":").map(Number);
                         cur_book.endMinutes = ehours * 60 + eminutes;
                         cur_book.employee = '';
+                        cur_book.overlap = false;
                         if( rec.Overlapped_Booking == "true" ){
                             cur_book.status = "Overlapped";
+                            cur_book.overlap = true;
                         }
                         else if( rec.Status === "Missed" ){
                             cur_book.status = "Missed";
@@ -2926,14 +2941,16 @@ function getEmployeeIconByCondition(employee, events) {
                         const [, stime] = rec.From_Date_Time.split(" "); 
                         const [shours, sminutes] = stime.split(":").map(Number);
                         cur_book.startMinutes = shours * 60 + sminutes;
-                        
+                        cur_book.service = rec.Site_Name.zc_display_value;
                         const [, etime] = rec.To_Date_Time.split(" "); 
                         const [ehours, eminutes] = etime.split(":").map(Number);
                         cur_book.endMinutes = ehours * 60 + eminutes;
                         cur_book.employee = emp.zc_display_value;
                         cur_book.employee_id = emp.ID;
+                        cur_book.overlap = false;
                         if( rec.Overlapped_Booking == "true" ){
                             cur_book.status = "Overlapped";
+                            cur_book.overlap = true;
                         }
                         else if( rec.Status === "Missed" ){
                             cur_book.status = "Missed";
@@ -3052,7 +3069,7 @@ function renderWeekSummaryRow() {
         const events = eventDatabase[key] || [];
 
         const unfilled = events.filter(e => !e.employee).length;
-        const mismatches = events.filter(e => e.status === 'Missed').length;
+        const mismatches = events.filter(e => e.overlap === true).length;
 
         const cell = document.createElement('div');
         cell.className = 'week-day-summary-cell';
