@@ -2354,7 +2354,7 @@ min-width: 100px;
 
       <div class="modal-form-row">
   <label>Duration</label>
-  <input class="modal-input" type="time" id="mDuration" disabled>
+  <input class="modal-input" type="text" id="mDuration" disabled>
 </div>
 
 
@@ -2457,7 +2457,13 @@ function openEventModal(evt) {
   document.getElementById('mPerson').value =
     evt.title  || '';
     console.log(evt);
-    
+ const [dd, MM, yyyy] = evt.date.split('-');
+    document.getElementById('mDate').value = `${yyyy}-${MM}-${dd}`;
+    document.getElementById('mFrom').value = minutesToHHMM(evt.startMinutes || 0);
+    document.getElementById('mTo').value = minutesToHHMM(evt.endMinutes || 0);
+    const durationMins = (evt.endMinutes || 0) - (evt.startMinutes || 0);
+    document.getElementById('mDuration').value = minutesToHHMM(durationMins || 0   );
+    document.getElementById('mNotes').value = evt.Manager_Notes || '';
     document.getElementById('mService').value = evt.service || '';
 
   if (statusInput && statusText) {
@@ -2491,8 +2497,8 @@ function saveEvent() {
    edit_booking_details.startMinutes = timeToMinutes(document.getElementById('mFrom').value);
    edit_booking_details.endMinutes = timeToMinutes(document.getElementById('mTo').value);
    edit_booking_details.employee = document.getElementById('mStaff').value;
-   edit_booking_details.status =
-    document.getElementById('mStatus').value;
+   let cur_sts = document.getElementById('mStatus').value.replace(' ', '_');
+   edit_booking_details.status = cur_sts;
     edit_booking_details.manager_notes = document.getElementById('mNotes').value;
     edit_booking_details.staff = document.getElementById('mStaff').value; 
     console.log(edit_booking_details);
@@ -2501,10 +2507,10 @@ function saveEvent() {
   const from = document.getElementById('mFrom').value;
   const to = document.getElementById('mTo').value;
 
-//   if (!from || !to) {
-//      showToast("Employee and time are required", "error");
-//     return;
-//   }
+  if (!from || !to || !document.getElementById('mStaff').value || ! document.getElementById('mStatus').value )   {
+     showToast("Date,From,To,Status and Staff are Mandatory", "error");
+    return;
+  }
 
 //   activeEvent.startMinutes = timeToMinutes(from);
 //   activeEvent.endMinutes = timeToMinutes(to);
@@ -2726,6 +2732,7 @@ function hideLoader() {
                         let cur_book = {};
                         cur_book.id = Number(rec.ID);
                         cur_book.zoho_id = BigInt(rec.ID);
+                        cur_book.Manager_notes = rec.Manager_Notes;
                         cur_book.title = rec.Care_Service_User.zc_display_value;
                         cur_book.date = rec.Date_field1;
                         const [, stime] = rec.From_Date_Time.split(" "); 
@@ -2767,6 +2774,7 @@ function hideLoader() {
                        cur_book.id = Number(rec.ID);
                        cur_book.zoho_id = BigInt(rec.ID);
                        cur_book.date = rec.Date_field1;
+                       cur_book.Manager_notes = rec.Manager_Notes;
                        cur_book.title = rec.Care_Service_User.zc_display_value;
                         const [, stime] = rec.From_Date_Time.split(" "); 
                         const [shours, sminutes] = stime.split(":").map(Number);
@@ -2901,6 +2909,7 @@ function getEmployeeIconByCondition(employee, events) {
                         cur_book.title = rec.Care_Service_User.zc_display_value;
                         cur_book.date = rec.Date_field1;
                         cur_book.service = rec.Site_Name.zc_display_value;
+                        cur_book.Manager_notes = rec.Manager_Notes;
                         const [, stime] = rec.From_Date_Time.split(" "); 
                         const [shours, sminutes] = stime.split(":").map(Number);
                         cur_book.startMinutes = shours * 60 + sminutes;
@@ -2941,6 +2950,7 @@ function getEmployeeIconByCondition(employee, events) {
                        cur_book.zoho_id = rec.ID;
                        cur_book.date = rec.Date_field1;
                        cur_book.title = rec.Care_Service_User.zc_display_value;
+                       cur_book.Manager_notes = rec.Manager_Notes;
                         const [, stime] = rec.From_Date_Time.split(" "); 
                         const [shours, sminutes] = stime.split(":").map(Number);
                         cur_book.startMinutes = shours * 60 + sminutes;
