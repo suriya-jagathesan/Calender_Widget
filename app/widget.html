@@ -1131,6 +1131,9 @@ min-width: 100px;
 .event.status-Completed {
     background: linear-gradient(135deg, #22c55e, #16a34a);
 }
+.event.status-Overlapped {
+     background: linear-gradient(135deg, #fb923c, #f97316);
+}
 
 .employee-header-controls {
     display: flex;
@@ -1651,6 +1654,100 @@ min-width: 100px;
 .week-summary-line.mismatch {
     color: #7c2d12; /* dark amber */
 }
+.quick-filter-popover {
+    position: absolute;
+    top: 60px;
+    right: 30px;
+    width: 260px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+    padding: 12px;
+    z-index: 500;
+    display: none;
+}
+
+.quick-filter-popover.active {
+    display: block;
+}
+
+.quick-filter-block {
+    margin-bottom: 14px;
+}
+
+.quick-filter-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+/* DROPDOWN */
+.quick-dropdown {
+    position: relative;
+}
+
+.quick-dropdown-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    background: #fff;
+}
+
+.quick-dropdown-options {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    z-index: 600;
+}
+
+.quick-dropdown.active .quick-dropdown-options {
+    display: block;
+}
+
+.quick-dropdown-option {
+    padding: 8px 10px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.quick-dropdown-option:hover {
+    background: #eef2ff;
+}
+.quick-dropdown-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.quick-dropdown-option.selected {
+    background: #eef2ff;
+    font-weight: 600;
+}
+
+.quick-dropdown-option i {
+    font-size: 12px;
+    color: #4f46e5;
+}
+
 
     </style>
 </head>
@@ -2032,6 +2129,39 @@ min-width: 100px;
                 <button class="nav-btn" onclick="navigatePeriod(1)"><i class="fa fa-angle-right"></i></button>
                 <button class="nav-btn" onclick="goToday()">Today</button>
                 <button class="calendar-icon" onclick="toggleSearch()"><i class="fa fa-search fa-lg"></i></button>
+                <button class="calendar-icon" onclick="toggleQuickFilter(event)">
+    <i class="fa fa-filter fa-lg"></i>
+</button>
+
+<div class="quick-filter-popover" id="quickFilterPopover">
+
+    <!-- EMPLOYEE -->
+    <div class="quick-filter-block">
+        <div class="quick-filter-label">Employee</div>
+
+        <div class="quick-dropdown" data-field="employee">
+            <div class="quick-dropdown-display" onclick="toggleQuickDropdown(this)">
+                <span>Select employee</span>
+                <i class="fa fa-chevron-down"></i>
+            </div>
+            <div class="quick-dropdown-options"></div>
+        </div>
+    </div>
+
+    <!-- STAFF -->
+    <div class="quick-filter-block">
+        <div class="quick-filter-label">Staff</div>
+
+        <div class="quick-dropdown" data-field="staff">
+            <div class="quick-dropdown-display" onclick="toggleQuickDropdown(this)">
+                <span>Select staff</span>
+                <i class="fa fa-chevron-down"></i>
+            </div>
+            <div class="quick-dropdown-options"></div>
+        </div>
+    </div>
+
+</div>
                 <button class="calendar-icon" onclick="toggleMiniCalendar()"><i class="fa fa-calendar fa-lg"></i></button>
             </div>
         </div>
@@ -2240,7 +2370,6 @@ min-width: 100px;
 
         let activeEvent = null;
 
-/* OPEN MODAL */
 function openEventModal(evt) {
   // STATUS
   const status = evt.status ? evt.status.replace('_', ' ') : 'Not Started';
@@ -2464,8 +2593,29 @@ function hideLoader() {
                     services.push(rec.ID); 
                 });
             }
+            await getTodayAllEmployees(); 
           await getBookings();
-           
+        }
+        async function getTodayAllEmployees(){
+            console.log("Get All Employees");
+            var employees_config ={
+                app_name: "thg-sandbox",
+                report_name: "Daily_Shift_Report",
+                criteria: "(Date_From == '" + formatDateDDMMYYYY( todayDate ) + "')"
+            }
+            employee_res = await ZOHO.CREATOR.DATA.getRecords(employees_config);
+            employees.length = 0;  
+            employees.push('');
+            employee_res.data.forEach(function (rec) {
+                console.log(rec.Staff.zc_display_value);
+                if( !employees.includes( rec.Staff.zc_display_value ) ){
+                    employees.push(rec.Staff.zc_display_value);
+                    employeeDetails.push({
+                        [rec.Staff.zc_display_value]: rec.Staff.ID
+                    });
+                }
+            });
+            
         }
         async function getBookingsForWeek(){
             const weekStart = new Date(currentDate);
@@ -2474,11 +2624,6 @@ function hideLoader() {
             weekEnd.setDate(weekStart.getDate() + 6);
             let zoho_start_date = formatDateDDMMYYYY( weekStart );
             let zoho_end_date = formatDateDDMMYYYY( weekEnd );
-            console.log(zoho_start_date,zoho_end_date);
-            
-            employees.length = 0;  
-            employees.push('');
-            console.log(services);
             const serviceList = `[${services.join(",")}]`;
             const criteria_2 = `Site_Name.ID == ${serviceList} && Date_field1 >= '${zoho_start_date}' && Date_field1 <= '${zoho_end_date}'`;
             console.log(criteria_2);
@@ -2508,7 +2653,10 @@ function hideLoader() {
                         const [ehours, eminutes] = etime.split(":").map(Number);
                         cur_book.endMinutes = ehours * 60 + eminutes;
                         cur_book.employee = '';
-                        if( rec.Status === "Missed" ){
+                        if( rec.Overlapped_Booking == "true" ){
+                            cur_book.status = "Overlapped";
+                        }
+                        else if( rec.Status === "Missed" ){
                             cur_book.status = "Missed";
                         }
                         else if( rec.Status === "Completed" ){
@@ -2535,7 +2683,10 @@ function hideLoader() {
                         cur_book.endMinutes = ehours * 60 + eminutes;
                         cur_book.employee = emp.zc_display_value;
                         cur_book.employee_id = emp.ID;
-                        if( rec.Status === "Missed" ){
+                        if( rec.Overlapped_Booking == "true" ){
+                            cur_book.status = "Overlapped";
+                        }
+                        else if( rec.Status === "Missed" ){
                             cur_book.status = "Missed";
                         }
                         else if( rec.Status === "Completed" ){
@@ -2545,12 +2696,6 @@ function hideLoader() {
                             cur_book.status = "Not_Started";
                         }
                         date_booking.push(cur_book);
-                        if( !employees.includes( emp.zc_display_value ) ){
-                            employees.push(emp.zc_display_value);
-                            employeeDetails.push({
-                                [emp.zc_display_value]: emp.ID
-                            });
-                        }
                     });
                     
                     const key = toYYYYMMDD( rec.Date_field1 );            
@@ -2623,8 +2768,6 @@ function getEmployeeIconByCondition(employee, events) {
 }
 
         async function getBookings() { 
-            employees.length = 0;  
-            employees.push('');
             const serviceList = `[${services.join(",")}]`;
             let cur_date = formatDateDDMMYYYY( currentDate );
             const criteria_1 = `Site_Name.ID == ${serviceList} && Date_field1 == '${cur_date}'`;
@@ -2659,7 +2802,10 @@ function getEmployeeIconByCondition(employee, events) {
                         const [ehours, eminutes] = etime.split(":").map(Number);
                         cur_book.endMinutes = ehours * 60 + eminutes;
                         cur_book.employee = '';
-                        if( rec.Status === "Missed" ){
+                        if( rec.Overlapped_Booking == "true" ){
+                            cur_book.status = "Overlapped";
+                        }
+                        else if( rec.Status === "Missed" ){
                             cur_book.status = "Missed";
                         }
                         else if( rec.Status === "Completed" ){
@@ -2685,7 +2831,10 @@ function getEmployeeIconByCondition(employee, events) {
                         cur_book.endMinutes = ehours * 60 + eminutes;
                         cur_book.employee = emp.zc_display_value;
                         cur_book.employee_id = emp.ID;
-                        if( rec.Status === "Missed" ){
+                        if( rec.Overlapped_Booking == "true" ){
+                            cur_book.status = "Overlapped";
+                        }
+                        else if( rec.Status === "Missed" ){
                             cur_book.status = "Missed";
                         }
                         else if( rec.Status === "Completed" ){
@@ -2695,13 +2844,6 @@ function getEmployeeIconByCondition(employee, events) {
                             cur_book.status = "Not_Started";
                         }
                         date_booking.push(cur_book);
-                        if( !employees.includes( emp.zc_display_value ) ){
-                            employees.push(emp.zc_display_value);
-                            console.log(emp);
-                            employeeDetails.push({
-                                [emp.zc_display_value]: emp.ID
-                            });
-                        }
                     });
                 });
                 const key = formatDateYYYYMMDD(currentDate);
@@ -2732,6 +2874,21 @@ eventDatabase[key].push(...date_booking);
 
             return `${day}-${month}-${year}`;
         }
+function isFilterApplied(field, value) {
+    return appliedFilters.some(
+        f => f.field === field && f.searchValues[0] === value
+    );
+}
+
+function removeFilterByFieldValue(field, value) {
+    const index = appliedFilters.findIndex(
+        f => f.field === field && f.searchValues[0] === value
+    );
+    if (index !== -1) {
+        appliedFilters.splice(index, 1);
+        renderAppliedFilters();
+    }
+}
 
 
         function calculateFillHeight() {
@@ -2888,7 +3045,102 @@ function renderWeekSummaryRow() {
         };
 
 
-        ///
+        function toggleQuickFilter(e) {
+    e.stopPropagation();
+    const popover = document.getElementById('quickFilterPopover');
+    popover.classList.toggle('active');
+    populateQuickDropdowns();
+}
+
+document.addEventListener('click', () => {
+    document.getElementById('quickFilterPopover')?.classList.remove('active');
+});
+
+function toggleQuickDropdown(el) {
+    event.stopPropagation();
+    const dropdown = el.closest('.quick-dropdown');
+
+    document.querySelectorAll('.quick-dropdown.active')
+        .forEach(d => d !== dropdown && d.classList.remove('active'));
+
+    dropdown.classList.toggle('active');
+}
+document
+  .getElementById('quickFilterPopover')
+  .addEventListener('click', e => {
+      e.stopPropagation();
+  });
+
+
+/* Fill dropdown lists */
+function populateQuickDropdowns() {
+    document.querySelectorAll('.quick-dropdown').forEach(dropdown => {
+        const field = dropdown.dataset.field;
+        const optionsBox = dropdown.querySelector('.quick-dropdown-options');
+        optionsBox.innerHTML = '';
+
+        employees.forEach(value => {
+            const opt = document.createElement('div');
+            opt.className = 'quick-dropdown-option';
+            opt.textContent = value;
+
+            const applied = isFilterApplied(field, value);
+
+            if (applied) {
+                opt.classList.add('selected');
+                opt.innerHTML = `
+                    <span>${value}</span>
+                    <i class="fa fa-check"></i>
+                `;
+            }
+
+            opt.onclick = (e) => {
+                e.stopPropagation();
+
+                if (applied) {
+                    removeFilterByFieldValue(field, value);
+                } else {
+                    applyQuickFilter(field, value);
+                }
+
+                populateQuickDropdowns(); // re-render state
+            };
+
+            optionsBox.appendChild(opt);
+        });
+    });
+}
+
+function applyQuickFilter(field, value) {
+    if (isFilterApplied(field, value)) return;
+
+    appliedFilters.push({
+        field,
+        filterType: 'is',
+        searchValues: [value]
+    });
+
+    renderAppliedFilters();
+
+    document.getElementById('quickFilterPopover').classList.remove('active');
+}
+/* Create pill */
+// function applyQuickFilter(field, value) {
+//     const exists = appliedFilters.some(
+//         f => f.field === field && f.searchValues[0] === value
+//     );
+
+//     if (exists) return; 
+
+//     appliedFilters.push({
+//         field,
+//         filterType: 'is',
+//         searchValues: [value]
+//     });
+
+//     renderAppliedFilters();
+//     document.getElementById('quickFilterPopover').classList.remove('active');
+// }
         
         let eventDatabase = JSON.parse(JSON.stringify(initialEventDatabase));
 
@@ -2919,6 +3171,7 @@ function renderWeekSummaryRow() {
         }
 
         async function switchView(view) {
+            showLoader();
             currentView = view;
             const dayViewBtn = document.getElementById('dayViewBtn');
             const weekViewBtn = document.getElementById('weekViewBtn');
@@ -2946,9 +3199,11 @@ function renderWeekSummaryRow() {
             if (miniCal.classList.contains('active')) {
                 renderMiniCalendar();
             }
+            hideLoader();
         }
 
          async function navigatePeriod(delta) {
+            showLoader();
             if (currentView === 'day') {
                 currentDate.setDate(currentDate.getDate() + delta);
                 await getBookings();
@@ -2956,9 +3211,11 @@ function renderWeekSummaryRow() {
                 startAt6();
             } else {
                 currentDate.setDate(currentDate.getDate() + (delta * 7));
+                await getBookingsForWeek();
                 renderWeekView();
             }
             updateDateTitle();
+            hideLoader();
         }
 
         function goToday() {
@@ -2995,7 +3252,7 @@ function renderWeekSummaryRow() {
             renderEmployeeRows();
             console.log("Call");
             syncScroll();
-            startAt6();
+            // startAt6();
         }
         function startAt6(){
             const scrollWrapper = document.getElementById('calendarScrollWrapper');
@@ -3033,10 +3290,19 @@ function renderWeekSummaryRow() {
         if (employee === '—') {
             row.innerHTML = '';
         } else {
-           
+            let total_mins = 0;
             const events = getEventsForEmployee(employee, dateKey);
-            const count = events.length;
-
+            events.forEach(evt => {
+                total_mins += (evt.endMinutes - evt.startMinutes);
+            });
+            const t_count = total_mins / 60;
+            let count = null;
+            if( t_count > 0 ){
+                count = t_count.toFixed(2);
+            }
+            else{
+count = 0;
+            }
             let iconHTML = '';
             if ( true) {
                 iconHTML = `<i class="fa-solid fa-car"></i>`;
@@ -3380,7 +3646,6 @@ function renderWeekEmployeeRows() {
             const eventsContainer = document.createElement('div');
             eventsContainer.className = 'week-events-container';
             const events = employee === '—' ? [] : getEventsForEmployee(employee, dateKey);
-            console.log(employee,dateKey);
             renderWeekEventsForEmployee(eventsContainer, events, dateKey);
 
             dayColumn.appendChild(eventsContainer);
@@ -3946,10 +4211,13 @@ formatFilterText = function(filter) {
             if (tagsGroup) {
                 tagsGroup.style.display = 'block';
             }
+            const filter = appliedFilters[index];
+            appliedFilters.splice(index, 1);
             
             clearTags(filterName);
             appliedFilters.splice(index, 1);
             renderAppliedFilters();
+            populateQuickDropdowns();
         }
         
         function clearTags(filterName) {
@@ -4112,6 +4380,7 @@ formatFilterText = function(filter) {
             await getBookings();
             if (currentView === 'week') {
                 updateDateTitle();
+                await getBookingsForWeek();
                 renderWeekView();
             } else {
                 updateDateTitle();
@@ -4139,7 +4408,7 @@ formatFilterText = function(filter) {
 
         // INITIALIZATION
         async function init() {
-             showLoader();
+            showLoader();
             await getZohoData();
             await switchView('day');
             await renderMiniCalendar();
