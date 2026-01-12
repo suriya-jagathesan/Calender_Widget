@@ -2693,7 +2693,8 @@ function hideLoader() {
                 if( !employees.includes( rec.Staff.zc_display_value ) ){
                     employees.push(rec.Staff.zc_display_value);
                     employeeDetails.push({
-                        [rec.Staff.zc_display_value]: rec.Staff.ID
+                        "name": rec.Staff.zc_display_value,
+                        "id": rec.Staff.ID
                     });
                 }
             });
@@ -2896,6 +2897,7 @@ function getEmployeeIconByCondition(employee, events) {
                     if( rec.Care_Providers.length === 0 ){
                         let cur_book = {};
                         cur_book.id = Number(rec.ID);
+                        cur_book.zoho_id = rec.ID;
                         cur_book.title = rec.Care_Service_User.zc_display_value;
                         cur_book.date = rec.Date_field1;
                         cur_book.service = rec.Site_Name.zc_display_value;
@@ -2936,6 +2938,7 @@ function getEmployeeIconByCondition(employee, events) {
                     rec.Care_Providers.forEach(function (emp) {
                        let cur_book = {};
                        cur_book.id = Number(rec.ID);
+                       cur_book.zoho_id = rec.ID;
                        cur_book.date = rec.Date_field1;
                        cur_book.title = rec.Care_Service_User.zc_display_value;
                         const [, stime] = rec.From_Date_Time.split(" "); 
@@ -3098,7 +3101,77 @@ function renderWeekSummaryRow() {
             document.body.style.userSelect = 'none';
 
             document.addEventListener('mousemove', onResizeMove);
-            document.addEventListener('mouseup', stopResize);
+            document.addEventListener('mouseup', stopResize );
+            setTimeout(() => {
+                updateEventZoho(evt);
+            }, 1500);
+        }
+        function minutesToHHMM(minutes) {
+            if (typeof minutes !== 'number' || minutes < 0) return '00:00';
+
+            const hrs = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+
+            return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+        }
+        function formatDateStringWithMinutes(dateStr, minutes) {
+    if (typeof dateStr !== 'string' || typeof minutes !== 'number') return '';
+
+    const [dd, MM, yyyy] = dateStr.split('-').map(Number);
+    if (!dd || !MM || !yyyy) return '';
+
+    const hrs = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+
+    const date = new Date(yyyy, MM - 1, dd, hrs, mins, 0, 0);
+    if (isNaN(date)) return '';
+
+    return (
+        String(dd).padStart(2, '0') + '-' +
+        String(MM).padStart(2, '0') + '-' +
+        yyyy + ' ' +
+        String(hrs).padStart(2, '0') + ':' +
+        String(mins).padStart(2, '0')
+    );
+}
+
+
+        async function updateEventZoho(evt){
+            console.log(evt);
+            let emp_id;
+            if( evt.employee ){
+               emp_id =  employeeDetails.find(emp => emp.name === evt.employee).id;
+            }
+            else{
+                emp_id = null;
+            }
+            let sts = evt.status.replace('_', ' '); 
+            
+            let duration = evt.endMinutes - evt.startMinutes; 
+            var update_config = {
+                app_name: "thg-sandbox",    
+                report_name: "Bookings_Backend",
+                id: evt.zoho_id,
+                payload: {
+                    "data": {
+                        "Care_Providers": [emp_id],
+                        "Start_time": `${minutesToHHMM(evt.startMinutes)}`,
+                        "End_time": `${minutesToHHMM(evt.endMinutes)}`,
+                        "Duration" : `${minutesToHHMM(duration)}`,
+                        "From_Date_Time": formatDateStringWithMinutes(evt.date, evt.startMinutes),
+                        "To_Date_Time": formatDateStringWithMinutes(evt.date, evt.endMinutes),
+                        "Status": sts
+                    }
+                }
+            }
+            console.log(update_config);
+            try{
+            res = await ZOHO.CREATOR.DATA.updateRecordById(update_config);
+            console.log(res);
+            }
+            catch(err){
+                console.log(err);
+            }
         }
 
         function onResizeMove(e) {
@@ -3118,7 +3191,6 @@ function renderWeekSummaryRow() {
                     resizeEvent.startMinutes = newStart;
                 }
             }
-
             if (currentView === 'day') {
                 renderDayView();
             } else {
@@ -3392,7 +3464,7 @@ function applyQuickFilter(field, value) {
         }
 
         // DAY VIEW RENDERING
-        async function renderDayView() {
+        async function renderDayView() {    
             // await getBookings();
             renderHourHeaders();
             renderEmployeeRows();
@@ -4026,8 +4098,12 @@ el.addEventListener('mouseup', (e) => {
                 endMinutes: newStartMinutes + duration,
                 employee: newEmployee
             });
-            console.log("all called");
             
+            updateEventZoho({ ...draggedEventData,
+                startMinutes: newStartMinutes,
+                endMinutes: newStartMinutes + duration,
+                employee: newEmployee});
+                
             renderDayView();
         }
 
