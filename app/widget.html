@@ -3159,18 +3159,21 @@ function renderWeekSummaryRow() {
 
 
         async function updateEventZoho(evt){
+            console.log(evt);
             
             const key = toYYYYMMDD( evt.date );            
             if (!eventDatabase[key]) {
                 eventDatabase[key] = [];
             }
-            let emp_id;
+            let emp_id;    
             if( evt.employee ){
                emp_id =  employeeDetails.find(emp => emp.name === evt.employee).id;
             }
             else{
                 emp_id = null;
             }
+            console.log(emp_id);
+            let final_emp = emp_id == null ? [] : [emp_id];
             let sts = evt.event_status; 
             
             let duration = evt.endMinutes - evt.startMinutes; 
@@ -3180,7 +3183,7 @@ function renderWeekSummaryRow() {
                 id: evt.zoho_id,
                 payload: {
                     "data": {
-                        "Care_Providers": [emp_id],
+                        "Care_Providers": final_emp,
                         "Start_time": `${minutesToHHMM(evt.startMinutes)}`,
                         "End_time": `${minutesToHHMM(evt.endMinutes)}`,
                         "Duration" : `${minutesToHHMM(duration)}`,
@@ -4149,6 +4152,7 @@ el.addEventListener('mouseup', (e) => {
             const newEmployee = slot.dataset.employee;
             const originalDateKey = draggedEventData.originalDateKey;
             const originalEmployee = draggedEventData.employee;
+            console.log(originalDateKey,newDateKey);
             
             // Prevent drop if it's the same column (same day AND same employee)
             if (newDateKey === originalDateKey && newEmployee === originalEmployee) {
@@ -4165,8 +4169,14 @@ el.addEventListener('mouseup', (e) => {
             if (!eventDatabase[newDateKey]) eventDatabase[newDateKey] = [];
             eventDatabase[newDateKey].push({
                 ...draggedEventData,
-                employee: newEmployee
+                employee: newEmployee,
+                date: toYYYYMMDD(newDateKey)
             });
+            updateEventZoho( {
+                ...draggedEventData,
+                employee: newEmployee,
+                date: toYYYYMMDD(newDateKey)
+            } )
             
             renderWeekView();
         }
