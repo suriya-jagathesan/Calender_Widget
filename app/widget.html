@@ -885,8 +885,8 @@
         
         .week-employee-row {
             display: flex;
-            align-items: center;
-            justify-content: center;
+            align-items: start;
+            justify-content: start;
             border-bottom: 1px solid #e5e7eb;
             padding: 10px;
             font-size: 14px;
@@ -1127,7 +1127,15 @@ min-width: 100px;
 .event.status-Missed {
     background: linear-gradient(135deg, #ef4444, #b91c1c);
 }
-
+.event.status-Not_Completed {
+    background: linear-gradient(135deg, #facc15, #ca8a04);
+}
+.event.status-Cancelled {
+   background: linear-gradient(135deg, #374151, #111827);
+}
+.event.status-Started {
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
+}
 .event.status-Completed {
     background: linear-gradient(135deg, #22c55e, #16a34a);
 }
@@ -1566,7 +1574,7 @@ min-width: 100px;
     min-width: 22px;
     height: 22px;
     border-radius: 999px;
-    background: #4f46e5;
+    background: #682987;
     color: #fff;
     font-size: 11px;
     font-weight: 600;
@@ -1748,6 +1756,50 @@ min-width: 100px;
     color: #4f46e5;
 }
 
+/* ================= EVENT TOOLTIP ================= */
+
+.event-tooltip {
+    position: fixed;
+    width: 260px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+    padding: 10px 12px;
+    font-size: 12px;
+    z-index: 99999;
+    pointer-events: none;
+}
+
+.event-tooltip.hidden {
+    display: none;
+}
+
+.tt-row {
+    display: grid;
+    grid-template-columns: 95px 1fr;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.tt-row:last-child {
+    margin-bottom: 0;
+}
+
+.tt-label {
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.tt-value {
+    font-weight: 500;
+    color: #111827;
+    word-break: break-word;
+}
+
+.tt-warn {
+    color: #b45309;
+}
 
     </style>
 </head>
@@ -2365,6 +2417,28 @@ min-width: 100px;
 
   </div>
 </div>
+<div id="eventTooltip" class="event-tooltip hidden">
+    <div class="tt-row">
+        <span class="tt-label">Service User</span>
+        <span class="tt-value" id="ttServiceUser"></span>
+    </div>
+    <div class="tt-row">
+        <span class="tt-label">Staff</span>
+        <span class="tt-value" id="ttStaff"></span>
+    </div>
+    <div class="tt-row">
+        <span class="tt-label">Time</span>
+        <span class="tt-value" id="ttTime"></span>
+    </div>
+    <div class="tt-row hidden" id="ttMismatchRow">
+        <span class="tt-label">Mismatch</span>
+        <span class="tt-value tt-warn" id="ttMismatch"></span>
+    </div>
+    <div class="tt-row hidden" id="ttTravelRow">
+        <span class="tt-label">Next Travel</span>
+        <span class="tt-value" id="ttTravel"></span>
+    </div>
+</div>
 
     <script>
 
@@ -2659,6 +2733,15 @@ function hideLoader() {
                         else if( rec.Status === "Missed" ){
                             cur_book.status = "Missed";
                         }
+                        else if( rec.Status === "Not Completed" ){
+                            cur_book.status = "Not_Completed";
+                        }
+                        else if( rec.Status === "Cancelled" ){
+                            cur_book.status = "Cancelled";
+                        }
+                        else if( rec.Status === "Started" ){
+                            cur_book.status = "Started";
+                        }
                         else if( rec.Status === "Completed" ){
                             cur_book.status = "Completed";
                         }
@@ -2688,6 +2771,15 @@ function hideLoader() {
                         }
                         else if( rec.Status === "Missed" ){
                             cur_book.status = "Missed";
+                        }
+                        else if( rec.Status === "Not Completed" ){
+                            cur_book.status = "Not_Completed";
+                        }
+                        else if( rec.Status === "Cancelled" ){
+                            cur_book.status = "Cancelled";
+                        }
+                        else if( rec.Status === "Started" ){
+                            cur_book.status = "Started";
                         }
                         else if( rec.Status === "Completed" ){
                             cur_book.status = "Completed";
@@ -2808,6 +2900,15 @@ function getEmployeeIconByCondition(employee, events) {
                         else if( rec.Status === "Missed" ){
                             cur_book.status = "Missed";
                         }
+                        else if( rec.Status === "Not Completed" ){
+                            cur_book.status = "Not_Completed";
+                        }
+                        else if( rec.Status === "Cancelled" ){
+                            cur_book.status = "Cancelled";
+                        }
+                        else if( rec.Status === "Started" ){
+                            cur_book.status = "Started";
+                        }
                         else if( rec.Status === "Completed" ){
                             cur_book.status = "Completed";
                         }
@@ -2836,6 +2937,15 @@ function getEmployeeIconByCondition(employee, events) {
                         }
                         else if( rec.Status === "Missed" ){
                             cur_book.status = "Missed";
+                        }
+                        else if( rec.Status === "Not Completed" ){
+                            cur_book.status = "Not_Completed";
+                        }
+                        else if( rec.Status === "Cancelled" ){
+                            cur_book.status = "Cancelled";
+                        }
+                        else if( rec.Status === "Started" ){
+                            cur_book.status = "Started";
                         }
                         else if( rec.Status === "Completed" ){
                             cur_book.status = "Completed";
@@ -2907,6 +3017,26 @@ function removeFilterByFieldValue(field, value) {
     
     return Math.max(MIN_ROW_HEIGHT, fillHeight);
 }
+function getTotalWeekHours(employee) {
+    let totalMinutes = 0;
+
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        const key = getDateKey(d);
+
+        const events = getEventsForEmployee(employee, key);
+        events.forEach(evt => {
+            totalMinutes += (evt.endMinutes - evt.startMinutes);
+        });
+    }
+
+    return (totalMinutes / 60) == 0 ? "0" :(totalMinutes / 60).toFixed(2);
+}
+
 function renderWeekSummaryRow() {
     const summary = document.getElementById('weekDaysSummary');
     summary.innerHTML = '';
@@ -3072,7 +3202,6 @@ document
   });
 
 
-/* Fill dropdown lists */
 function populateQuickDropdowns() {
     document.querySelectorAll('.quick-dropdown').forEach(dropdown => {
         const field = dropdown.dataset.field;
@@ -3250,7 +3379,6 @@ function applyQuickFilter(field, value) {
             // await getBookings();
             renderHourHeaders();
             renderEmployeeRows();
-            console.log("Call");
             syncScroll();
             // startAt6();
         }
@@ -3436,6 +3564,17 @@ function syncScroll() {
                 el.dataset.eventId = evt.id;
                 el.dataset.viewType = 'day';
                 el.dataset.employee = evt.employee;
+                el.dataset.serviceUser = evt.title || '';
+                el.dataset.staff = evt.employee || '—';
+                el.dataset.start = minutesToTime(evt.startMinutes).hour.toString().padStart(2,'0') + ':' +
+                                minutesToTime(evt.startMinutes).minute.toString().padStart(2,'0');
+                el.dataset.end = minutesToTime(evt.endMinutes).hour.toString().padStart(2,'0') + ':' +
+                                minutesToTime(evt.endMinutes).minute.toString().padStart(2,'0');
+
+                /* OPTIONAL – only if available */
+                el.dataset.mismatch = evt.status === 'Missed' ? 'Visit missed' : '';
+                el.dataset.travel = evt.travel || '';
+
 
                 const left = (startHour * hourWidth) + ((startMinute / 60) * hourWidth);
                 const width = (duration / 60) * hourWidth;
@@ -3672,8 +3811,22 @@ window.addEventListener('resize', () => {
     displayList.forEach(employee => {
         const row = document.createElement('div');
         row.className = 'week-employee-row';
-        row.textContent = employee === '—' ? "" : employee;
-        const height = rowHeightsMap[employee] || (employees.length === 0 ? 500 : MIN_ROW_HEIGHT);
+
+        if (employee !== '—') {
+            const hours = getTotalWeekHours(employee);
+
+            row.innerHTML = `
+                <div class="employee-label">
+                    <div class="employee-name">${employee}</div>
+                    <div class="employee-total-hours">${hours}</div>
+                </div>
+            `;
+        }
+
+        const height =
+            rowHeightsMap[employee] ||
+            (employees.length === 0 ? 500 : MIN_ROW_HEIGHT);
+
         row.style.height = height + 'px';
         column.appendChild(row);
     });
@@ -4473,6 +4626,57 @@ function filterDropdownEmployees(query) {
     );
     renderEmployeeDropdownList(filtered);
 }
+const tooltip = document.getElementById('eventTooltip');
+
+function showTooltip(evtEl, mouseEvent) {
+    const rect = evtEl.getBoundingClientRect();
+
+    document.getElementById('ttServiceUser').textContent = evtEl.dataset.serviceUser;
+    document.getElementById('ttStaff').textContent = evtEl.dataset.staff;
+    document.getElementById('ttTime').textContent =
+        `${evtEl.dataset.start} – ${evtEl.dataset.end}`;
+
+    // Mismatch
+    if (evtEl.dataset.mismatch) {
+        document.getElementById('ttMismatch').textContent = evtEl.dataset.mismatch;
+        document.getElementById('ttMismatchRow').classList.remove('hidden');
+    } else {
+        document.getElementById('ttMismatchRow').classList.add('hidden');
+    }
+
+    // Travel
+    if (evtEl.dataset.travel) {
+        document.getElementById('ttTravel').textContent = evtEl.dataset.travel;
+        document.getElementById('ttTravelRow').classList.remove('hidden');
+    } else {
+        document.getElementById('ttTravelRow').classList.add('hidden');
+    }
+
+    tooltip.style.top = rect.bottom + 6 + 'px';
+    tooltip.style.left = rect.left + 'px';
+    tooltip.classList.remove('hidden');
+}
+
+function hideTooltip() {
+    tooltip.classList.add('hidden');
+}
+
+/* GLOBAL DELEGATION (works for day + week) */
+document.addEventListener('mouseover', e => {
+    const evtEl = e.target.closest('.event');
+    if (!evtEl) return;
+    if (evtEl.classList.contains('dragging')) return;
+    showTooltip(evtEl, e);
+});
+
+document.addEventListener('mouseout', e => {
+    if (e.target.closest('.event')) hideTooltip();
+});
+
+/* Hide on scroll / drag */
+document.addEventListener('scroll', hideTooltip, true);
+document.addEventListener('mousedown', hideTooltip);
+
 
     </script>
 </body>
