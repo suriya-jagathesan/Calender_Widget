@@ -1089,7 +1089,7 @@ min-width: 100px;
     position: fixed;
     inset: 0;
     background: rgba(255, 255, 255, 0.9);
-    z-index: 9999;
+    z-index: 9999999;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2491,38 +2491,43 @@ function closeEventModal() {
 }
 
 /* SAVE (UI level only) */
-function saveEvent() {
-   const edit_booking_details = {};
-   edit_booking_details.id = activeEvent.id;
-   edit_booking_details.startMinutes = timeToMinutes(document.getElementById('mFrom').value);
-   edit_booking_details.endMinutes = timeToMinutes(document.getElementById('mTo').value);
-   edit_booking_details.employee = document.getElementById('mStaff').value;
-   let cur_sts = document.getElementById('mStatus').value.replace(' ', '_');
-   edit_booking_details.status = cur_sts;
-    edit_booking_details.manager_notes = document.getElementById('mNotes').value;
-    edit_booking_details.staff = document.getElementById('mStaff').value; 
-    console.log(edit_booking_details);
-    
-  if (!activeEvent) return;
+async function saveEvent() {
+  
   const from = document.getElementById('mFrom').value;
   const to = document.getElementById('mTo').value;
-
-  if (!from || !to || !document.getElementById('mStaff').value || ! document.getElementById('mStatus').value )   {
+  const [shours, sminutes] = from.split(":").map(Number);
+  var temp_start = shours * 60 + sminutes;
+  const [ehours, eminutes] = to.split(":").map(Number);
+  var temp_end = ehours * 60 + eminutes;
+  if( temp_end < temp_start ){
+    showToast("To Time can't greater than from time");
+    return;
+  }
+  if ( !document.getElementById("mDate").value || !from || !to || !document.getElementById('mStaff').value || ! document.getElementById('mStatus').value )   {
      showToast("Date,From,To,Status and Staff are Mandatory", "error");
     return;
   }
-
-//   activeEvent.startMinutes = timeToMinutes(from);
-//   activeEvent.endMinutes = timeToMinutes(to);
-//   activeEvent.employee = document.getElementById('mStaff').value;
-//   activeEvent.status =
-//     document.getElementById('mStatus').value.replace(' ', '_');
-    
-    
-    showToast("Employee and time are required", "error");
-    return;
+   if (!activeEvent) return;
+  console.log(activeEvent);
+  
+   activeEvent.startMinutes = timeToMinutes(document.getElementById('mFrom').value);
+   activeEvent.endMinutes = timeToMinutes(document.getElementById('mTo').value);
+   activeEvent.employee = document.getElementById('mStaff').value;
+   let cur_sts = document.getElementById('mStatus').value.replace(' ', '_');
+   activeEvent.status = cur_sts;
+   activeEvent.event_status = cur_sts;
+   activeEvent.Manager_Notes = document.getElementById('mNotes').value;
+   activeEvent.staff = document.getElementById('mStaff').value; 
+   activeEvent.startMinute = temp_start;
+   activeEvent.endMinutes = temp_end;
+   const [yyyy, mm, dd] = document.getElementById('mDate').value.split('-');
+   activeEvent.date = `${dd}-${mm}-${yyyy}`;
+   console.log(activeEvent);
+  showLoader();
+  await updateEventZoho(activeEvent);
   renderDayView(); // existing function
   closeEventModal();
+  hideLoader();
 }
 
 /* HELPERS */
@@ -2743,13 +2748,14 @@ function hideLoader() {
                         const [ehours, eminutes] = etime.split(":").map(Number);
                         cur_book.endMinutes = ehours * 60 + eminutes;
                         cur_book.employee = '';
+                        cur_book.event_status = rec.Status;
                         cur_book.overlap = false;
                         if( rec.Overlapped_Booking == "true" ){
                             cur_book.status = "Overlapped";
                             cur_book.overlap = true;
                         }
                         else if( rec.Status === "Missed" ){
-                            cur_book.status = "Missed";
+                            cur_book.status = "Missed";   
                         }
                         else if( rec.Status === "Not Completed" ){
                             cur_book.status = "Not_Completed";
@@ -2786,6 +2792,7 @@ function hideLoader() {
                         cur_book.employee = emp.zc_display_value;
                         cur_book.employee_id = emp.ID;
                         cur_book.overlap = false;
+                        cur_book.event_status = rec.Status;
                         if( rec.Overlapped_Booking == "true" ){
                             cur_book.status = "Overlapped";
                             cur_book.overlap = true;
@@ -2919,6 +2926,7 @@ function getEmployeeIconByCondition(employee, events) {
                         cur_book.endMinutes = ehours * 60 + eminutes;
                         cur_book.employee = '';
                         cur_book.overlap = false;
+                        cur_book.event_status = rec.Status;
                         if( rec.Overlapped_Booking == "true" ){
                             cur_book.status = "Overlapped";
                             cur_book.overlap = true;
@@ -2961,6 +2969,7 @@ function getEmployeeIconByCondition(employee, events) {
                         cur_book.employee = emp.zc_display_value;
                         cur_book.employee_id = emp.ID;
                         cur_book.overlap = false;
+                        cur_book.event_status = rec.Status;
                         if( rec.Overlapped_Booking == "true" ){
                             cur_book.status = "Overlapped";
                             cur_book.overlap = true;
@@ -3147,7 +3156,9 @@ function renderWeekSummaryRow() {
 
 
         async function updateEventZoho(evt){
-            console.log(evt);
+            
+            
+
             let emp_id;
             if( evt.employee ){
                emp_id =  employeeDetails.find(emp => emp.name === evt.employee).id;
@@ -3155,7 +3166,7 @@ function renderWeekSummaryRow() {
             else{
                 emp_id = null;
             }
-            let sts = evt.status.replace('_', ' '); 
+            let sts = evt.event_status; 
             
             let duration = evt.endMinutes - evt.startMinutes; 
             var update_config = {
@@ -3170,7 +3181,9 @@ function renderWeekSummaryRow() {
                         "Duration" : `${minutesToHHMM(duration)}`,
                         "From_Date_Time": formatDateStringWithMinutes(evt.date, evt.startMinutes),
                         "To_Date_Time": formatDateStringWithMinutes(evt.date, evt.endMinutes),
-                        "Status": sts
+                        "Status": sts,
+                        "Manager_notes": evt.Manager_Notes,
+                        "Date_field1" : evt.date
                     }
                 }
             }
