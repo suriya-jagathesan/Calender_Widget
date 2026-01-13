@@ -627,7 +627,9 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
-    position: relative;
+    height: calc(100vh - 40px); /* Leave some margin */
+    max-height: calc(100vh - 40px);
+    overflow: hidden;
 }
 
 /* Adjust scrollable body to account for sticky headers */
@@ -671,14 +673,21 @@
         }
         
         /* Day View Styles - Modified for Employee Rows with Single Scroll */
-        .day-view { display: none; }
-        .day-view.active { display: block; }
+        .day-view { 
+            display: none;
+        flex: 1;
+    min-height: 0; }
+        .day-view.active { 
+            display: flex;
+    flex-direction: column; 
+}
         
         .day-view-container {
-            display: flex;
-            flex-direction: column;
-            height: 87vh;
-        }
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0; /* Important */
+}
         
         .day-header-row {
             display: flex;
@@ -735,16 +744,17 @@
         }
         
         .employee-row {
-            display: flex;
-            align-items: start;
-            justify-content: start;
-            border-bottom: 1px solid #e5e7eb;
-            padding: 1px;
-            font-size: 14px;
-            font-weight: 500;
-            color: #374151;
-            text-align: center;
-        }
+    display: flex;
+    align-items: start;
+    justify-content: start;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 1px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    text-align: center;
+    /* Height will be set dynamically by JavaScript */
+}
         
         .calendar-scroll-wrapper { 
             flex: 1;
@@ -762,6 +772,7 @@
 }        
         .calendar-rows {
             min-width: 2400px;
+             min-height: 100%; 
         }
         
         .employee-calendar-row {
@@ -1927,36 +1938,37 @@ min-width: 100px;
 /* ===== SCROLLABLE BODY (SINGLE SCROLL) ===== */
 .calendar-body-scrollable {
     flex: 1;
-    overflow-y: auto; /* ✅ ONLY vertical scroll HERE */
+    overflow-y: auto !important; /* ✅ MUST have vertical scroll */
     overflow-x: hidden;
     position: relative;
+    min-height: 0; /* Important for flex */
 }
+
 
 /* ===== DAY BODY ===== */
 .day-body {
     display: flex;
-    height: 100%;
-    overflow: hidden; /* No scroll here */
+    min-height: 100%; /* Allow it to grow */
 }
 
 .employee-column {
     flex: 0 0 150px;
-    min-width: 12.5%;
     border-right: 2px solid #e5e7eb;
     background: #f9fafb;
     position: sticky;
     left: 0;
     z-index: 40;
+    min-height: 100%; /* Match the scrollable area */
 }
 
 /* ===== HORIZONTAL SCROLL WRAPPER ===== */
 .calendar-scroll-wrapper {
     flex: 1;
-    overflow-x: auto; /* ✅ Horizontal scroll for hours */
-    overflow-y: hidden; /* NO vertical scroll */
+    overflow-x: auto; /* Horizontal scroll for hours */
+    overflow-y: hidden; /* NO vertical scroll here */
     position: relative;
+    min-height: 100%;
 }
-
 /* ===== HOUR HEADER STICKY ===== */
 .hour-header-container {
     position: sticky;
