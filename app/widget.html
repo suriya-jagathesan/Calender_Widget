@@ -3303,15 +3303,28 @@ function populateQuickDropdowns() {
 function applyQuickFilter(field, value) {
     if (isFilterApplied(field, value)) return;
 
+    const existing = appliedFilters.find(f => f.field === field);
+
+if (existing) {
+    existing.filterType = 'is';          
+    existing.searchValues = [...existing.searchValues,value];
+} else {
     appliedFilters.push({
         field,
         filterType: 'is',
         searchValues: [value]
     });
+}
 
-    renderAppliedFilters();
-
+    renderAppliedFilters();    
     document.getElementById('quickFilterPopover').classList.remove('active');
+    if (currentView === 'week') {
+                
+                renderWeekView();
+            } else {
+                
+                renderDayView();
+            }
 }
 /* Create pill */
 // function applyQuickFilter(field, value) {
@@ -3363,72 +3376,78 @@ function applyQuickFilter(field, value) {
             );
         }
         function getEventsForEmployee(employee, dateKey) {
-            console.log(eventDatabase);
-            const allEvents = eventDatabase[dateKey] || [];
-            return allEvents.filter(evt => {
-                if (evt.employee !== employee) return false;
-                console.log("filter1",appliedFilters);
+    const allEvents = eventDatabase[dateKey] || [];
+    const hasStaffFilter = appliedFilters.some(f => f.field === 'staff' || f.field === 'employee' );
+             
+    return allEvents.filter(evt => {
+        if (evt.employee !== employee) return false;
+
+        return appliedFilters.every(f => {
+            let search_key = null;
+            if (f.field === "persons") {
+                search_key = 'title';
+            } else if (f.field === 'staff' || f.field === 'employee' ) {
+                search_key = 'employee';
+            } else {
+                search_key = f.field;
+            }
+            const eventValue = evt[search_key];
+            if (eventValue == null) return false;
+
+            if( search_key == 'employee' && eventValue === '' ){
+                return true;
+            }
+            if (f.filterType === 'contains') {
+                console.log("contains");
                 
-                return appliedFilters.every(f => {
-                    console.log("filter2");
-                    let search_key =null;
-                    if( f.field == "persons" ){
-                        search_key = 'title';
-                    }
-                    else if( f.field == 'staff' ){
-                        search_key = 'employee';
-                    }
-                    else{
-                        search_key = f.field;
-                    }
-                    const eventValue = evt[search_key];
-                    if (eventValue == null) return false;
-                    switch (f.filterType) {
+                return f.searchValues.some(v =>
+                    String(eventValue)
+                        .toLowerCase()
+                        .includes(String(v).toLowerCase())
+                );
 
-                        case 'contains':
-                            return f.searchValues.some(v =>
-                                String(eventValue)
-                                    .toLowerCase()
-                                    .includes(String(v).toLowerCase())
-                            );
+            } else if (f.filterType === 'is') {
+    return f.searchValues.some(v =>
+        String(eventValue).trim().toLowerCase() ===
+        String(v).trim().toLowerCase()
+    );
+} else if (f.filterType === 'isNot') {
+                return !f.searchValues.some(v =>
+                    String(eventValue) === String(v)
+                );
 
-                        case 'is':
-                            return f.searchValues.some(v =>
-                                String(eventValue) === String(v)
-                            );
-                        case 'isNot':
-                            return !f.searchValues.some(v =>
-                                String(eventValue) === String(v)
-                            );
+            } else if (f.filterType === 'isEmpty') {
+                return isEmptyValue(eventValue);
 
-                        case 'isEmpty':
-                            return isEmptyValue(eventValue);
+            } else if (f.filterType === 'isNotEmpty') {
+                return !isEmptyValue(eventValue);
 
-                        case 'isNotEmpty':
-                            return !isEmptyValue(eventValue);
-                        case 'before': {
-                            const eventMin = timeToMinutes(eventValue);
-                            return f.searchValues.some(v => {
-                                const filterMin = timeToMinutes(v);
-                                return eventMin !== null && filterMin !== null && eventMin < filterMin;
-                            });
-                        }
-
-                        case 'after': {
-                            const eventMin = timeToMinutes(eventValue);
-                            return f.searchValues.some(v => {
-                                const filterMin = timeToMinutes(v);
-                                return eventMin !== null && filterMin !== null && eventMin > filterMin;
-                            });
-                        }
-
-                        default:
-                            console.warn('Unknown filterType:', f.filterType);
-                            return true;
-                    }
+            } else if (f.filterType === 'before') {
+                const eventMin = timeToMinutes(eventValue);
+                return f.searchValues.some(v => {
+                    const filterMin = timeToMinutes(v);
+                    return eventMin !== null &&
+                           filterMin !== null &&
+                           eventMin < filterMin;
                 });
-            });
-        }
+
+            } else if (f.filterType === 'after') {
+                const eventMin = timeToMinutes(eventValue);
+                return f.searchValues.some(v => {
+                    const filterMin = timeToMinutes(v);
+                    return eventMin !== null &&
+                           filterMin !== null &&
+                           eventMin > filterMin;
+                });
+
+            } else {
+                console.warn('Unknown filterType:', f.filterType);
+                return true;
+            }
+        });
+    });
+}
+
 
 
         async function switchView(view) {
@@ -3590,9 +3609,21 @@ function applyQuickFilter(field, value) {
     column.innerHTML = '';
 
     const displayList = employees.length > 0 ? employees : ['—'];
+    const employeeObj = appliedFilters.find(o => o.field === "staff" || o.field === "employee" );
+    if(employeeObj){
+        console.log(appliedFilters);
+        employeeValues = returnEmployees(employeeObj.searchValues);
+        
+        if (!employeeValues.includes('')) {
+            employeeValues.unshift('');
+            console.log(employeeValues);
+        }
+    }
+    else{
+        employeeValues = employees;
+    }
     const dateKey = getCurrentDateKey();
-
-    displayList.forEach(employee => {
+    employeeValues.forEach(employee => {
         const row = document.createElement('div');
         row.className = 'employee-row';
 
@@ -3601,6 +3632,8 @@ function applyQuickFilter(field, value) {
         } else {
             let total_mins = 0;
             const events = getEventsForEmployee(employee, dateKey);
+            console.log(employee,events);
+            
             events.forEach(evt => {
                 total_mins += (evt.endMinutes - evt.startMinutes);
             });
@@ -3657,8 +3690,15 @@ function syncScroll() {
 
     scrollSynced = true;
 }
-        
-        function renderEmployeeRows() {
+    function returnEmployees(values){
+        return employees.filter(emp =>
+        values.some(v =>
+            emp.toLowerCase().includes(v.toLowerCase())
+        )
+    );
+    }        
+
+        async function renderEmployeeRows() {
     const rowsContainer = document.getElementById('calendarRows');
     rowsContainer.innerHTML = '';
 
@@ -3667,11 +3707,21 @@ function syncScroll() {
     
     // Calculate how much height each row needs to fill the screen
     const fillHeight = calculateFillHeight();
-
     const displayList = employees.length >= 0 ? employees : ['—'];   
-             
-    displayList.forEach(employee => {
-        console.log(employee);
+    const employeeObj = appliedFilters.find(o => o.field === "staff" || o.field === "employee" );
+    if(employeeObj){
+        employeeValues = returnEmployees(employeeObj.searchValues);
+        if (!employeeValues.includes('')) {
+            employeeValues.unshift('');
+            console.log(employeeValues);
+        }
+    }
+    else{
+        employeeValues = employees;
+    }
+    console.log(employeeValues);
+    
+    employeeValues.forEach(employee => {
         const rawEvents = employee === '—' ? [] : getEventsForEmployee(employee, dateKey);
         const events = detectOverlaps([...rawEvents]);
 
@@ -3922,7 +3972,18 @@ function renderWeekEmployeeRows() {
     const fillHeight = calculateFillHeight();
 
     const displayList = employees.length >= 0 ? employees : ['—'];
-    displayList.forEach(employee => {
+    const employeeObj = appliedFilters.find(o => o.field === "staff" || o.field === "employee" );
+    if(employeeObj){
+        employeeValues = returnEmployees(employeeObj.searchValues);
+        console.log(employeeValues);
+        if (!employeeValues.includes('')) {
+            employeeValues.unshift('');
+        }
+    }
+    else{
+        employeeValues = employees;
+    }
+    employeeValues.forEach(employee => {
         let maxEventsInDay = 1;
 
         // 2. Check if events require MORE height than the fill height
@@ -3989,8 +4050,18 @@ window.addEventListener('resize', () => {
     column.innerHTML = '';
 
     const displayList = employees.length > 0 ? employees : ['—'];
-
-    displayList.forEach(employee => {
+    const employeeObj = appliedFilters.find(o => o.field === "staff" || o.field === "employee" );
+    if(employeeObj){
+        employeeValues = returnEmployees(employeeObj.searchValues);
+        console.log(employeeValues);
+        if (!employeeValues.includes('')) {
+            employeeValues.unshift('');
+        }
+    }
+    else{
+        employeeValues = employees;
+    }
+    employeeValues.forEach(employee => {
         const row = document.createElement('div');
         row.className = 'week-employee-row';
 
