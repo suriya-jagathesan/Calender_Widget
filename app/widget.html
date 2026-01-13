@@ -223,10 +223,13 @@
         
         /* Search Filters Display Section */
         .search-filters-section {
-            padding-left: 15px;
+            padding: 10px 30px;
             background: #fafafa;
             border-bottom: 1px solid #e5e7eb;
             display: none;
+            position: sticky;
+            top: 72px; /* Adjust based on your header height */
+            z-index: 90;
         }
 
         .search-filters-section.active {
@@ -608,6 +611,60 @@
             z-index: 199;
             display: none;
         }
+
+        .calendar-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* Update calendar container */
+.calendar-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+/* Adjust scrollable body to account for sticky headers */
+.calendar-body-scrollable {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* For day view */
+.day-view-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(87vh - 72px); /* Adjust for sticky headers */
+}
+
+/* For week view */
+.week-view-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(87vh - 72px); /* Adjust for sticky headers */
+}
+.week-header-row {
+    position: sticky;
+    top: 0; /* This will be relative to its scroll container */
+    z-index: 120;
+    background: #ffffff;
+}
+
+/* If week view is inside the scrollable area, adjust accordingly */
+.week-scroll-wrapper .week-header-row {
+    position: sticky;
+    top: 0;
+    z-index: 120;
+    background: #ffffff;
+}
 
         .search-overlay.active {
             display: block;
@@ -1800,7 +1857,186 @@ min-width: 100px;
 .tt-warn {
     color: #b45309;
 }
+/* ===== MAIN CONTAINER ===== */
+.calendar-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Full viewport height */
+    overflow: hidden; /* Prevent container scroll */
+}
 
+/* ===== STICKY HEADER ===== */
+.calendar-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0; /* Don't shrink */
+}
+
+/* ===== STICKY SEARCH FILTERS (SECOND ROW) ===== */
+.search-filters-section {
+    padding: 10px 30px;
+    background: #fafafa;
+    border-bottom: 1px solid #e5e7eb;
+    display: none;
+    position: sticky;
+    top: 0; /* Will stack below header naturally */
+    z-index: 90;
+    flex-shrink: 0; /* Don't shrink */
+}
+
+.search-filters-section.active {
+    display: block;
+}
+
+/* ===== DAY VIEW ===== */
+.day-view {
+    display: none;
+    flex: 1;
+    overflow: hidden; /* No scroll here */
+}
+
+.day-view.active {
+    display: flex;
+    flex-direction: column;
+}
+
+.day-view-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* ===== STICKY DAY HEADER ROW ===== */
+.day-header-row {
+    display: flex;
+    border-bottom: 2px solid #e5e7eb;
+    background: white;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    flex-shrink: 0;
+}
+
+/* ===== SCROLLABLE BODY (SINGLE SCROLL) ===== */
+.calendar-body-scrollable {
+    flex: 1;
+    overflow-y: auto; /* ✅ ONLY vertical scroll HERE */
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* ===== DAY BODY ===== */
+.day-body {
+    display: flex;
+    height: 100%;
+    overflow: hidden; /* No scroll here */
+}
+
+.employee-column {
+    flex: 0 0 150px;
+    min-width: 12.5%;
+    border-right: 2px solid #e5e7eb;
+    background: #f9fafb;
+    position: sticky;
+    left: 0;
+    z-index: 40;
+}
+
+/* ===== HORIZONTAL SCROLL WRAPPER ===== */
+.calendar-scroll-wrapper {
+    flex: 1;
+    overflow-x: auto; /* ✅ Horizontal scroll for hours */
+    overflow-y: hidden; /* NO vertical scroll */
+    position: relative;
+}
+
+/* ===== HOUR HEADER STICKY ===== */
+.hour-header-container {
+    position: sticky;
+    top: 0; /* Stick to top of scroll container */
+    z-index: 45;
+    background: white;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.hour-header {
+    display: flex;
+    min-width: 2400px;
+}
+
+/* ===== WEEK VIEW ===== */
+.week-view {
+    display: none;
+    flex: 1;
+    overflow: hidden;
+}
+
+.week-view.active {
+    display: flex;
+    flex-direction: column;
+}
+
+.week-view-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* ===== WEEK SCROLL WRAPPER (SINGLE SCROLL) ===== */
+.week-scroll-wrapper {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; /* ✅ ONLY vertical scroll */
+    overflow-x: auto; /* Horizontal for week days */
+    flex: 1;
+    position: relative;
+}
+
+/* ===== WEEK STICKY HEADER ===== */
+.week-header-row {
+    position: sticky;
+    top: 0;
+    z-index: 120;
+    background: #ffffff;
+    display: flex;
+    border-bottom: 2px solid #e5e7eb;
+    flex-shrink: 0;
+}
+
+.week-days-container {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Remove scrollbar from header */
+}
+
+/* ===== WEEK BODY ===== */
+.week-body {
+    display: flex;
+    flex: 1;
+}
+
+.week-employee-column {
+    flex: 0 0 150px;
+    border-right: 2px solid #e5e7eb;
+    background: #f9fafb;
+    position: sticky;
+    left: 0;
+    z-index: 40;
+}
+
+.week-calendar-rows {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
     </style>
 </head>
 <body>
@@ -2165,12 +2401,6 @@ min-width: 100px;
             <div class="view-toggle">
                 <button id="weekViewBtn" onclick="switchView('week')">Week</button>
                 <button id="dayViewBtn" class="active" onclick="switchView('day')">Day</button>
-
-                <div class="search-filters-section" id="searchFiltersSection">
-            <div class="search-filters-container" id="searchFiltersContainer">
-                <span class="search-label">🔍</span>
-            </div>
-        </div>
             </div>
             <!-- Search Filters Display Section -->
         
@@ -2217,7 +2447,10 @@ min-width: 100px;
                 <button class="calendar-icon" onclick="toggleMiniCalendar()"><i class="fa fa-calendar fa-lg"></i></button>
             </div>
         </div>
-
+<div class="search-filters-section" id="searchFiltersSection">
+    <div class="search-filters-container" id="searchFiltersContainer">
+    </div>
+</div>
         
         <div class="mini-calendar" id="miniCalendar">
             <div class="mini-header">
