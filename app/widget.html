@@ -319,7 +319,7 @@
 .day-header-row.sticky-header {
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 88;
     background: #ffffff;
 }
 
@@ -1729,7 +1729,7 @@ min-width: 100px;
     border-radius: 8px;
     box-shadow: 0 12px 30px rgba(0,0,0,0.15);
     padding: 12px;
-    z-index: 500;
+    z-index: 900;
     display: none;
 }
 
@@ -2979,87 +2979,12 @@ function hideLoader() {
                 booking_resp.data.forEach(function (rec) {
                     let date_booking = [];
                     if( rec.Care_Providers.length === 0 ){
-                        let cur_book = {};
-                        cur_book.id = Number(rec.ID);
-                        cur_book.zoho_id = BigInt(rec.ID);
-                        cur_book.Manager_notes = rec.Manager_Notes;
-                        cur_book.title = rec.Care_Service_User.zc_display_value;
-                        cur_book.date = rec.Date_field1;
-                        const [, stime] = rec.From_Date_Time.split(" "); 
-                        const [shours, sminutes] = stime.split(":").map(Number);
-                        cur_book.startMinutes = shours * 60 + sminutes;
-                        cur_book.service = rec.Site_Name.zc_display_value;
-                        const [, etime] = rec.To_Date_Time.split(" "); 
-                        const [ehours, eminutes] = etime.split(":").map(Number);
-                        cur_book.endMinutes = ehours * 60 + eminutes;
-                        cur_book.employee = '';
-                        cur_book.event_status = rec.Status;
-                        cur_book.overlap = false;
-                        if( rec.Overlapped_Booking == "true" ){
-                            cur_book.status = "Overlapped";
-                            cur_book.overlap = true;
-                        }
-                        else if( rec.Status === "Missed" ){
-                            cur_book.status = "Missed";   
-                        }
-                        else if( rec.Status === "Not Completed" ){
-                            cur_book.status = "Not_Completed";
-                        }
-                        else if( rec.Status === "Cancelled" ){
-                            cur_book.status = "Cancelled";
-                        }
-                        else if( rec.Status === "Started" ){
-                            cur_book.status = "Started";
-                        }
-                        else if( rec.Status === "Completed" ){
-                            cur_book.status = "Completed";
-                        }
-                        else{
-                            cur_book.status = "Not_Started";
-                        }
-                        date_booking.push(cur_book); 
+                        let cur_book = createBookingObject(rec, null);
+                        date_booking.push(cur_book);
                     }
                     
                     rec.Care_Providers.forEach(function (emp) {
-                       let cur_book = {};
-                       cur_book.id = Number(rec.ID);
-                       cur_book.zoho_id = BigInt(rec.ID);
-                       cur_book.date = rec.Date_field1;
-                       cur_book.Manager_notes = rec.Manager_Notes;
-                       cur_book.title = rec.Care_Service_User.zc_display_value;
-                        const [, stime] = rec.From_Date_Time.split(" "); 
-                        const [shours, sminutes] = stime.split(":").map(Number);
-                        cur_book.startMinutes = shours * 60 + sminutes;
-                        cur_book.service = rec.Site_Name.zc_display_value;
-                        const [, etime] = rec.To_Date_Time.split(" "); 
-                        const [ehours, eminutes] = etime.split(":").map(Number);
-                        cur_book.endMinutes = ehours * 60 + eminutes;
-                        cur_book.employee = emp.zc_display_value;
-                        cur_book.employee_id = emp.ID;
-                        cur_book.overlap = false;
-                        cur_book.event_status = rec.Status;
-                        if( rec.Overlapped_Booking == "true" ){
-                            cur_book.status = "Overlapped";
-                            cur_book.overlap = true;
-                        }
-                        else if( rec.Status === "Missed" ){
-                            cur_book.status = "Missed";
-                        }
-                        else if( rec.Status === "Not Completed" ){
-                            cur_book.status = "Not_Completed";
-                        }
-                        else if( rec.Status === "Cancelled" ){
-                            cur_book.status = "Cancelled";
-                        }
-                        else if( rec.Status === "Started" ){
-                            cur_book.status = "Started";
-                        }
-                        else if( rec.Status === "Completed" ){
-                            cur_book.status = "Completed";
-                        }
-                        else{
-                            cur_book.status = "Not_Started";
-                        }
+                       let cur_book = createBookingObject(rec, emp);
                         date_booking.push(cur_book);
                     });
                     
@@ -3162,89 +3087,13 @@ function getEmployeeIconByCondition(employee, events) {
                 let date_booking = [];
                 booking_resp.data.forEach(function (rec) {
                     if( rec.Care_Providers.length === 0 ){
-                        let cur_book = {};
-                        cur_book.id = Number(rec.ID);
-                        cur_book.zoho_id = rec.ID;
-                        cur_book.title = rec.Care_Service_User.zc_display_value;
-                        cur_book.date = rec.Date_field1;
-                        cur_book.service = rec.Site_Name.zc_display_value;
-                        cur_book.Manager_notes = rec.Manager_Notes;
-                        const [, stime] = rec.From_Date_Time.split(" "); 
-                        const [shours, sminutes] = stime.split(":").map(Number);
-                        cur_book.startMinutes = shours * 60 + sminutes;
-                        
-                        const [, etime] = rec.To_Date_Time.split(" "); 
-                        const [ehours, eminutes] = etime.split(":").map(Number);
-                        cur_book.endMinutes = ehours * 60 + eminutes;
-                        cur_book.employee = '';
-                        cur_book.overlap = false;
-                        cur_book.event_status = rec.Status;
-                        if( rec.Overlapped_Booking == "true" ){
-                            cur_book.status = "Overlapped";
-                            cur_book.overlap = true;
-                        }
-                        else if( rec.Status === "Missed" ){
-                            cur_book.status = "Missed";
-                        }
-                        else if( rec.Status === "Not Completed" ){
-                            cur_book.status = "Not_Completed";
-                        }
-                        else if( rec.Status === "Cancelled" ){
-                            cur_book.status = "Cancelled";
-                        }
-                        else if( rec.Status === "Started" ){
-                            cur_book.status = "Started";
-                        }
-                        else if( rec.Status === "Completed" ){
-                            cur_book.status = "Completed";
-                        }
-                        else{
-                            cur_book.status = "Not_Started";
-                        }
-                        date_booking.push(cur_book); 
+                        let cur_book = createBookingObject(rec, null);
+                    date_booking.push(cur_book);
                     }
                     
                     rec.Care_Providers.forEach(function (emp) {
-                       let cur_book = {};
-                       cur_book.id = Number(rec.ID);
-                       cur_book.zoho_id = rec.ID;
-                       cur_book.date = rec.Date_field1;
-                       cur_book.title = rec.Care_Service_User.zc_display_value;
-                       cur_book.Manager_notes = rec.Manager_Notes;
-                        const [, stime] = rec.From_Date_Time.split(" "); 
-                        const [shours, sminutes] = stime.split(":").map(Number);
-                        cur_book.startMinutes = shours * 60 + sminutes;
-                        cur_book.service = rec.Site_Name.zc_display_value;
-                        const [, etime] = rec.To_Date_Time.split(" "); 
-                        const [ehours, eminutes] = etime.split(":").map(Number);
-                        cur_book.endMinutes = ehours * 60 + eminutes;
-                        cur_book.employee = emp.zc_display_value;
-                        cur_book.employee_id = emp.ID;
-                        cur_book.overlap = false;
-                        cur_book.event_status = rec.Status;
-                        if( rec.Overlapped_Booking == "true" ){
-                            cur_book.status = "Overlapped";
-                            cur_book.overlap = true;
-                        }
-                        else if( rec.Status === "Missed" ){
-                            cur_book.status = "Missed";
-                        }
-                        else if( rec.Status === "Not Completed" ){
-                            cur_book.status = "Not_Completed";
-                        }
-                        else if( rec.Status === "Cancelled" ){
-                            cur_book.status = "Cancelled";
-                        }
-                        else if( rec.Status === "Started" ){
-                            cur_book.status = "Started";
-                        }
-                        else if( rec.Status === "Completed" ){
-                            cur_book.status = "Completed";
-                        }
-                        else{
-                            cur_book.status = "Not_Started";
-                        }
-                        date_booking.push(cur_book);
+                      let cur_book = createBookingObject(rec, emp);
+                      date_booking.push(cur_book);
                     });
                 });
                 const key = formatDateYYYYMMDD(currentDate);
@@ -3809,7 +3658,57 @@ function applyQuickFilter(field, value) {
                 document.getElementById('dateTitle').textContent = `${startStr} – ${endStr}`;
             }
         }
+        function createBookingObject(rec, emp) {
 
+    let cur_book = {};
+    cur_book.id = Number(rec.ID);
+    cur_book.zoho_id = rec.ID;
+    cur_book.date = rec.Date_field1;
+    cur_book.Manager_notes = rec.Manager_Notes;
+    cur_book.title = rec.Care_Service_User.zc_display_value;
+    cur_book.service = rec.Site_Name.zc_display_value;
+    
+    // Parse start time
+    const [, stime] = rec.From_Date_Time.split(" ");
+    const [shours, sminutes] = stime.split(":").map(Number);
+    cur_book.startMinutes = shours * 60 + sminutes;
+    
+    // Parse end time
+    const [, etime] = rec.To_Date_Time.split(" ");
+    const [ehours, eminutes] = etime.split(":").map(Number);
+    cur_book.endMinutes = ehours * 60 + eminutes;
+    
+    // Employee details
+    if (emp) {
+        cur_book.employee = emp.zc_display_value;
+        cur_book.employee_id = emp.ID;
+    } else {
+        cur_book.employee = '';
+    }
+    
+    cur_book.overlap = false;
+    cur_book.event_status = rec.Status;
+    
+    // Determine status
+    if (rec.Overlapped_Booking == "true") {
+        cur_book.status = "Overlapped";
+        cur_book.overlap = true;
+    } else if (rec.Status === "Missed") {
+        cur_book.status = "Missed";
+    } else if (rec.Status === "Not Completed") {
+        cur_book.status = "Not_Completed";
+    } else if (rec.Status === "Cancelled") {
+        cur_book.status = "Cancelled";
+    } else if (rec.Status === "Started") {
+        cur_book.status = "Started";
+    } else if (rec.Status === "Completed") {
+        cur_book.status = "Completed";
+    } else {
+        cur_book.status = "Not_Started";
+    }
+    
+    return cur_book;
+}
         // DAY VIEW RENDERING
         async function renderDayView() {    
             // await getBookings();
@@ -4588,6 +4487,7 @@ formatFilterText = function(filter) {
 };
         // SEARCH FUNCTIONALITY
         function toggleSearch() {
+            console.log("Called");
             const panel = document.getElementById('searchPanel');
             const overlay = document.getElementById('searchOverlay');
             panel.classList.toggle('active');
@@ -4827,16 +4727,19 @@ formatFilterText = function(filter) {
 
         // MINI CALENDAR
         function toggleMiniCalendar() {
+            event.stopPropagation();
             const miniCal = document.getElementById('miniCalendar');
+            console.log(miniCal);
             const wasActive = miniCal.classList.contains('active');
             miniCal.classList.toggle('active');
-            
+            console.log(miniCal);
             if (!wasActive && miniCal.classList.contains('active')) {
                 renderMiniCalendar();
             }
         }
 
         async function renderMiniCalendar() {
+            console.log("Caledar Rendered");
             const grid = document.getElementById('miniGrid');
             const monthYear = document.getElementById('miniMonthYear');
             
