@@ -2202,11 +2202,11 @@ min-width: 100px;
 
     <!-- STAFF -->
     <div class="quick-filter-block">
-        <div class="quick-filter-label">Staff</div>
+        <div class="quick-filter-label">Services</div>
 
         <div class="quick-dropdown" data-field="staff">
             <div class="quick-dropdown-display" onclick="toggleQuickDropdown(this)">
-                <span>Select staff</span>
+                <span>Select Service</span>
                 <i class="fa fa-chevron-down"></i>
             </div>
             <div class="quick-dropdown-options"></div>
@@ -2655,6 +2655,7 @@ const CLICK_TOLERANCE = 5;
         let originalEnd = 0;
 
         let loginUser = null;
+        let app_name = null;
         let userService = null;
         let services = [];
 
@@ -2668,33 +2669,42 @@ function hideLoader() {
     if (overlay) overlay.classList.add('hidden');
 }
 
-
+    
        async function getZohoData() {
-            let initparam = await ZOHO.CREATOR.UTIL.getInitParams();
-            loginUser = initparam.loginUser;
-           var get_service = {
-                app_name: "thg-sandbox",
-                report_name: "Sites_Access_Details_Report",
-                criteria: "(Staff_Email.contains(\"" + loginUser + "\"))"
-            };
-            
+    try {
+        let initparam = await ZOHO.CREATOR.UTIL.getInitParams();
 
-            let service_resp = await ZOHO.CREATOR.DATA.getRecords(get_service);
-            
+        app_name = initparam.appLinkName;
+        loginUser = initparam.loginUser;
 
-           if (service_resp.code === 3000) {
-                service_resp.data.forEach(function (rec) {
-                    
-                    services.push(rec.ID); 
-                });
-            }
-            await getTodayAllEmployees(); 
-          await getBookings();
+        let get_service = {
+            app_name: app_name,
+            report_name: "Sites_Access_Details_Report",
+            criteria: `(Staff_Email.contains("${loginUser}"))`
+        };
+
+        let service_resp = await ZOHO.CREATOR.DATA.getRecords(get_service);
+
+        if (service_resp.code === 3000 && Array.isArray(service_resp.data)) {
+            service_resp.data.forEach(rec => {
+                services.push(rec.ID);
+            });
+        } else {
+            console.error("Zoho response error:", service_resp);
         }
+
+        await getTodayAllEmployees();
+        await getBookings();
+
+    } catch (err) {
+        console.log("getZohoData failed:", err);
+    }
+}
+
         async function getTodayAllEmployees(){
             console.log("Get All Employees");
             var employees_config ={
-                app_name: "thg-sandbox",
+                app_name: app_name,
                 report_name: "Daily_Shift_Report",
                 criteria: "(Date_From == '" + formatDateDDMMYYYY( todayDate ) + "')"
             }
@@ -2725,11 +2735,11 @@ function hideLoader() {
             console.log(criteria_2);
             
             var booking = {
-                app_name: "thg-sandbox",
+                app_name: app_name,
                 report_name: "Bookings_Backend",
                 criteria: criteria_2
             };
-           
+           try{
             booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
             
             eventDatabase = {};
@@ -2827,6 +2837,12 @@ function hideLoader() {
                     eventDatabase[key].push(...date_booking);  
                 });
             }
+            catch(e){
+                console.log(e);
+                
+            }
+        }
+
         function toYYYYMMDD(ddmmyyyy) {
             console.log(ddmmyyyy);
             const [dd, mm, yyyy] = ddmmyyyy.split('-');
@@ -2895,14 +2911,14 @@ function getEmployeeIconByCondition(employee, events) {
             let cur_date = formatDateDDMMYYYY( currentDate );
             const criteria_1 = `Site_Name.ID == ${serviceList} && Date_field1 == '${cur_date}'`;
             var booking = {
-                app_name: "thg-sandbox",
+                app_name: app_name,
                 report_name: "Bookings_Backend",
                 criteria: criteria_1
             };
             try {
                 booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
             } catch (err) {
-                console.error("Creator error:", err);
+                console.log("Creator error:", err);
                 return; 
             }
             try{
@@ -3178,7 +3194,7 @@ function renderWeekSummaryRow() {
             
             let duration = evt.endMinutes - evt.startMinutes; 
             var update_config = {
-                app_name: "thg-sandbox",    
+                app_name: app_name,    
                 report_name: "Bookings_Backend",
                 id: evt.zoho_id,
                 payload: {
@@ -3274,6 +3290,7 @@ function renderWeekSummaryRow() {
         
         // const employees = ['John Smith', 'Sarah Johnson', 'Mike Wilson', 'Emily Davis', 'David Brown', 'Arun', 'Kamalam', 'Surya', 'Mugil', 'Nirmal', 'Sofia', 'Shiva'];
         const employees=[];
+        employees.push('');
         const employeeDetails = [];
         const initialEventDatabase = {
             '2026-01-07': [
@@ -3321,6 +3338,26 @@ document
   .addEventListener('click', e => {
       e.stopPropagation();
   });
+  document.addEventListener('click', () => {
+    document
+        .getElementById('quickFilterPopover')
+        ?.classList.remove('active');
+
+    document
+        .querySelectorAll('.quick-dropdown.active')
+        .forEach(d => d.classList.remove('active'));
+});
+
+function getOptionsByField(field) {
+    switch (field) {
+        case "employee":
+            return employees;
+        case "staff":      
+            return services;
+        default:
+            return [];
+    }
+}
 
 
 function populateQuickDropdowns() {
@@ -3329,37 +3366,35 @@ function populateQuickDropdowns() {
         const optionsBox = dropdown.querySelector('.quick-dropdown-options');
         optionsBox.innerHTML = '';
 
-        employees.forEach(value => {
+        const values = getOptionsByField(field);
+
+        values.forEach(value => {
             const opt = document.createElement('div');
             opt.className = 'quick-dropdown-option';
-            opt.textContent = value;
 
             const applied = isFilterApplied(field, value);
 
-            if (applied) {
-                opt.classList.add('selected');
-                opt.innerHTML = `
-                    <span>${value}</span>
-                    <i class="fa fa-check"></i>
-                `;
-            }
+            opt.innerHTML = applied
+                ? `<span>${value}</span><i class="fa fa-check"></i>`
+                : `<span>${value}</span>`;
+
+            if (applied) opt.classList.add('selected');
 
             opt.onclick = (e) => {
                 e.stopPropagation();
 
-                if (applied) {
-                    removeFilterByFieldValue(field, value);
-                } else {
-                    applyQuickFilter(field, value);
-                }
+                applied
+                    ? removeFilterByFieldValue(field, value)
+                    : applyQuickFilter(field, value);
 
-                populateQuickDropdowns(); // re-render state
+                populateQuickDropdowns(); // re-render
             };
 
             optionsBox.appendChild(opt);
         });
     });
 }
+
 
 function applyQuickFilter(field, value) {
     if (isFilterApplied(field, value)) return;
@@ -4717,7 +4752,7 @@ async function getAllEmployees() {
      const serviceList = `[${services.join(",")}]`;
     const criteria_2 = `Sites.ID == ${serviceList} && Status == "Active"`;
     var staffs = {
-        app_name: "thg-sandbox",
+        app_name: app_name,
         report_name: "Staffs_Details_Backend",
         criteria: criteria_2
     };       
