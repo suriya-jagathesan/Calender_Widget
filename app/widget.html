@@ -2887,9 +2887,9 @@ function getEmployeeIconByCondition(employee, events) {
     const hasErrorCondition = events.some(e => e.status === 'Missed');
 
     return {
-            icon: 'fa-car',
-            cls: 'car',
-            title: 'Travel required'
+            icon: 'fa-circle-xmark',
+            cls: 'error',
+            title: 'Error condition'
         };
     if (hasErrorCondition) {
         return {
@@ -3450,10 +3450,57 @@ function applyQuickFilter(field, value) {
             return eventDatabase[getDateKey(date)] || [];
         }
         
-        function getEventsForEmployee(employee, dateKey) {
-            const allEvents = eventDatabase[dateKey] || [];
-            return allEvents.filter(evt => evt.employee === employee);
+        function isEmptyValue(val) {
+            return (
+                val === null ||
+                val === undefined ||
+                (typeof val === 'string' && val.trim() === '') ||
+                (Array.isArray(val) && val.length === 0)
+            );
         }
+        function getEventsForEmployee(employee, dateKey, filters = []) {
+            const allEvents = eventDatabase[dateKey] || [];
+
+            return allEvents.filter(evt => {
+                if (evt.employee !== employee) return false;
+
+                return filters.every(f => {
+                    const eventValue = evt[f.field];
+                    if (eventValue == null) return false;
+
+                    switch (f.filterType) {
+
+                        case 'contains':
+                            return f.searchValues.some(v =>
+                                String(eventValue)
+                                    .toLowerCase()
+                                    .includes(String(v).toLowerCase())
+                            );
+
+                        case 'is':
+                            return f.searchValues.some(v =>
+                                String(eventValue) === String(v)
+                            );
+                        case 'isNot':
+                            return !f.searchValues.some(v =>
+                                String(eventValue) === String(v)
+                            );
+
+                        case 'isEmpty':
+                            return isEmptyValue(eventValue);
+
+                        case 'isNotEmpty':
+                            return !isEmptyValue(eventValue);
+
+
+                        default:
+                            console.warn('Unknown filterType:', f.filterType);
+                            return true;
+                    }
+                });
+            });
+        }
+
 
         async function switchView(view) {
             showLoader();
@@ -3589,7 +3636,7 @@ count = 0;
             }
             let iconHTML = '';
             if ( true) {
-                iconHTML = `<i class="fa-solid fa-car"></i>`;
+                iconHTML = `<i class="fa-solid fa-circle-xmark"></i>`;
             } else if (/* your condition */ false) {
                 iconHTML = `<i class="fa-solid fa-circle-xmark"></i>`;
             }
