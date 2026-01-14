@@ -3477,6 +3477,7 @@ if (existing) {
 
 
         async function switchView(view) {
+            document.getElementById("employeeSearchInput").value = '';
             showLoader();
             currentView = view;
             const dayViewBtn = document.getElementById('dayViewBtn');
@@ -3551,7 +3552,6 @@ if (existing) {
             }
         }
         function createBookingObject(rec, emp) {
-            console.log(rec);
             let cur_book = {};
     cur_book.id = Number(rec.ID);
     cur_book.zoho_id = rec.ID;
@@ -3698,6 +3698,57 @@ count = 0;
     });
 }
 
+function renderEmployeeColumnBasedOnFilter(rowHeightsMap = {},emp) {
+    const column = document.getElementById('employeeColumn');
+    column.innerHTML = '';
+
+    const dateKey = getCurrentDateKey();
+    emp.forEach(employee => {
+        const row = document.createElement('div');
+        row.className = 'employee-row';
+
+        if (employee === '—') {
+            row.innerHTML = '';
+        } else {
+            let total_mins = 0;
+            const events = getEventsForEmployee(employee, dateKey);
+            events.forEach(evt => {
+                total_mins += (evt.endMinutes - evt.startMinutes);
+            });
+            const t_count = total_mins / 60;
+            let count = null;
+            if( t_count > 0 ){
+                count = t_count.toFixed(2);
+            }
+            else{
+count = 0;
+            }
+            let iconHTML = '';
+            if ( true) {
+                iconHTML = `<i class="fa-solid fa-circle-xmark"></i>`;
+            } else if (/* your condition */ false) {
+                iconHTML = `<i class="fa-solid fa-circle-xmark"></i>`;
+            }
+
+            row.innerHTML = `
+                <div class="employee-label">
+                    <span class="employee-name">${employee}</span>
+                    ${iconHTML}
+                    <span class="employee-count">${count}</span>
+                    
+                </div>
+            `;
+        }
+
+        const height =
+            rowHeightsMap[employee] ||
+            (employees.length === 0 ? 500 : MIN_ROW_HEIGHT);
+
+        row.style.height = height + 'px';
+        column.appendChild(row);
+    });
+}
+
         
        let scrollSynced = false;
 
@@ -3732,7 +3783,7 @@ function syncScroll() {
     const dateKey = getCurrentDateKey();
     const rowHeightsMap = {};
     const shiftsData = await getEmployeeShifts(currentDate);
-    console.log(shiftsData);
+    
     
     // Calculate how much height each row needs to fill the screen
     const fillHeight = calculateFillHeight();
@@ -4891,13 +4942,114 @@ formatFilterText = function(filter) {
         } else {
             init();
         }
+        let employeeSearchTimer = null;
         function filterEmployees(query) {
-    const q = query.toLowerCase();
-    visibleEmployees = allEmployees.filter(e =>
-        e.toLowerCase().includes(q)
-    );
-    renderDayView();
+    clearTimeout(employeeSearchTimer);
+
+    employeeSearchTimer = setTimeout(() => {
+        const q = query.trim().toLowerCase();
+
+        if (q === '') {
+            renderDayView();
+            return;
+        }
+
+        const visibleEmployees = employees.filter(e =>
+            e.toLowerCase().includes(q)
+        );
+
+        visibleEmployees.unshift('');
+        renderFilteredEmployeeRows(visibleEmployees);
+
+        console.log(q, visibleEmployees);
+    }, 1000);
 }
+
+async function renderFilteredEmployeeRows(emp) {
+    const rowsContainer = document.getElementById('calendarRows');
+    rowsContainer.innerHTML = '';
+
+    const dateKey = getCurrentDateKey();
+    const rowHeightsMap = {};
+    const shiftsData = await getEmployeeShifts(currentDate);
+    
+    
+    // Calculate how much height each row needs to fill the screen
+    const fillHeight = calculateFillHeight();
+    const displayList = employees.length >= 0 ? employees : ['—'];   
+    const employeeObj = appliedFilters.find(o => o.field === "staff" || o.field === "employee" );
+    if(employeeObj){
+        employeeValues = returnEmployees(employeeObj.searchValues);
+        if (!employeeValues.includes('')) {
+            employeeValues.unshift('');
+            console.log(employeeValues);
+        }
+    }
+    else{
+        employeeValues = employees;
+    }
+    emp.forEach(employee => {
+        const rawEvents = employee === '—' ? [] : getEventsForEmployee(employee, dateKey);
+        const events = detectOverlaps([...rawEvents]);
+
+        const maxConcurrent = events.length ? Math.max(...events.map(e => e.maxConcurrent)) : 1;
+        const dynamicHeight = (maxConcurrent * (EVENT_HEIGHT + EVENT_GAP)) + (ROW_PADDING * 2);
+        
+        // Logic: Take the larger of (Height needed for events) OR (Height needed to fill screen)
+        const finalRowHeight = Math.max(fillHeight, dynamicHeight);
+        rowHeightsMap[employee] = finalRowHeight;
+
+        const employeeRow = document.createElement('div');
+        employeeRow.className = 'employee-calendar-row';
+        employeeRow.dataset.employee = employee;
+        employeeRow.style.height = finalRowHeight + 'px';
+
+        const grid = document.createElement('div');
+        grid.className = 'calendar-grid';
+
+        for (let h = 0; h < 24; h++) {
+            const hourCol = document.createElement('div');
+            hourCol.className = 'hour-column';
+            const innerGrid = document.createElement('div');
+            innerGrid.className = 'hour-column-inner';
+            for (let i = 0; i < 4; i++) {
+                const line = document.createElement('div');
+                line.className = 'quarter-line';
+                innerGrid.appendChild(line);
+            }
+            hourCol.appendChild(innerGrid);
+
+            for (let q = 0; q < 4; q++) {
+                const slot = document.createElement('div');
+                slot.className = 'quarter-slot';
+                slot.dataset.hour = h;
+                slot.dataset.quarter = q;
+                slot.dataset.employee = employee;
+                if (employee !== '—') {
+                    slot.addEventListener('dragover', handleDayDragOver);
+                    slot.addEventListener('drop', handleDayDrop);
+                    slot.addEventListener('dragleave', handleDragLeave);
+                }
+                hourCol.appendChild(slot);
+            }
+            grid.appendChild(hourCol);
+        }
+        if (employee !== '—') {
+            renderEmployeeWorkingHours(grid, employee, shiftsData);
+        }
+        const eventsContainer = document.createElement('div');
+        eventsContainer.className = 'events-container';
+        eventsContainer.dataset.employee = employee;
+        renderEventsForEmployee(eventsContainer, events);
+
+        grid.appendChild(eventsContainer);
+        employeeRow.appendChild(grid);
+        rowsContainer.appendChild(employeeRow);
+    });
+
+    renderEmployeeColumnBasedOnFilter(rowHeightsMap,emp);
+}
+
 async function getAllEmployees() {
      const serviceList = `[${services.join(",")}]`;
     const criteria_2 = `Sites.ID == ${serviceList} && Status == "Active"`;
@@ -5028,8 +5180,6 @@ async function getEmployeeShifts(date) {
     
     try {
         const shift_resp = await ZOHO.CREATOR.DATA.getRecords(shifts_config);
-        console.log(shift_resp);
-        
         const shiftsMap = {};
         
         if (shift_resp.code === 3000 && Array.isArray(shift_resp.data)) {
