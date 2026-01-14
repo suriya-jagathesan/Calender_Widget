@@ -2049,6 +2049,23 @@ min-width: 100px;
     display: flex;
     flex-direction: column;
 }
+/* Employee working hours indicator */
+.employee-working-hours {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border: 0px;
+    pointer-events: none;
+    z-index: 5;
+}
+.employee-working-hours::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #22c55e;
+}
     </style>
 </head>
 <body>
@@ -3574,13 +3591,15 @@ if (existing) {
     }
     return cur_book;
 }
-        // DAY VIEW RENDERING
+        
         async function renderDayView() {    
+            showLoader();
             // await getBookings();
             renderHourHeaders();
-            renderEmployeeRows();
+            await renderEmployeeRows();
             syncScroll();
             // startAt6();
+            hideLoader();
         }
         function startAt6(){
             const scrollWrapper = document.getElementById('calendarScrollWrapper');
@@ -3704,6 +3723,8 @@ function syncScroll() {
 
     const dateKey = getCurrentDateKey();
     const rowHeightsMap = {};
+    const shiftsData = await getEmployeeShifts(currentDate);
+    console.log(shiftsData);
     
     // Calculate how much height each row needs to fill the screen
     const fillHeight = calculateFillHeight();
@@ -3719,8 +3740,6 @@ function syncScroll() {
     else{
         employeeValues = employees;
     }
-    console.log(employeeValues);
-    
     employeeValues.forEach(employee => {
         const rawEvents = employee === '—' ? [] : getEventsForEmployee(employee, dateKey);
         const events = detectOverlaps([...rawEvents]);
@@ -3767,7 +3786,9 @@ function syncScroll() {
             }
             grid.appendChild(hourCol);
         }
-
+        if (employee !== '—') {
+            renderEmployeeWorkingHours(grid, employee, shiftsData);
+        }
         const eventsContainer = document.createElement('div');
         eventsContainer.className = 'events-container';
         eventsContainer.dataset.employee = employee;
@@ -4960,7 +4981,70 @@ document.addEventListener('mouseout', e => {
 /* Hide on scroll / drag */
 document.addEventListener('scroll', hideTooltip, true);
 document.addEventListener('mousedown', hideTooltip);
-
+function renderEmployeeWorkingHours(container, employee, shiftsData) {
+    if (!shiftsData[employee]) return;
+    
+    const shift = shiftsData[employee];
+    const hourWidth = 100; // PIXELS_PER_HOUR
+    
+    const startHour = Math.floor(shift.startMinutes / 60);
+    const startMinute = shift.startMinutes % 60;
+    const duration = shift.endMinutes - shift.startMinutes;
+    
+    const left = (startHour * hourWidth) + ((startMinute / 60) * hourWidth);
+    const width = (duration / 60) * hourWidth;
+    
+    const indicator = document.createElement('div');
+    indicator.className = 'employee-working-hours';
+    indicator.style.left = left + 'px';
+    indicator.style.width = width + 'px';
+    indicator.title = `Working hours: ${minutesToHHMM(shift.startMinutes)} - ${minutesToHHMM(shift.endMinutes)}`;
+    
+    container.appendChild(indicator);
+}
+async function getEmployeeShifts(date) {
+    const dateStr = formatDateDDMMYYYY(date);
+    const serviceList = `[${services.join(",")}]`;
+    
+    const criteria = `Date_From == '${dateStr}' && Date_To == '${dateStr}' && Site_Name.ID == ${serviceList}`;
+    
+    var shifts_config = {
+        app_name: app_name,
+        report_name: "Daily_schedule_for_Staff",
+        criteria: criteria
+    };
+    
+    try {
+        const shift_resp = await ZOHO.CREATOR.DATA.getRecords(shifts_config);
+        console.log(shift_resp);
+        
+        const shiftsMap = {};
+        
+        if (shift_resp.code === 3000 && Array.isArray(shift_resp.data)) {
+            shift_resp.data.forEach(rec => {
+                const staffName = rec.Staff.zc_display_value;
+                const startTime = rec.Start_Time; 
+                const endTime = rec.End_Time;     
+                
+                if (startTime && endTime) {
+                    const [startHour, startMin] = startTime.split(':').map(Number);
+                    const [endHour, endMin] = endTime.split(':').map(Number);
+                    
+                    shiftsMap[staffName] = {
+                        startMinutes: startHour * 60 + startMin,
+                        endMinutes: endHour * 60 + endMin
+                    };
+                }
+            });
+        }
+        console.log(shiftsMap);
+        
+        return shiftsMap;
+    } catch (err) {
+        console.log("Error fetching employee shifts:", err);
+        return {};
+    }
+}
 
     </script>
 </body>
