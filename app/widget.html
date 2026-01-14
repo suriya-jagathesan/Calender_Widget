@@ -2257,7 +2257,7 @@ min-width: 100px;
 
     <!-- EMPLOYEE -->
     <div class="quick-filter-block">
-        <div class="quick-filter-label">Employee</div>
+        <div class="quick-filter-label">Staff</div>
 
         <div class="quick-dropdown" data-field="employee">
             <div class="quick-dropdown-display" onclick="toggleQuickDropdown(this)">
@@ -2272,7 +2272,7 @@ min-width: 100px;
     <div class="quick-filter-block">
         <div class="quick-filter-label">Services</div>
 
-        <div class="quick-dropdown" data-field="staff">
+        <div class="quick-dropdown" data-field="service">
             <div class="quick-dropdown-display" onclick="toggleQuickDropdown(this)">
                 <span>Select Service</span>
                 <i class="fa fa-chevron-down"></i>
@@ -2731,6 +2731,7 @@ const CLICK_TOLERANCE = 5;
         let app_name = null;
         let userService = null;
         let services = [];
+        let services_details = [];
 
         function showLoader() {
     const overlay = document.getElementById('loadingOverlay');
@@ -2761,11 +2762,17 @@ function hideLoader() {
         if (service_resp.code === 3000 && Array.isArray(service_resp.data)) {
             service_resp.data.forEach(rec => {
                 services.push(rec.ID);
+                console.log(rec);
+                
+                services_details.push({
+  [String(rec.Centre_Name).trim()]: rec.ID
+});
+
             });
         } else {
             console.error("Zoho response error:", service_resp);
         }
-
+        console.log(services_details);
         await getTodayAllEmployees();
         await getBookings();
 
@@ -3273,8 +3280,8 @@ function getOptionsByField(field) {
     switch (field) {
         case "employee":
             return employees.filter( i => i !== '' );
-        case "staff":      
-            return services;
+        case "service":      
+            return services_details.flatMap(obj => Object.keys(obj));
         default:
             return [];
     }
@@ -3283,6 +3290,8 @@ function getOptionsByField(field) {
 
 function populateQuickDropdowns() {
     document.querySelectorAll('.quick-dropdown').forEach(dropdown => {
+        console.log(dropdown);
+        
         const field = dropdown.dataset.field;
         const optionsBox = dropdown.querySelector('.quick-dropdown-options');
         optionsBox.innerHTML = '';
@@ -3542,6 +3551,7 @@ if (existing) {
             }
         }
         function createBookingObject(rec, emp) {
+            console.log(rec);
             let cur_book = {};
     cur_book.id = Number(rec.ID);
     cur_book.zoho_id = rec.ID;
@@ -3651,8 +3661,6 @@ if (existing) {
         } else {
             let total_mins = 0;
             const events = getEventsForEmployee(employee, dateKey);
-            console.log(employee,events);
-            
             events.forEach(evt => {
                 total_mins += (evt.endMinutes - evt.startMinutes);
             });
@@ -3845,7 +3853,10 @@ function syncScroll() {
                 // const time = document.createElement('div');
                 // time.className = 'event-time';
                 // time.textContent = formatTimeRange(evt.startMinutes, evt.endMinutes);
-
+                if( evt.status === "Completed" ){
+                    el.appendChild(title);
+                }
+                else{
                 const leftHandle = document.createElement('div');
                 leftHandle.className = 'resize-handle left';
                 leftHandle.addEventListener('mousedown', e => {
@@ -3890,6 +3901,7 @@ el.addEventListener('mouseup', (e) => {
 
 
 });
+            }
                 container.appendChild(el);
             });
         }
