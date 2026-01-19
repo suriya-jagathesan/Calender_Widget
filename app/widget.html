@@ -3983,9 +3983,11 @@ if (existing) {
         }
         function startAt6(){
             const scrollWrapper = document.getElementById('calendarScrollWrapper');
-            const startScrollLeft = DEFAULT_DAY_START_HOUR * PIXELS_PER_HOUR;
- 
+            const startScrollLeft = DEFAULT_DAY_START_HOUR * PIXELS_PER_HOUR;;
+            const hourHeaderContainer = document.querySelector('.hour-header-container');
+
             requestAnimationFrame(() => {
+                hourHeaderContainer.scrollLeft = startScrollLeft;
                 scrollWrapper.scrollLeft = startScrollLeft;
             });
         }
