@@ -2810,7 +2810,6 @@ function openEventModal(evt) {
   const statusText  = document.getElementById('mStatusText');
   document.getElementById('mPerson').value =
     evt.title  || '';
-    console.log(evt);
  const [dd, MM, yyyy] = evt.date.split('-');
     document.getElementById('mDate').value = `${yyyy}-${MM}-${dd}`;
     document.getElementById('mFrom').value = minutesToHHMM(evt.startMinutes || 0);
@@ -2826,7 +2825,13 @@ function openEventModal(evt) {
   }
   activeEvent = evt;
  
-  initStaffMultiSelect(evt.employee ? [evt.employee] : []);
+   const groupRows = getEventGroupRows(evt);
+
+  const staffList = groupRows
+    .map(e => e.employee)
+    .filter(Boolean);
+
+  initStaffMultiSelect(staffList);
 
   // OTHER FIELDS (example)
   const titleEl = document.getElementById('mTitle');
@@ -2859,8 +2864,7 @@ function closeEventModal() {
 }
 
 /* SAVE (UI level only) */
-async function saveEvent() {
-  
+async function saveEvent() {    
   const from = document.getElementById('mFrom').value;
   const to = document.getElementById('mTo').value;
   const [shours, sminutes] = from.split(":").map(Number);
@@ -2871,33 +2875,90 @@ async function saveEvent() {
     showToast("To Time can't greater than from time");
     return;
   }
-  if ( !document.getElementById("mDate").value || !from || !to || !document.getElementById('mStaff').value || ! document.getElementById('mStatus').value )   {
+  if ( !document.getElementById("mDate").value || !from || !to  || ! document.getElementById('mStatus').value )   {
      showToast("Date,From,To,Status and Staff are Mandatory", "error");
     return;
   }
    if (!activeEvent) return;
    activeEvent.startMinutes = timeToMinutes(document.getElementById('mFrom').value);
    activeEvent.endMinutes = timeToMinutes(document.getElementById('mTo').value);
-   activeEvent.employee = document.getElementById('mStaff').value;
+//    activeEvent.employee = document.getElementById('mStaff').value;
    let cur_sts = document.getElementById('mStatus').value.replace(' ', '_');
    activeEvent.status = cur_sts;
    activeEvent.event_status = cur_sts.replace(' ', '_');
    activeEvent.Manager_Notes = document.getElementById('mNotes').value;
-   activeEvent.staff = document.getElementById('mStaff').value; 
+//    activeEvent.staff = document.getElementById('mStaff').value; 
    activeEvent.startMinute = temp_start;
    activeEvent.endMinutes = temp_end;
    activeEvent.from = `${from}`;
    activeEvent.to = `${to}`;
    const [yyyy, mm, dd] = document.getElementById('mDate').value.split('-');
    activeEvent.date = `${dd}-${mm}-${yyyy}`;
-   console.log(activeEvent);
+    const dateKey = toYYYYMMDD(activeEvent.date);
+  const rows = getEventGroupRows(activeEvent);
+
+ const unassignedRows = rows.filter(isUnassigned);
+const assignedRows   = rows.filter(r => !isUnassigned(r));
+
+const existingStaff = assignedRows.map(r => r.employee);
+
+const toAdd    = selectedStaff.filter(s => !existingStaff.includes(s));
+const toRemove = existingStaff.filter(s => !selectedStaff.includes(s));
+
+assignedRows
+  .filter(r => selectedStaff.includes(r.employee))
+  .forEach(evt => {
+    evt.from = `${from}`;
+    evt.to = `${to}`;
+    evt.startMinutes = temp_start;
+    evt.endMinutes = temp_end;
+    evt.status = cur_sts;
+    evt.event_status = cur_sts.replace('_', ' ');
+    evt.date = `${dd}-${mm}-${yyyy}`;
+    evt.Manager_notes = document.getElementById('mNotes').value;
+  });
+
+
+if (toRemove.length) {
+  eventDatabase[dateKey] = eventDatabase[dateKey].filter(evt =>
+    !(
+      isSameLogicalEvent(evt, activeEvent) &&
+      toRemove.includes(evt.employee)
+    )
+  );
+  ensurePlaceholderRow(activeEvent);
+}
+
+toAdd.forEach((staff, index) => {
+  if (unassignedRows[index]) {
+    console.log(activeEvent.event_status);
+    
+    unassignedRows[index].employee = staff;
+    unassignedRows[index].from = `${from}`;
+    unassignedRows[index].to = `${to}`;
+    unassignedRows[index].startMinutes = temp_start;
+    unassignedRows[index].endMinutes = temp_end;
+    unassignedRows[index].status = cur_sts;
+    unassignedRows[index].event_status = cur_sts.replace('_', ' ');
+    unassignedRows[index].date = `${dd}-${mm}-${yyyy}`;
+    unassignedRows[index].Manager_notes = document.getElementById('mNotes').value;
+    if( staff ){
+               employee_id =  employeeDetails.find(emp => emp.name === staff).id;
+            }
+            else{
+                employee_id = null;
+            }
+            unassignedRows[index].employee_id = employee_id;
+  } else {
+    const base = assignedRows[0] || rows[0] || activeEvent;
+    const newEvt = cloneEventForEmployee(base, staff);
+    eventDatabase[dateKey].push(newEvt);
+  }
+});
+  console.log(eventDatabase);
   showLoader();
   await updateEventZoho(activeEvent);
-  if (currentView === 'day') {
-                renderDayView();
-            } else {
-                renderWeekView();
-            }
+  currentView === 'day' ? renderDayView() : renderWeekView();
   closeEventModal();
   hideLoader();
 }
@@ -3417,21 +3478,15 @@ function renderWeekSummaryRow() {
 
 
         async function updateEventZoho(evt){
-            console.log(evt);
+            console.log(evt.id);
+            
             const key = toYYYYMMDD( evt.date );            
             if (!eventDatabase[key]) {
                 eventDatabase[key] = [];
             }
-            let emp_id;    
-            if( evt.employee ){
-               emp_id =  employeeDetails.find(emp => emp.name === evt.employee).id;
-            }
-            else{
-                emp_id = null;
-            }
-            console.log(emp_id);
-            let final_emp = emp_id == null ? [] : [emp_id];
-            let sts = evt.event_status; 
+            const final_emp = getEmployeeIdsForEvent(evt);
+            let sts = evt.event_status.replace("_"," "); 
+            console.log(final_emp);
             
             let duration = evt.endMinutes - evt.startMinutes; 
             var update_config = {
@@ -3917,6 +3972,8 @@ if (existing) {
 }
         
         async function renderDayView() {    
+            console.log("Day rendered");
+            
             showLoader();
             await getTodayAllEmployees();
             renderHourHeaders();
@@ -4066,8 +4123,6 @@ count = 0;
        let scrollSynced = false;
 
 function syncScroll() {
-    console.log("Called");
-    
     if (scrollSynced) return; 
 
     const scrollWrapper = document.getElementById('calendarScrollWrapper');
@@ -4450,10 +4505,10 @@ function renderWeekEmployeeRows() {
     renderWeekEmployeeColumn(rowHeightsMap);
 }
 
-window.addEventListener('resize', () => {
-    if (currentView === 'day') renderDayView();
-    else renderWeekView();
-});
+// window.addEventListener('resize', () => {
+//     if (currentView === 'day') renderDayView();
+//     else renderWeekView();
+// });
 
         function renderWeekEmployeeColumn(rowHeightsMap = {}) {
     const column = document.getElementById('weekEmployeeColumn');

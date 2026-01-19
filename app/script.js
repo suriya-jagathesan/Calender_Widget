@@ -1,5 +1,7 @@
 let selectedStaff = [];
 function initStaffMultiSelect(initialStaff = []) {
+    console.log(activeEvent.id);
+        
   selectedStaff = [...initialStaff];
 
   renderStaffPills();
@@ -83,4 +85,76 @@ function renderStaffDropdown(query) {
     });
 
   dropdown.classList.add('active');
+}
+function isSameLogicalEvent(a, b) {
+  return (
+    a.date === b.date &&
+    a.title === b.title &&
+    a.service === b.service &&
+    a.from === b.from &&
+    a.to === b.to
+  );
+}
+function getEventGroupRows(activeEvent) {
+  const key = toYYYYMMDD(activeEvent.date);
+  return (eventDatabase[key] || []).filter(evt =>
+    isSameLogicalEvent(evt, activeEvent)
+  );
+}
+function cloneEventForEmployee(base, employee, employee_id = null) {
+    console.log(employee);
+    
+     if( employee ){
+               employee_id =  employeeDetails.find(emp => emp.name === employee).id;
+            }
+            else{
+                employee_id = null;
+            }
+  return {
+    ...base,
+    employee,
+    employee_id
+  };
+}
+function isUnassigned(evt) {
+  return !evt.employee || evt.employee.trim() === "";
+}
+
+function ensurePlaceholderRow(activeEvent) {
+  const dateKey = toYYYYMMDD(activeEvent.date);
+
+  const rows = (eventDatabase[dateKey] || []).filter(evt =>
+    isSameLogicalEvent(evt, activeEvent)
+  );
+
+  if (rows.length === 0) {
+    const placeholder = {
+      ...activeEvent,
+      employee: "",
+      employee_id: null
+    };    
+    eventDatabase[dateKey].push(placeholder);
+  }
+}
+function getEmployeeIdsForEvent(evt) {
+  const dateKey = toYYYYMMDD(evt.date);
+
+  if (!eventDatabase[dateKey]) return [];
+
+  const employeeIds = eventDatabase[dateKey]
+    .filter(e =>
+      e.date === evt.date &&
+      e.title === evt.title &&
+      e.service === evt.service &&
+      e.from === evt.from &&
+      e.to === evt.to &&
+      e.employee
+    )
+    .map(e => {
+      const emp = employeeDetails.find(emp => emp.name === e.employee);
+      return emp ? emp.id : null;
+    })
+    .filter(Boolean);
+
+  return employeeIds;
 }
