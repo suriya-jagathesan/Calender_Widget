@@ -3223,7 +3223,6 @@ function hideLoader() {
         }
 
         function toYYYYMMDD(ddmmyyyy) {
-            console.log(ddmmyyyy);
             const [dd, mm, yyyy] = ddmmyyyy.split('-');
             return `${yyyy}-${mm}-${dd}`;
         }
@@ -4562,6 +4561,17 @@ function renderWeekEmployeeRows() {
                 el.dataset.viewType = 'week';
                 el.dataset.eventDate = dateKey;
                 el.dataset.employee = evt.employee;
+                el.dataset.serviceUser = evt.title || '';
+                el.dataset.staff = evt.employee || '—';
+                el.dataset.start = minutesToTime(evt.startMinutes).hour.toString().padStart(2,'0') + ':' +
+                                minutesToTime(evt.startMinutes).minute.toString().padStart(2,'0');
+                el.dataset.end = minutesToTime(evt.endMinutes).hour.toString().padStart(2,'0') + ':' +
+                                minutesToTime(evt.endMinutes).minute.toString().padStart(2,'0');
+
+                /* OPTIONAL – only if available */
+                el.dataset.mismatch = evt.status === 'Missed' ? 'Visit missed' : '';
+                el.dataset.travel = evt.travel || '';
+
 
                 // Stack events from top to bottom instead of time-based positioning
                 const topPosition = ROW_PADDING + (index * (EVENT_HEIGHT + EVENT_GAP));
@@ -4695,6 +4705,8 @@ document.body.classList.remove('dragging-active');
         }
 
         function handleWeekDragOver(e) {
+            console.log("Called");
+            
             e.preventDefault();
             
             if (!draggedEventData) {
@@ -4754,39 +4766,72 @@ document.body.classList.remove('dragging-active');
         eventDatabase[currentDateKey] = [];
     }
 
-    draggedEventData.forEach(evt => {
-        const offsetFromAnchor = evt.startMinutes - anchorStart;
-        const duration = evt.endMinutes - evt.startMinutes;
+    // NEW: Check if multiple events are selected
+    if (draggedEventData.length > 1) {
+        // Multiple events: Always maintain their original times, only change employee
+        draggedEventData.forEach(evt => {
+            // REMOVE FROM ORIGINAL DATE
+            if (eventDatabase[evt.originalDateKey]) {
+                eventDatabase[evt.originalDateKey] =
+                    eventDatabase[evt.originalDateKey].filter(e => e.id !== evt.id);
+            }
 
-        const finalStart = newAnchorStart + offsetFromAnchor;
-        const finalEnd = finalStart + duration;
+            // ADD TO NEW DATE / EMPLOYEE (keep original time)
+            const updatedEvent = {
+                ...evt,
+                startMinutes: evt.startMinutes,
+                endMinutes: evt.endMinutes,
+                employee: newEmployee
+            };
 
-        // REMOVE FROM ORIGINAL DATE
-        if (eventDatabase[evt.originalDateKey]) {
-            eventDatabase[evt.originalDateKey] =
-                eventDatabase[evt.originalDateKey].filter(e => e.id !== evt.id);
-        }
+            eventDatabase[currentDateKey].push(updatedEvent);
 
-        // ADD TO NEW DATE / EMPLOYEE
-        const updatedEvent = {
-            ...evt,
-            startMinutes: finalStart,
-            endMinutes: finalEnd,
-            employee: newEmployee
-        };
-
-        eventDatabase[currentDateKey].push(updatedEvent);
-
-        // PERSIST
-        updateEventZoho({
-            ...evt,
-            startMinutes: finalStart,
-            endMinutes: finalEnd,
-            from: minutesToHHMM(finalStart),
-            to: minutesToHHMM(finalEnd),
-            employee: newEmployee
+            // PERSIST
+            updateEventZoho({
+                ...evt,
+                startMinutes: evt.startMinutes,
+                endMinutes: evt.endMinutes,
+                from: minutesToHHMM(evt.startMinutes),
+                to: minutesToHHMM(evt.endMinutes),
+                employee: newEmployee
+            });
         });
-    });
+    } else {
+        // Single event: Allow drop anywhere with time change
+        draggedEventData.forEach(evt => {
+            const offsetFromAnchor = evt.startMinutes - anchorStart;
+            const duration = evt.endMinutes - evt.startMinutes;
+
+            const finalStart = newAnchorStart + offsetFromAnchor;
+            const finalEnd = finalStart + duration;
+
+            // REMOVE FROM ORIGINAL DATE
+            if (eventDatabase[evt.originalDateKey]) {
+                eventDatabase[evt.originalDateKey] =
+                    eventDatabase[evt.originalDateKey].filter(e => e.id !== evt.id);
+            }
+
+            // ADD TO NEW DATE / EMPLOYEE
+            const updatedEvent = {
+                ...evt,
+                startMinutes: finalStart,
+                endMinutes: finalEnd,
+                employee: newEmployee
+            };
+
+            eventDatabase[currentDateKey].push(updatedEvent);
+
+            // PERSIST
+            updateEventZoho({
+                ...evt,
+                startMinutes: finalStart,
+                endMinutes: finalEnd,
+                from: minutesToHHMM(finalStart),
+                to: minutesToHHMM(finalEnd),
+                employee: newEmployee
+            });
+        });
+    }
 
     clearEventSelection();
     renderDayView();
