@@ -2111,6 +2111,70 @@ min-width: 100px;
     height: 1px;
 }
 
+.event.selected {
+    outline: 2px solid #111827;
+    outline-offset: -2px;
+}
+.multi-drag-ghost .ghost {
+    opacity: 0.7;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+.event-modal-tabs {
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.tab-btn {
+    padding: 8px 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    color: #6b7280;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-btn.active {
+    color: #111827;
+    border-bottom-color: #4f46e5;
+}
+
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+.insight-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px dashed #e5e7eb;
+}
+.event-modal-tabs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 12px;
+}
+
+.event-modal-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.close-btn {
+  font-size: 20px;
+  line-height: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
     </style>
 </head>
 <body>
@@ -2430,107 +2494,152 @@ min-width: 100px;
     </div>
     </div>
 
-<!-- EVENT MODAL -->
+
 <div id="eventModal" class="modal-overlay hidden">
   <div class="modal-card">
 
     <!-- Header -->
-    <div class="modal-header">
-      <h3>Edit Visit</h3>
-      <button class="close-btn" onclick="closeEventModal()">×</button>
-    </div>
+    <!-- Header + Tabs -->
+<div class="event-modal-tabs-header">
+
+  <div class="event-modal-tabs">
+    <button class="tab-btn active" data-tab="visit">Visit</button>
+    <button class="tab-btn" data-tab="travel">Travel</button>
+    <button class="tab-btn" data-tab="insights">Insights</button>
+  </div>
+
+  <button class="close-btn" onclick="closeEventModal()">×</button>
+
+</div>
+
 
     <!-- Scrollable Body -->
     <div class="modal-body">
 
-        <div class="modal-form-row">
-  <label>Service</label>
-  <input id="mService" class="modal-input" type="text" value="" disabled>
-</div>
-      
-
-      <div class="modal-form-row">
-  <label>Person</label>
-  <input id="mPerson" class="modal-input" type="text" value="" disabled>
-</div>
-
-
-      <div class="modal-form-row">
-  <label>Visit Title</label>
-  <input class="modal-input" type="text" id="mTitle">
-</div>
-<div class="modal-form-row">
-  <label>Date <span>*</span></label>
-  <input class="modal-input" type="date" id="mDate">
-</div>
-
-
-      <div class="modal-form-row">
-  <label>From <span>*</span></label>
-  <input class="modal-input" type="time" id="mFrom">
-</div>
-
-
-      <div class="modal-form-row">
-  <label>Duration</label>
-  <input class="modal-input" type="text" id="mDuration" disabled>
-</div>
-
+      <!-- ================= VISIT TAB ================= -->
+      <div class="tab-panel active" id="tab-visit">
 
         <div class="modal-form-row">
-  <label>To <span>*</span></label>
-  <input class="modal-input" type="time" id="mTo">
-</div>
+          <label>Service</label>
+          <input id="mService" class="modal-input" type="text" disabled>
+        </div>
 
+        <div class="modal-form-row">
+          <label>Person</label>
+          <input id="mPerson" class="modal-input" type="text" disabled>
+        </div>
 
-      <!-- STATUS -->
-<div class="modal-form-row">
-  <label>Status <span>*</span></label>
+        <div class="modal-form-row">
+          <label>Visit Title</label>
+          <input class="modal-input" type="text" id="mTitle">
+        </div>
 
-  <div class="custom-dropdown" data-field="status">
-    <div class="custom-dropdown-display" onclick="toggleCustomDropdown(this)">
-      <span id="mStatusText">Not Started</span>
-     <i class="fa fa-chevron-down"></i>
-    </div>
+        <div class="modal-form-row">
+          <label>Date <span>*</span></label>
+          <input class="modal-input" type="date" id="mDate">
+        </div>
 
-    <div class="custom-dropdown-options">
-      <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Not Started')">Not Started</div>
-      <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Completed')">Completed</div>
-      <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Not Completed')">Not Completed</div>
-      <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Missed')">Missed</div>
-      <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Started')">Started</div>
-      <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Inactive')">Inactive</div>
-      <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Cancelled')">Cancelled</div>
-    </div>
-  </div>
+        <div class="modal-form-row">
+          <label>From <span>*</span></label>
+          <input class="modal-input" type="time" id="mFrom">
+        </div>
 
-  <input type="hidden" id="mStatus" value="Not Started">
-</div>
+        <div class="modal-form-row">
+          <label>Duration</label>
+          <input class="modal-input" type="text" id="mDuration" disabled>
+        </div>
 
-<!-- STAFF -->
-<div class="modal-form-row">
-  <label>Staff <span>*</span></label>
+        <div class="modal-form-row">
+          <label>To <span>*</span></label>
+          <input class="modal-input" type="time" id="mTo">
+        </div>
 
-  <div class="custom-dropdown" data-field="staff">
-    <div class="custom-dropdown-display" onclick="toggleCustomDropdown(this)">
-      <span id="mStaffText">Select staff</span>
-      <i class="fa fa-chevron-down"></i>
-    </div>
+        <!-- STATUS -->
+        <div class="modal-form-row">
+          <label>Status <span>*</span></label>
 
-    <div class="custom-dropdown-options" id="mStaffOptions"></div>
-  </div>
+          <div class="custom-dropdown" data-field="status">
+            <div class="custom-dropdown-display" onclick="toggleCustomDropdown(this)">
+              <span id="mStatusText">Not Started</span>
+              <i class="fa fa-chevron-down"></i>
+            </div>
 
-  <input type="hidden" id="mStaff">
-</div>
+            <div class="custom-dropdown-options">
+              <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Not Started')">Not Started</div>
+              <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Completed')">Completed</div>
+              <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Not Completed')">Not Completed</div>
+              <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Missed')">Missed</div>
+              <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Started')">Started</div>
+              <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Inactive')">Inactive</div>
+              <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Cancelled')">Cancelled</div>
+            </div>
+          </div>
 
-<div class="modal-form-row">
-   <button class="btn-primary" >Recommended</button>
-</div>
-      <div class="modal-form-row">
-  <label>Manager Notes</label>
-  <textarea class="modal-input" rows="3" id="mNotes"></textarea>
-</div>
+          <input type="hidden" id="mStatus" value="Not Started">
+        </div>
 
+        <!-- STAFF -->
+        <div class="modal-form-row">
+          <label>Staff <span>*</span></label>
+
+          <div class="custom-dropdown" data-field="staff">
+            <div class="custom-dropdown-display" onclick="toggleCustomDropdown(this)">
+              <span id="mStaffText">Select staff</span>
+              <i class="fa fa-chevron-down"></i>
+            </div>
+
+            <div class="custom-dropdown-options" id="mStaffOptions"></div>
+          </div>
+
+          <input type="hidden" id="mStaff">
+        </div>
+
+        <div class="modal-form-row">
+          <label>Manager Notes</label>
+          <textarea class="modal-input" rows="3" id="mNotes"></textarea>
+        </div>
+
+      </div>
+
+      <!-- ================= TRAVEL TAB ================= -->
+      <div class="tab-panel" id="tab-travel">
+
+        <div class="modal-form-row">
+          <label>Travel Time</label>
+          <input class="modal-input" type="text" id="mTravelTime">
+        </div>
+
+        <div class="modal-form-row">
+          <label>Distance</label>
+          <input class="modal-input" type="text" id="mTravelDistance">
+        </div>
+
+        <div class="modal-form-row">
+          <label>Travel Notes</label>
+          <textarea class="modal-input" rows="3" id="mTravelNotes"></textarea>
+        </div>
+
+      </div>
+
+      <!-- ================= INSIGHTS TAB ================= -->
+      <div class="tab-panel" id="tab-insights">
+
+        <div class="insight-row">
+          <span>Total Visits</span>
+          <strong id="insightTotalVisits">–</strong>
+        </div>
+
+        <div class="insight-row">
+          <span>Completion Rate</span>
+          <strong id="insightCompletionRate">–</strong>
+        </div>
+
+        <div class="insight-row">
+          <span>Average Duration</span>
+          <strong id="insightAvgDuration">–</strong>
+        </div>
+
+      </div>
 
     </div>
 
@@ -2542,6 +2651,7 @@ min-width: 100px;
 
   </div>
 </div>
+
 <div id="eventTooltip" class="event-tooltip hidden">
     <div class="tt-row">
         <span class="tt-label">Service User</span>
@@ -2566,6 +2676,28 @@ min-width: 100px;
 </div>
 
     <script>
+        const selectedEventIds = new Set();
+        function toggleEventSelection(eventEl) {
+    const id = parseInt(eventEl.dataset.eventId);
+
+    if (selectedEventIds.has(id)) {
+        selectedEventIds.delete(id);
+        eventEl.classList.remove('selected');
+    } else {
+        selectedEventIds.add(id);
+        eventEl.classList.add('selected');
+    }
+}
+
+function clearEventSelection() {
+    selectedEventIds.forEach(id => {
+        document
+            .querySelector(`.event[data-event-id="${id}"]`)
+            ?.classList.remove('selected');
+    });
+    selectedEventIds.clear();
+}
+
 const mainScroll = document.getElementById('calendarScrollWrapper');
 const bottomScroll = document.querySelector('.day-bottom-scroll');
 
@@ -2619,6 +2751,20 @@ function openEventModal(evt) {
 
 
   document.getElementById('eventModal').classList.remove('hidden');
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+
+    document.querySelectorAll('.tab-btn')
+      .forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    document.querySelectorAll('.tab-panel')
+      .forEach(p => p.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.add('active');
+  });
+});
+
   
 }
 
@@ -4025,9 +4171,15 @@ function syncScroll() {
                 el.addEventListener('mousedown', (e) => {
     mouseDownX = e.clientX;
     mouseDownY = e.clientY;
+    if ((e.ctrlKey || e.metaKey) && e.button === 0) {
+        e.preventDefault();
+        e.stopPropagation();   
+        toggleEventSelection(el);
+    }
 });
 
 el.addEventListener('mouseup', (e) => {
+      if (e.ctrlKey || e.metaKey) return;
     // Ignore resize handles
     if (e.target.closest('.resize-handle')) return;
 
@@ -4335,25 +4487,48 @@ el.addEventListener('mouseup', (e) => {
 
         // DRAG AND DROP HANDLERS
         function handleDragStart(e) {
-            draggedElement = e.currentTarget;
-            draggedEventId = parseInt(e.currentTarget.dataset.eventId);
-            console.log(draggedEventId);
-            
-            const viewType = e.currentTarget.dataset.viewType;
-            let dateKey = viewType === 'week' ? e.currentTarget.dataset.eventDate : getCurrentDateKey();
-            
-            const events = eventDatabase[dateKey] || [];
-            console.log(events);
-            
-            draggedEventData = events.find(evt => evt.id === draggedEventId);
-            if (draggedEventData) {
-                draggedEventData.originalDateKey = dateKey;
-            }
-            
-            e.currentTarget.classList.add('dragging');
-            document.body.classList.add('dragging-active');
-            e.dataTransfer.effectAllowed = 'move';
-        }
+            // Hide default drag image
+
+
+    const baseEl = e.currentTarget;
+    const baseId = parseInt(baseEl.dataset.eventId);
+
+    // If dragging unselected event → reset selection
+    if (!selectedEventIds.has(baseId)) {
+        clearEventSelection();
+        selectedEventIds.add(baseId);
+        baseEl.classList.add('selected');
+    }
+
+    draggedElement = baseEl;
+    draggedEventId = baseId;
+
+    const viewType = baseEl.dataset.viewType;
+    const dateKey = viewType === 'week'
+        ? baseEl.dataset.eventDate
+        : getCurrentDateKey();
+
+    const events = eventDatabase[dateKey] || [];
+
+    draggedEventData = [...selectedEventIds].map(id => {
+        const evt = events.find(e => e.id === id);
+        return {
+            ...evt,
+            originalDateKey: dateKey
+        };
+    });
+
+   selectedEventIds.forEach(id => {
+    const el = document.querySelector(`.event[data-event-id="${id}"]`);
+    if (el) {
+        el.classList.add('dragging');
+    }
+});
+
+document.body.classList.add('dragging-active');
+e.dataTransfer.effectAllowed = 'move';
+}
+
 
         function handleDragEnd(e) {
             e.currentTarget.classList.remove('dragging');
@@ -4362,6 +4537,11 @@ el.addEventListener('mouseup', (e) => {
             draggedElement = null;
             draggedEventId = null;
             draggedEventData = null;
+            document.querySelectorAll('.event.dragging').forEach(el => {
+    el.classList.remove('dragging');
+});
+
+document.body.classList.remove('dragging-active');
         }
 
         function handleDayDragOver(e) {
@@ -4409,44 +4589,69 @@ el.addEventListener('mouseup', (e) => {
         }
 
         function handleDayDrop(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const slot = e.currentTarget;
-            slot.classList.remove('drop-highlight');
-            console.log(draggedElement, draggedEventId, draggedEventData);
-            if (!draggedElement || !draggedEventId || !draggedEventData) return;
-            
-            const newHour = parseInt(slot.dataset.hour);
-            const newQuarter = parseInt(slot.dataset.quarter);
-            const newEmployee = slot.dataset.employee;
-            const newStartMinutes = newHour * 60 + newQuarter * 15;
-            const duration = draggedEventData.endMinutes - draggedEventData.startMinutes;
-            
-            const originalDateKey = draggedEventData.originalDateKey;
-            const currentDateKey = getCurrentDateKey();
-            
-            if (eventDatabase[originalDateKey]) {
-                const index = eventDatabase[originalDateKey].findIndex(ev => ev.id === draggedEventId);
-                if (index !== -1) eventDatabase[originalDateKey].splice(index, 1);
-            }
-            
-            if (!eventDatabase[currentDateKey]) eventDatabase[currentDateKey] = [];
-            eventDatabase[currentDateKey].push({
-                ...draggedEventData,
-                startMinutes: newStartMinutes,
-                endMinutes: newStartMinutes + duration,
-                employee: newEmployee
-            });
-            
-            updateEventZoho({ ...draggedEventData,
-                startMinutes: newStartMinutes,
-                endMinutes: newStartMinutes + duration,
-                from: minutesToHHMM(newStartMinutes),
-                to:minutesToHHMM(newStartMinutes + duration),
-                employee: newEmployee});
-                
-            renderDayView();
+    e.preventDefault();
+    e.stopPropagation();
+
+    const slot = e.currentTarget;
+    slot.classList.remove('drop-highlight');
+
+    // SAFETY CHECK
+    if (!Array.isArray(draggedEventData) || draggedEventData.length === 0) {
+        return;
+    }
+
+    const newHour = parseInt(slot.dataset.hour, 10);
+    const newQuarter = parseInt(slot.dataset.quarter, 10);
+    const newEmployee = slot.dataset.employee;
+    const currentDateKey = getCurrentDateKey();
+
+    const anchorEvent = draggedEventData[0];
+    const anchorStart = anchorEvent.startMinutes;
+    const newAnchorStart = newHour * 60 + newQuarter * 15;
+
+    // Ensure destination bucket exists
+    if (!eventDatabase[currentDateKey]) {
+        eventDatabase[currentDateKey] = [];
+    }
+
+    draggedEventData.forEach(evt => {
+        const offsetFromAnchor = evt.startMinutes - anchorStart;
+        const duration = evt.endMinutes - evt.startMinutes;
+
+        const finalStart = newAnchorStart + offsetFromAnchor;
+        const finalEnd = finalStart + duration;
+
+        // REMOVE FROM ORIGINAL DATE
+        if (eventDatabase[evt.originalDateKey]) {
+            eventDatabase[evt.originalDateKey] =
+                eventDatabase[evt.originalDateKey].filter(e => e.id !== evt.id);
         }
+
+        // ADD TO NEW DATE / EMPLOYEE
+        const updatedEvent = {
+            ...evt,
+            startMinutes: finalStart,
+            endMinutes: finalEnd,
+            employee: newEmployee
+        };
+
+        eventDatabase[currentDateKey].push(updatedEvent);
+
+        // PERSIST
+        updateEventZoho({
+            ...evt,
+            startMinutes: finalStart,
+            endMinutes: finalEnd,
+            from: minutesToHHMM(finalStart),
+            to: minutesToHHMM(finalEnd),
+            employee: newEmployee
+        });
+    });
+
+    clearEventSelection();
+    renderDayView();
+}
+
 
         function handleWeekDrop(e) {
             e.preventDefault();
@@ -5225,7 +5430,12 @@ function hideTooltip() {
 document.addEventListener('mouseover', e => {
     const evtEl = e.target.closest('.event');
     if (!evtEl) return;
+
+    if (e.ctrlKey || e.metaKey) return;
+
     if (evtEl.classList.contains('dragging')) return;
+
+    if (evtEl.classList.contains('selected')) return;
     showTooltip(evtEl, e);
 });
 
