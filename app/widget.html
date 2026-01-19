@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://js.zohostatic.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
+    <script src="script.js"></script>
     <title>Day & Week Calendar View - With Employees</title>
     <link
   rel="stylesheet"
@@ -2174,6 +2175,84 @@ min-width: 100px;
   border: none;
   cursor: pointer;
 }
+/* ===== MULTI SELECT ===== */
+.multi-select {
+  position: relative;
+  width: 100%;
+}
+
+.multi-select-input {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  cursor: text;
+}
+
+.multi-select-input:focus-within {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79,70,229,0.2);
+}
+
+.multi-select-input input {
+  border: none;
+  outline: none;
+  min-width: 120px;
+  flex: 1;
+  font-size: 13px;
+}
+
+.multi-pill {
+  display: flex;
+  align-items: center;
+  background: #e0e7ff;
+  color: #1e3a8a;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  gap: 6px;
+}
+
+.multi-pill button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* DROPDOWN */
+.multi-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  display: none;
+  z-index: 3000;
+}
+
+.multi-select-dropdown.active {
+  display: block;
+}
+
+.multi-option {
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.multi-option:hover {
+  background: #eef2ff;
+}
 
     </style>
 </head>
@@ -2580,19 +2659,23 @@ min-width: 100px;
 
         <!-- STAFF -->
         <div class="modal-form-row">
-          <label>Staff <span>*</span></label>
+  <label>Staff <span>*</span></label>
 
-          <div class="custom-dropdown" data-field="staff">
-            <div class="custom-dropdown-display" onclick="toggleCustomDropdown(this)">
-              <span id="mStaffText">Select staff</span>
-              <i class="fa fa-chevron-down"></i>
-            </div>
+  <div class="multi-select" id="staffMultiSelect">
+    <div class="multi-select-input" id="staffMultiInput">
+      <!-- pills injected here -->
+      <input
+        type="text"
+        id="staffSearchInput"
+        placeholder="Select staff"
+        autocomplete="off"
+      />
+    </div>
 
-            <div class="custom-dropdown-options" id="mStaffOptions"></div>
-          </div>
+    <div class="multi-select-dropdown" id="staffDropdown"></div>
+  </div>
+</div>
 
-          <input type="hidden" id="mStaff">
-        </div>
 
         <div class="modal-form-row">
           <label>Manager Notes</label>
@@ -2743,7 +2826,7 @@ function openEventModal(evt) {
   }
   activeEvent = evt;
  
-  populateStaffDropdown(evt.employee);
+  initStaffMultiSelect(evt.employee ? [evt.employee] : []);
 
   // OTHER FIELDS (example)
   const titleEl = document.getElementById('mTitle');
