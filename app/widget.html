@@ -2066,6 +2066,28 @@ min-width: 100px;
     height: 2px;
     background: #22c55e;
 }
+.event-staff-badge {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    min-width: 18px;
+    height: 15px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #374151;
+    font-size: 9px;
+    font-weight: 700;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    z-index: 50;
+    pointer-events: none;
+}
+
+.event-staff-badge i {
+    font-size: 9px;
+}
     </style>
 </head>
 <body>
@@ -2475,7 +2497,9 @@ min-width: 100px;
   <input type="hidden" id="mStaff">
 </div>
 
-
+<div class="modal-form-row">
+   <button class="btn-primary" >Recommended</button>
+</div>
       <div class="modal-form-row">
   <label>Manager Notes</label>
   <textarea class="modal-input" rows="3" id="mNotes"></textarea>
@@ -2782,7 +2806,6 @@ function hideLoader() {
 }
 
         async function getTodayAllEmployees(){
-            console.log("Get All Employees");
             var employees_config ={
                 app_name: app_name,
                 report_name: "Daily_Shift_Report",
@@ -2801,7 +2824,7 @@ function hideLoader() {
                     });
                 }
             });
-            
+            getEmployeeShifts(currentDate);
         }
         async function getBookingsForWeek(){
             const weekStart = new Date(currentDate);
@@ -3561,6 +3584,7 @@ if (existing) {
     cur_book.service = rec.Site_Name.zc_display_value;
     cur_book.from = rec.Start_time;
     cur_book.to = rec.End_time;
+    cur_book.no_of_staff = rec.No_of_Staff;
     // Parse start time
     const [, stime] = rec.From_Date_Time.split(" ");
     const [shours, sminutes] = stime.split(":").map(Number);
@@ -3599,6 +3623,8 @@ if (existing) {
     } else {
         cur_book.status = "Not_Started";
     }
+    console.log(rec);
+    
     return cur_book;
 }
         
@@ -3782,7 +3808,7 @@ function syncScroll() {
 
     const dateKey = getCurrentDateKey();
     const rowHeightsMap = {};
-    const shiftsData = await getEmployeeShifts(currentDate);
+    const shiftsData = shiftsMap;
     
     
     // Calculate how much height each row needs to fill the screen
@@ -3904,6 +3930,14 @@ function syncScroll() {
                 // const time = document.createElement('div');
                 // time.className = 'event-time';
                 // time.textContent = formatTimeRange(evt.startMinutes, evt.endMinutes);
+                console.log(evt.no_of_staff);
+                if (evt.no_of_staff && evt.no_of_staff > 1) {
+                    const staffBadge = document.createElement('div');
+                    staffBadge.className = 'event-staff-badge';
+                    staffBadge.innerHTML = `<i class="fa fa-users"></i>${evt.no_of_staff}`;
+                    staffBadge.title = `${evt.no_of_staff} staff required`;
+                    el.appendChild(staffBadge);
+                }
                 if( evt.status === "Completed" ){
                     el.appendChild(title);
                 }
@@ -4971,7 +5005,7 @@ async function renderFilteredEmployeeRows(emp) {
 
     const dateKey = getCurrentDateKey();
     const rowHeightsMap = {};
-    const shiftsData = await getEmployeeShifts(currentDate);
+    const shiftsData = shiftsMap;
     
     
     // Calculate how much height each row needs to fill the screen
@@ -5166,6 +5200,7 @@ function renderEmployeeWorkingHours(container, employee, shiftsData) {
     
     container.appendChild(indicator);
 }
+let shiftsMap = {};
 async function getEmployeeShifts(date) {
     const dateStr = formatDateDDMMYYYY(date);
     const serviceList = `[${services.join(",")}]`;
@@ -5180,7 +5215,7 @@ async function getEmployeeShifts(date) {
     
     try {
         const shift_resp = await ZOHO.CREATOR.DATA.getRecords(shifts_config);
-        const shiftsMap = {};
+        shiftsMap = {};
         
         if (shift_resp.code === 3000 && Array.isArray(shift_resp.data)) {
             shift_resp.data.forEach(rec => {
@@ -5199,9 +5234,6 @@ async function getEmployeeShifts(date) {
                 }
             });
         }
-        console.log(shiftsMap);
-        
-        return shiftsMap;
     } catch (err) {
         console.log("Error fetching employee shifts:", err);
         return {};
