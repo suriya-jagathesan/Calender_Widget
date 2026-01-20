@@ -2749,7 +2749,7 @@ min-width: 100px;
         <span class="tt-value" id="ttTime"></span>
     </div>
     <div class="tt-row hidden" id="ttMismatchRow">
-        <span class="tt-label">Mismatch</span>
+        <span class="tt-label">Status</span>
         <span class="tt-value tt-warn" id="ttMismatch"></span>
     </div>
     <div class="tt-row hidden" id="ttTravelRow">
@@ -4253,7 +4253,7 @@ function syncScroll() {
                                 minutesToTime(evt.endMinutes).minute.toString().padStart(2,'0');
 
                 /* OPTIONAL – only if available */
-                el.dataset.mismatch = evt.status === 'Missed' ? 'Visit missed' : '';
+                el.dataset.mismatch = evt.status ? evt.status.replace("_"," ") : "";
                 el.dataset.travel = evt.travel || '';
 
 
@@ -4593,13 +4593,42 @@ function renderWeekEmployeeRows() {
                 el.appendChild(title);
                 el.appendChild(time);
 
-                el.addEventListener('dragstart', handleDragStart);
-                el.addEventListener('dragend', handleDragEnd);
+                el.addEventListener('dragstart', handleDragStartWeek);
+                el.addEventListener('dragend', handleDragEndWeek);
 
                 el.addEventListener('mousedown', (e) => {
     mouseDownX = e.clientX;
     mouseDownY = e.clientY;
 });
+function handleDragStartWeek(e) {
+            draggedElement = e.currentTarget;
+            draggedEventId = parseInt(e.currentTarget.dataset.eventId);
+            console.log(draggedEventId);
+            
+            const viewType = e.currentTarget.dataset.viewType;
+            let dateKey = viewType === 'week' ? e.currentTarget.dataset.eventDate : getCurrentDateKey();
+            
+            const events = eventDatabase[dateKey] || [];
+            console.log(events);
+            
+            draggedEventData = events.find(evt => evt.id === draggedEventId);
+            if (draggedEventData) {
+                draggedEventData.originalDateKey = dateKey;
+            }
+            
+            e.currentTarget.classList.add('dragging');
+            document.body.classList.add('dragging-active');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEndWeek(e) {
+            e.currentTarget.classList.remove('dragging');
+            document.body.classList.remove('dragging-active');
+            document.querySelectorAll('.drop-highlight').forEach(el => el.classList.remove('drop-highlight'));
+            draggedElement = null;
+            draggedEventId = null;
+            draggedEventData = null;
+        }
 
 el.addEventListener('mouseup', (e) => {
     // Ignore resize handles (future-safe)
