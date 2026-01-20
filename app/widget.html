@@ -3997,7 +3997,7 @@ if (existing) {
                 weekViewBtn.classList.remove('active');
                 dayView.classList.add('active');
                 weekView.classList.remove('active');
-                renderDayView();
+                await renderDayView();
             } else {
                 await getTodayAllEmployees();
                 await getBookingsForWeek();
@@ -4005,7 +4005,7 @@ if (existing) {
                 dayViewBtn.classList.remove('active');
                 weekView.classList.add('active');
                 dayView.classList.remove('active');
-                renderWeekView();
+                await renderWeekView();
             }
             updateDateTitle();
             
@@ -5581,12 +5581,24 @@ formatFilterText = function(filter) {
 
         // INITIALIZATION
         async function init() {
-            showLoader();
-            await getZohoData();
-            await switchView('day');
-            await renderMiniCalendar();
-            startAt6();
-            hideLoader();
+            try {
+        await getZohoData();
+        await switchView('day');
+        await renderMiniCalendar();
+        
+        await new Promise(resolve => {
+            requestAnimationFrame(() => {
+                startAt6();
+                resolve();
+            });
+        });
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+    } catch (error) {
+        console.error('Initialization error:', error);
+    } finally {
+        hideLoader();
+    }
         }
 
         if (document.readyState === 'loading') {
