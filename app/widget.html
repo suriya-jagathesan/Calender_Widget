@@ -3564,7 +3564,8 @@ function renderWeekSummaryRow() {
     }
 }
 
-
+let resizeDebounceTimer = null;
+let resizeDirtyEvent = null;
         function startResize(e, evt, direction) {
             resizeEvent = evt;
             resizeDirection = direction;
@@ -3581,9 +3582,7 @@ function renderWeekSummaryRow() {
 
             document.addEventListener('mousemove', onResizeMove);
             document.addEventListener('mouseup', stopResize );
-            setTimeout(() => {
-                updateEventZoho(evt);
-            }, 1500);
+            
         }
         function minutesToHHMM(minutes) {
             if (typeof minutes !== 'number' || minutes < 0) return '00:00';
@@ -3660,7 +3659,13 @@ function renderWeekSummaryRow() {
             if (!resizeEvent) return;
 
             const deltaX = e.clientX - resizeStartX;
-            const minutesDelta = Math.round(deltaX / PIXELS_PER_15_MIN) * 15;
+            let minutesDelta;
+
+if (resizeDirection === 'right') {
+    minutesDelta = Math.floor(deltaX / PIXELS_PER_15_MIN) * 15;
+} else {
+    minutesDelta = Math.ceil(deltaX / PIXELS_PER_15_MIN) * 15;
+}
 
             if (resizeDirection === 'right') {
                 const newEnd = originalEnd + minutesDelta;
@@ -3673,8 +3678,9 @@ function renderWeekSummaryRow() {
                     resizeEvent.startMinutes = newStart;
                 }
             }
+            resizeDirtyEvent = resizeEvent;
             if (currentView === 'day') {
-                renderDayView();
+                re_renderDayView();
             } else {
                 renderWeekView();
             }
@@ -3694,6 +3700,16 @@ function renderWeekSummaryRow() {
 
             resizeEvent = null;
             resizeDirection = null;
+            if (!resizeDirtyEvent) return;
+
+    clearTimeout(resizeDebounceTimer);
+
+    resizeDebounceTimer = setTimeout(async () => {
+        showLoader();
+        await updateEventZoho(resizeDirtyEvent);
+        hideLoader();
+        resizeDirtyEvent = null;
+    }, 400);
         }
        
         let appliedFilters = [];
@@ -4112,10 +4128,12 @@ if (existing) {
     }
     return cur_book;
 }
-        
+        async function re_renderDayView(){
+            renderHourHeaders();
+            await renderEmployeeRows();
+            syncScroll();
+        }
         async function renderDayView() {    
-            console.log("Day rendered");
-            
             showLoader();
             await getTodayAllEmployees();
             renderHourHeaders();
