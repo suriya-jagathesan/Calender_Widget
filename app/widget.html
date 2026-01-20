@@ -3218,7 +3218,41 @@ function hideLoader() {
         employees.length = 0;
         employees.push('');
         const serviceList = `[${services.join(",")}]`;
+        if( currentView == "day" ){
+            const employees_config = {
+            app_name,
+            report_name: "Daily_Shift_Report",
+            criteria: "(Date_From == '" + formatDateDDMMYYYY(currentDate) + "')"
+        };
 
+        const employees_config1 = {
+            app_name,
+            report_name: "Bookings_Backend",
+            criteria: `Site_Name.ID == ${serviceList} && Care_Providers != null && Date_field1 == '${formatDateDDMMYYYY(currentDate)}'`
+        }
+        }
+        else{
+            // const criteria_2 = `Site_Name.ID == ${serviceList} && Date_field1 >= '${zoho_start_date}' && Date_field1 <= '${zoho_end_date}'`;
+
+            const weekStart = new Date(currentDate);
+            weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            let zoho_start_date = formatDateDDMMYYYY( weekStart );
+            let zoho_end_date = formatDateDDMMYYYY( weekEnd );
+
+             const employees_config = {
+            app_name,
+            report_name: "Daily_Shift_Report",
+            criteria: `Date_From >= '${zoho_start_date}' &&  Date_From <= ${zoho_end_date} `
+        };
+
+        const employees_config1 = {
+            app_name,
+            report_name: "Bookings_Backend",
+            criteria: `Site_Name.ID == ${serviceList} && Care_Providers != null && Date_field1 >= '${zoho_start_date}' && Date_field1 <= '${zoho_end_date}' `
+        }
+        }
     try {
         const employees_config = {
             app_name,
@@ -3248,14 +3282,11 @@ function hideLoader() {
         const employee_res1 = await ZOHO.CREATOR.DATA.getRecords(employees_config1);
        if (employee_res1.code === 3000 && employee_res1.data.length) {
             employee_res1.data.forEach(rec => {
-                console.log(rec);
-                
                 const staffList = Array.isArray(rec.Care_Providers)
                     ? rec.Care_Providers
                     : rec.Care_Providers
                         ? [rec.Care_Providers]
                         : [];
-                console.log(staffList);
                 
                 staffList.forEach(staff => {
                     const name = staff?.zc_display_value;
@@ -3960,6 +3991,7 @@ if (existing) {
             const weekView = document.getElementById('weekView');
             
             if (view === 'day') {
+                await getTodayAllEmployees();
                 await getBookings();
                 dayViewBtn.classList.add('active');
                 weekViewBtn.classList.remove('active');
@@ -3967,6 +3999,7 @@ if (existing) {
                 weekView.classList.remove('active');
                 renderDayView();
             } else {
+                await getTodayAllEmployees();
                 await getBookingsForWeek();
                 weekViewBtn.classList.add('active');
                 dayViewBtn.classList.remove('active');
@@ -3987,11 +4020,13 @@ if (existing) {
             showLoader();
             if (currentView === 'day') {
                 currentDate.setDate(currentDate.getDate() + delta);
+                await getTodayAllEmployees();
                 await getBookings();
                 renderDayView();
                 startAt6();
             } else {
                 currentDate.setDate(currentDate.getDate() + (delta * 7));
+                await getTodayAllEmployees();
                 await getBookingsForWeek();
                 renderWeekView();
             }
@@ -4830,6 +4865,8 @@ document.body.classList.remove('dragging-active');
         }
 
         function handleDayDragOver(e) {
+            console.log("called");
+            
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             const slot = e.currentTarget;
@@ -5512,13 +5549,14 @@ formatFilterText = function(filter) {
 
         async function selectDate(day, month, year) {
             currentDate = new Date(year, month, day);
-            await getBookings();
+            await getTodayAllEmployees();
             if (currentView === 'week') {
                 updateDateTitle();
                 await getBookingsForWeek();
                 renderWeekView();
             } else {
                 updateDateTitle();
+                await getBookings();
                 renderDayView();
             }
             
