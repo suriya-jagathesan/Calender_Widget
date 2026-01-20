@@ -1330,7 +1330,7 @@ min-width: 100px;
 /* CARD */
 .modal-card {
   background: #fff;
-  width: 420px;
+  width: 620px;
   max-height: calc(100vh - 40px); /* KEY FIX */
   display: flex;
   flex-direction: column;
@@ -2253,7 +2253,66 @@ min-width: 100px;
 .multi-option:hover {
   background: #eef2ff;
 }
+/* ===== INSIGHTS TABLE ===== */
+.insights-table-container {
+  overflow-x: auto;
+  margin-top: 10px;
+}
 
+.insights-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.insights-table thead {
+  background: #f3f4f6;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.insights-table th {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  font-size: 12px;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.insights-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #111827;
+}
+
+.insights-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.insights-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Text alignment for specific columns */
+.insights-table td:nth-child(2) {
+  text-align: center;
+}
+
+.insights-table th:nth-child(2) {
+  text-align: center;
+}
+.modal-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#visitTabButtons {
+  display: flex;
+  gap: 10px;
+}
     </style>
 </head>
 <body>
@@ -2707,20 +2766,23 @@ min-width: 100px;
       <!-- ================= INSIGHTS TAB ================= -->
       <div class="tab-panel" id="tab-insights">
 
-        <div class="insight-row">
-          <span>Total Visits</span>
-          <strong id="insightTotalVisits">–</strong>
-        </div>
-
-        <div class="insight-row">
-          <span>Completion Rate</span>
-          <strong id="insightCompletionRate">–</strong>
-        </div>
-
-        <div class="insight-row">
-          <span>Average Duration</span>
-          <strong id="insightAvgDuration">–</strong>
-        </div>
+        <div class="insights-table-container">
+    <table class="insights-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>No of Visits</th>
+          <th>Available/Overlap</th>
+          <th>Skills</th>
+          <th>Locality</th>
+          <th>Exclude</th>
+        </tr>
+      </thead>
+      <tbody id="insightsTableBody">
+        <!-- Rows will be populated dynamically -->
+      </tbody>
+    </table>
+  </div>
 
       </div>
 
@@ -2728,8 +2790,10 @@ min-width: 100px;
 
     <!-- Footer -->
     <div class="modal-footer">
+        <div id="visitTabButtons" style="display: flex; gap: 10px;">
       <button class="btn-secondary" onclick="closeEventModal()">Cancel</button>
       <button class="btn-primary" onclick="saveEvent()">Save</button>
+      </div>
     </div>
 
   </div>
@@ -2832,6 +2896,19 @@ function openEventModal(evt) {
     .filter(Boolean);
 
   initStaffMultiSelect(staffList);
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.tab-btn[data-tab="visit"]').classList.add('active');
+  
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-visit').classList.add('active');
+
+  // Show Visit tab buttons
+  document.getElementById('visitTabButtons').style.display = 'flex';
+
+  document.getElementById('eventModal').classList.remove('hidden');
+  
+  // ✅ Add event listeners for tab switching (remove old ones first)
+  setupTabSwitching();
 
   // OTHER FIELDS (example)
   const titleEl = document.getElementById('mTitle');
@@ -3140,6 +3217,8 @@ function hideLoader() {
        async function getTodayAllEmployees() {
         employees.length = 0;
         employees.push('');
+        const serviceList = `[${services.join(",")}]`;
+
     try {
         const employees_config = {
             app_name,
@@ -3147,10 +3226,13 @@ function hideLoader() {
             criteria: "(Date_From == '" + formatDateDDMMYYYY(currentDate) + "')"
         };
 
+        const employees_config1 = {
+            app_name,
+            report_name: "Bookings_Backend",
+            criteria: `Site_Name.ID == ${serviceList} && Care_Providers != null && Date_field1 == '${formatDateDDMMYYYY(currentDate)}'`
+        }
         const employee_res = await ZOHO.CREATOR.DATA.getRecords(employees_config);
-
         
-
         if (employee_res.code === 3000 && employee_res.data.length) {
             employee_res.data.forEach(rec => {
                 const name = rec.Staff?.zc_display_value;
@@ -3161,10 +3243,35 @@ function hideLoader() {
                         id: rec.Staff.ID
                     });
                 }
-            });
-
-            await getEmployeeShifts(currentDate);
+            });            
         }
+        const employee_res1 = await ZOHO.CREATOR.DATA.getRecords(employees_config1);
+       if (employee_res1.code === 3000 && employee_res1.data.length) {
+            employee_res1.data.forEach(rec => {
+                console.log(rec);
+                
+                const staffList = Array.isArray(rec.Care_Providers)
+                    ? rec.Care_Providers
+                    : rec.Care_Providers
+                        ? [rec.Care_Providers]
+                        : [];
+                console.log(staffList);
+                
+                staffList.forEach(staff => {
+                    const name = staff?.zc_display_value;
+                    const id = staff?.ID;
+
+                    if (!name || !id) return;
+
+                    if (!employees.includes(name)) {
+                        employees.push(name);
+                        employeeDetails.push({ name, id });
+                    }
+                });
+            });
+        }
+
+        await getEmployeeShifts(currentDate);
     } catch (err) {
         if (err?.responseText) {
             const res = JSON.parse(err.responseText);
@@ -4666,7 +4773,6 @@ el.addEventListener('mouseup', (e) => {
 
         // DRAG AND DROP HANDLERS
         function handleDragStart(e) {
-            // Hide default drag image
 
 
     const baseEl = e.currentTarget;
@@ -4734,8 +4840,6 @@ document.body.classList.remove('dragging-active');
         }
 
         function handleWeekDragOver(e) {
-            console.log("Called");
-            
             e.preventDefault();
             
             if (!draggedEventData) {

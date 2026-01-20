@@ -158,3 +158,90 @@ function getEmployeeIdsForEvent(evt) {
 
   return employeeIds;
 }
+function populateInsightsTable(evt) {
+  const tbody = document.getElementById('insightsTableBody');
+  tbody.innerHTML = '';
+  
+  // Get all staff for this event group
+  const groupRows = getEventGroupRows(evt);
+  const dateKey = toYYYYMMDD(evt.date);
+  
+  // For each employee, calculate their stats
+  employees.forEach(employee => {
+    if (!employee) return; // Skip empty employee
+    
+    // Get all events for this employee on this date
+    const employeeEvents = getEventsForEmployee(employee, dateKey);
+    const noOfVisits = employeeEvents.length;
+    
+    // Check if this employee is assigned to the current event
+    const isAssigned = groupRows.some(r => r.employee === employee);
+    
+    // Check for overlaps
+    const hasOverlap = employeeEvents.some(e => e.overlap === true);
+    const availableOverlap = hasOverlap ? 'YES' : 'NO';
+    
+    // Get employee details (you'll need to fetch this from Zoho)
+    const empDetails = employeeDetails.find(e => e.name === employee);
+    const skills = empDetails?.skills || ''; // Add skills to employeeDetails
+    const locality = empDetails?.locality || ''; // Add locality to employeeDetails
+    
+    // Create table row
+    const row = document.createElement('tr');
+    
+    
+    
+    row.innerHTML = `
+      <td>${employee}</td>
+      <td>${noOfVisits}</td>
+      <td>${availableOverlap}</td>
+      <td>${skills}</td>
+      <td>${locality}</td>
+      <td>
+        No
+      </td>
+    `;
+    
+    tbody.appendChild(row);
+  });
+}
+function setupTabSwitching() {
+  // Remove any existing listeners to prevent duplicates
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  
+  tabButtons.forEach(btn => {
+    // Clone and replace to remove old event listeners
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+  });
+  
+  // Add new event listeners
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+
+      // Update active tab button
+      document.querySelectorAll('.tab-btn')
+        .forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Update active tab panel
+      document.querySelectorAll('.tab-panel')
+        .forEach(p => p.classList.remove('active'));
+      document.getElementById(`tab-${tab}`).classList.add('active');
+
+      // ✅ Show/Hide Save and Cancel buttons based on active tab
+      const visitButtons = document.getElementById('visitTabButtons');
+      if (tab === 'visit') {
+        visitButtons.style.display = 'flex';
+      } else {
+        visitButtons.style.display = 'none';
+      }
+
+      // ✅ Populate insights table ONLY when Insights tab is clicked
+      if (tab === 'insights' && activeEvent) {
+        populateInsightsTable(activeEvent);
+      }
+    });
+  });
+}
