@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://js.zohostatic.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
     <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net"></script>
     <title>Day & Week Calendar View - With Employees</title>
     <link
   rel="stylesheet"
@@ -5874,7 +5875,78 @@ async function getEmployeeShifts(date) {
         return {};
     }
 }
+async function populateInsightsTable(evt) {
+  const tbody = document.getElementById('insightsTableBody');
+  tbody.innerHTML = '';
+  
+  // Get all staff for this event group
+  const groupRows = getEventGroupRows(evt);
+  const dateKey = toYYYYMMDD(evt.date);
+  
 
+var config = {
+        'http_method': 'POST',
+        'api_name': 'Most_Probable_Staff',
+        'public_key': 'Av7kPvbZrGVvnaHgqXpR4wFE8',
+        'payload':{
+            "id": "235935000010208204"
+        }
+        
+    };
+    console.log(config);
+    
+    ZOHO.CREATOR.DATA.invokeCustomApi(config).then(function (response)  {
+        if( response.code === 3000 ){
+           Object.entries(response.result).forEach(([name, data]) => {
+  console.log(name + " - " + data.Count + "  - " + data.Avail );
+  const noOfVisits = data.Count;
+  const availableOverlap = data.Avail;
+  const skills = data?.Skills || '';
+    const locality = data?.Locality || '';
+    const exclude = data?.Exclude || '';
+    const row = document.createElement('tr');
+    
+    row.innerHTML = `
+      <td>${name}</td>
+      <td>${noOfVisits}</td>
+      <td>${availableOverlap}</td>
+      <td>${skills}</td>
+      <td>${locality}</td>
+      <td>${exclude}</td>`;
+    
+    tbody.appendChild(row);
+});
+            
+        }
+    }).catch(function (error) {
+        console.log( error);
+    });
+
+    
+  
+  employees.forEach(employee => {
+    if (!employee) return; // Skip empty employee
+    
+    // Get all events for this employee on this date
+    const employeeEvents = getEventsForEmployee(employee, dateKey);
+    const noOfVisits = employeeEvents.length;
+    
+    // Check if this employee is assigned to the current event
+    const isAssigned = groupRows.some(r => r.employee === employee);
+    
+    // Check for overlaps
+    const hasOverlap = employeeEvents.some(e => e.overlap === true);
+    const availableOverlap = hasOverlap ? 'YES' : 'NO';
+    
+    // Get employee details (you'll need to fetch this from Zoho)
+    const empDetails = employeeDetails.find(e => e.name === employee);
+    const skills = empDetails?.skills || ''; // Add skills to employeeDetails
+    const locality = empDetails?.locality || ''; // Add locality to employeeDetails
+    
+    // Create table row
+    
+  });
+}
     </script>
 </body>
 </html>

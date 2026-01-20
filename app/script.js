@@ -70,7 +70,7 @@ function renderStaffDropdown(query) {
 
       opt.onclick = () => {
   if (selectedStaff.length >= activeEvent.no_of_staff ) {
-    showToast('You can select a maximum of 2 staff only');
+    showToast(`You can select a maximum of ${activeEvent.no_of_staff} staff only`);
     return;
   }
 
@@ -158,53 +158,7 @@ function getEmployeeIdsForEvent(evt) {
 
   return employeeIds;
 }
-function populateInsightsTable(evt) {
-  const tbody = document.getElementById('insightsTableBody');
-  tbody.innerHTML = '';
-  
-  // Get all staff for this event group
-  const groupRows = getEventGroupRows(evt);
-  const dateKey = toYYYYMMDD(evt.date);
-  
-  // For each employee, calculate their stats
-  employees.forEach(employee => {
-    if (!employee) return; // Skip empty employee
-    
-    // Get all events for this employee on this date
-    const employeeEvents = getEventsForEmployee(employee, dateKey);
-    const noOfVisits = employeeEvents.length;
-    
-    // Check if this employee is assigned to the current event
-    const isAssigned = groupRows.some(r => r.employee === employee);
-    
-    // Check for overlaps
-    const hasOverlap = employeeEvents.some(e => e.overlap === true);
-    const availableOverlap = hasOverlap ? 'YES' : 'NO';
-    
-    // Get employee details (you'll need to fetch this from Zoho)
-    const empDetails = employeeDetails.find(e => e.name === employee);
-    const skills = empDetails?.skills || ''; // Add skills to employeeDetails
-    const locality = empDetails?.locality || ''; // Add locality to employeeDetails
-    
-    // Create table row
-    const row = document.createElement('tr');
-    
-    
-    
-    row.innerHTML = `
-      <td>${employee}</td>
-      <td>${noOfVisits}</td>
-      <td>${availableOverlap}</td>
-      <td>${skills}</td>
-      <td>${locality}</td>
-      <td>
-        No
-      </td>
-    `;
-    
-    tbody.appendChild(row);
-  });
-}
+
 function setupTabSwitching() {
   // Remove any existing listeners to prevent duplicates
   const tabButtons = document.querySelectorAll('.tab-btn');
