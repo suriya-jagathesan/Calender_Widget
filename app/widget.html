@@ -6126,31 +6126,36 @@ var config = {
         }
         
     };
-    console.log(config);
+    
     
     ZOHO.CREATOR.DATA.invokeCustomApi(config).then(function (response)  {
-        if( response.code === 3000 ){
-           Object.entries(response.result).forEach(([name, data]) => {
-  console.log(name + " - " + data.Count + "  - " + data.Avail );
-  const noOfVisits = data.Count;
-  const availableOverlap = data.Avail;
-  const skills = data?.Skills || '';
-    const locality = data?.Locality || '';
-    const exclude = data?.Exclude || '';
-    const row = document.createElement('tr');
-    
-    row.innerHTML = `
-      <td>${name}</td>
-      <td>${noOfVisits}</td>
-      <td>${availableOverlap}</td>
-      <td>${skills}</td>
-      <td>${locality}</td>
-      <td>${exclude}</td>`;
-    
-    tbody.appendChild(row);
-});
-            
-        }
+        if (response.code === 3000) {
+
+    Object.entries(response.result)
+        .sort(([, a], [, b]) => b.Count - a.Count) 
+        .forEach(([name, data]) => {
+
+            const noOfVisits = data.Count;
+            const availableOverlap = data.Avail;
+            const skills = data?.Skills || '';
+            const locality = data?.Locality || '';
+            const exclude = data?.Exclude || '';
+
+            const row = document.createElement('tr');
+
+            row.innerHTML = `
+                <td>${name}</td>
+                <td>${noOfVisits}</td>
+                <td>${availableOverlap}</td>
+                <td>${skills}</td>
+                <td>${locality}</td>
+                <td>${exclude}</td>
+            `;
+
+            tbody.appendChild(row);
+        });
+}
+
     }).catch(function (error) {
         console.log( error);
     });
