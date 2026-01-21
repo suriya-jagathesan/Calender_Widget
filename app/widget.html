@@ -6,6 +6,7 @@
     <script src="https://js.zohostatic.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
     <script src="script.js"></script>
     <script src="https://cdn.jsdelivr.net"></script>
+    <link rel="stylesheet" href="styles.css" />
     <title>Day & Week Calendar View - With Employees</title>
     <link
   rel="stylesheet"
@@ -1618,7 +1619,7 @@ min-width: 100px;
 .employee-count {
     min-width: 22px;
     height: 22px;
-    border-radius: 999px;
+    border-radius: 5px;
     background: #682987;
     color: #fff;
     font-size: 11px;
@@ -1626,13 +1627,14 @@ min-width: 100px;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 2px;
 }
 .employee-label {
     display: flex;
     align-items: center;
     gap: 6px;
     width: 100%;
-    padding: 6px 8px;
+    padding: 6px 4px;
 }
 
 .employee-name {
@@ -2317,6 +2319,46 @@ min-width: 100px;
     </style>
 </head>
 <body>
+    <div id="timeChangeConfirmModal" class="modal-overlay hidden">
+  <div class="time-confirm-modal">
+    <div class="time-confirm-header">
+      <h3>Confirm Time Change</h3>
+      <button class="time-confirm-close" onclick="cancelTimeChange()">×</button>
+    </div>
+    
+    <div class="time-confirm-body">
+      <p class="confirm-message">Are you sure you want to change the time?</p>
+      
+      <div class="time-comparison">
+        <div class="time-row">
+          <span class="time-label">From:</span>
+          <span class="time-value old-time" id="confirmOldTime">09:00 - 10:00</span>
+        </div>
+        <div class="time-arrow">→</div>
+        <div class="time-row">
+          <span class="time-label">To:</span>
+          <span class="time-value new-time" id="confirmNewTime">10:00 - 11:00</span>
+        </div>
+      </div>
+      
+      <div class="event-info">
+        <div class="info-item">
+          <span class="info-label">Event:</span>
+          <span class="info-value" id="confirmEventTitle">Team Meeting</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Staff:</span>
+          <span class="info-value" id="confirmEventStaff">John Doe</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="time-confirm-footer">
+      <button class="btn-cancel" onclick="cancelTimeChange()">Cancel</button>
+      <button class="btn-confirm" onclick="confirmTimeChange()">Confirm</button>
+    </div>
+  </div>
+</div>
     <div id="toast-container"></div>
     <div id="loadingOverlay">
     <div class="loader"></div>
@@ -3302,7 +3344,7 @@ function hideLoader() {
                 });
             });
         }
-
+        employees.sort();
         await getEmployeeShifts(currentDate);
     } catch (err) {
         if (err?.responseText) {
@@ -3615,13 +3657,15 @@ let resizeDirtyEvent = null;
 
 
         async function updateEventZoho(evt){
-            console.log(evt.id);
+            console.log(evt);
             
             const key = toYYYYMMDD( evt.date );            
             if (!eventDatabase[key]) {
                 eventDatabase[key] = [];
             }
             const final_emp = getEmployeeIdsForEvent(evt);
+            console.log(final_emp);
+            
             let sts = evt.event_status.replace("_"," "); 
             console.log(final_emp);
             
@@ -3685,32 +3729,132 @@ if (resizeDirection === 'right') {
                 renderWeekView();
             }
         }
+let pendingTimeChange = null;
+let originalEventState = null;
 
-        function stopResize() {
-            document.body.style.cursor = '';
-            document.body.style.userSelect = '';
+       function stopResize() {
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
 
-            document.querySelectorAll('.event.resizing').forEach(el => {
-                el.classList.remove('resizing');
-                el.draggable = true;
-            });
+    document.querySelectorAll('.event.resizing').forEach(el => {
+        el.classList.remove('resizing');
+        el.draggable = true;
+    });
 
-            document.removeEventListener('mousemove', onResizeMove);
-            document.removeEventListener('mouseup', stopResize);
+    document.removeEventListener('mousemove', onResizeMove);
+    document.removeEventListener('mouseup', stopResize);
 
-            resizeEvent = null;
-            resizeDirection = null;
-            if (!resizeDirtyEvent) return;
-
-    clearTimeout(resizeDebounceTimer);
-
-    resizeDebounceTimer = setTimeout(async () => {
-        showLoader();
-        await updateEventZoho(resizeDirtyEvent);
-        hideLoader();
-        resizeDirtyEvent = null;
-    }, 400);
+    // Store the changes for confirmation
+    if (resizeDirtyEvent) {
+        const oldStart = originalStart;
+        const oldEnd = originalEnd;
+        const newStart = resizeDirtyEvent.startMinutes;
+        const newEnd = resizeDirtyEvent.endMinutes;
+        
+        // Check if time actually changed
+        if (oldStart !== newStart || oldEnd !== newEnd) {
+            pendingTimeChange = {
+                event: resizeDirtyEvent,
+                oldStart: oldStart,
+                oldEnd: oldEnd,
+                newStart: newStart,
+                newEnd: newEnd,
+                type: 'resize'
+            };
+            
+            showTimeChangeConfirmation();
         }
+    }
+
+    resizeEvent = null;
+    resizeDirection = null;
+}
+function showTimeChangeConfirmation() {
+   
+    
+    const modal = document.getElementById('timeChangeConfirmModal');
+    
+    if (pendingTimeChange.type === 'resize') {
+        const evt = pendingTimeChange.event;
+        document.getElementById('confirmOldTime').textContent = 
+            `${minutesToHHMM(pendingTimeChange.oldStart)} - ${minutesToHHMM(pendingTimeChange.oldEnd)}`;
+        document.getElementById('confirmNewTime').textContent = 
+            `${minutesToHHMM(pendingTimeChange.newStart)} - ${minutesToHHMM(pendingTimeChange.newEnd)}`;
+        document.getElementById('confirmEventTitle').textContent = evt.title || 'Untitled';
+        document.getElementById('confirmEventStaff').textContent = evt.employee || 'Unassigned';
+    } else if (pendingTimeChange.type === 'drag') {
+        const evt = pendingTimeChange.draggedEventData[0];
+        const duration = evt.endMinutes - evt.startMinutes;
+        const newEnd = pendingTimeChange.newAnchorStart + duration;
+        
+        document.getElementById('confirmOldTime').textContent = 
+            `${minutesToHHMM(evt.startMinutes)} - ${minutesToHHMM(evt.endMinutes)}`;
+        document.getElementById('confirmNewTime').textContent = 
+            `${minutesToHHMM(pendingTimeChange.newAnchorStart)} - ${minutesToHHMM(newEnd)}`;
+        document.getElementById('confirmEventTitle').textContent = evt.title || 'Untitled';
+        
+        if (pendingTimeChange.draggedEventData.length > 1) {
+            document.getElementById('confirmEventStaff').textContent = 
+                `${pendingTimeChange.draggedEventData.length} events`;
+        } else {
+            document.getElementById('confirmEventStaff').textContent = 
+                `${evt.employee || 'Unassigned'} → ${pendingTimeChange.newEmployee || 'Unassigned'}`;
+        }
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+// New function to confirm time change
+async function confirmTimeChange() {
+    console.log(pendingTimeChange);
+    
+    const modal = document.getElementById('timeChangeConfirmModal');
+    modal.classList.add('hidden');
+    
+    showLoader();
+    
+    if (pendingTimeChange.type === 'resize') {
+        clearTimeout(resizeDebounceTimer);
+        await updateEventZoho(pendingTimeChange.event);
+        currentView === 'day' ? renderDayView() : renderWeekView();
+    } else if (pendingTimeChange.type === 'drag') {
+        const {
+            draggedEventData,
+            newHour,
+            newQuarter,
+            newEmployee,
+            currentDateKey,
+            anchorStart,
+            newAnchorStart
+        } = pendingTimeChange;
+        
+        await applyDragChanges(draggedEventData, newHour, newQuarter, newEmployee, currentDateKey, anchorStart, newAnchorStart);
+    }
+    
+    pendingTimeChange = null;
+    resizeDirtyEvent = null;
+    hideLoader();
+}
+
+// New function to cancel time change
+function cancelTimeChange() {
+    const modal = document.getElementById('timeChangeConfirmModal');
+    modal.classList.add('hidden');
+    
+    // Revert changes
+    if (pendingTimeChange && pendingTimeChange.type === 'resize') {
+        const evt = pendingTimeChange.event;
+        evt.startMinutes = pendingTimeChange.oldStart;
+        evt.endMinutes = pendingTimeChange.oldEnd;
+    }
+    
+    pendingTimeChange = null;
+    resizeDirtyEvent = null;
+    
+    // Re-render to show original state
+    currentView === 'day' ? renderDayView() : renderWeekView();
+}
        
         let appliedFilters = [];
         
@@ -4936,7 +5080,6 @@ document.body.classList.remove('dragging-active');
     const slot = e.currentTarget;
     slot.classList.remove('drop-highlight');
 
-    // SAFETY CHECK
     if (!Array.isArray(draggedEventData) || draggedEventData.length === 0) {
         return;
     }
@@ -4950,22 +5093,43 @@ document.body.classList.remove('dragging-active');
     const anchorStart = anchorEvent.startMinutes;
     const newAnchorStart = newHour * 60 + newQuarter * 15;
 
-    // Ensure destination bucket exists
+    console.log(newAnchorStart, anchorStart);
+    
+    const timeChanged = draggedEventData.length === 1 && newAnchorStart !== anchorStart;
+    
+
+    if (timeChanged) {
+        // Store pending change
+        pendingTimeChange = {
+            draggedEventData: draggedEventData,
+            newHour: newHour,
+            newQuarter: newQuarter,
+            newEmployee: newEmployee,
+            currentDateKey: currentDateKey,
+            anchorStart: anchorStart,
+            newAnchorStart: newAnchorStart,
+            type: 'drag'
+        };
+        showTimeChangeConfirmation();
+    } else {
+        // No time change, proceed normally
+        applyDragChanges(draggedEventData, newHour, newQuarter, newEmployee, currentDateKey, anchorStart, newAnchorStart);
+    }
+    
+    clearEventSelection();
+}
+async function applyDragChanges(draggedEventData, newHour, newQuarter, newEmployee, currentDateKey, anchorStart, newAnchorStart) {
     if (!eventDatabase[currentDateKey]) {
         eventDatabase[currentDateKey] = [];
     }
 
-    // NEW: Check if multiple events are selected
     if (draggedEventData.length > 1) {
-        // Multiple events: Always maintain their original times, only change employee
         draggedEventData.forEach(evt => {
-            // REMOVE FROM ORIGINAL DATE
             if (eventDatabase[evt.originalDateKey]) {
                 eventDatabase[evt.originalDateKey] =
                     eventDatabase[evt.originalDateKey].filter(e => e.id !== evt.id);
             }
 
-            // ADD TO NEW DATE / EMPLOYEE (keep original time)
             const updatedEvent = {
                 ...evt,
                 startMinutes: evt.startMinutes,
@@ -4975,7 +5139,6 @@ document.body.classList.remove('dragging-active');
 
             eventDatabase[currentDateKey].push(updatedEvent);
 
-            // PERSIST
             updateEventZoho({
                 ...evt,
                 startMinutes: evt.startMinutes,
@@ -4986,7 +5149,6 @@ document.body.classList.remove('dragging-active');
             });
         });
     } else {
-        // Single event: Allow drop anywhere with time change
         draggedEventData.forEach(evt => {
             const offsetFromAnchor = evt.startMinutes - anchorStart;
             const duration = evt.endMinutes - evt.startMinutes;
@@ -4994,23 +5156,22 @@ document.body.classList.remove('dragging-active');
             const finalStart = newAnchorStart + offsetFromAnchor;
             const finalEnd = finalStart + duration;
 
-            // REMOVE FROM ORIGINAL DATE
             if (eventDatabase[evt.originalDateKey]) {
                 eventDatabase[evt.originalDateKey] =
                     eventDatabase[evt.originalDateKey].filter(e => e.id !== evt.id);
             }
 
-            // ADD TO NEW DATE / EMPLOYEE
             const updatedEvent = {
                 ...evt,
                 startMinutes: finalStart,
                 endMinutes: finalEnd,
                 employee: newEmployee
             };
-
+            console.log(updatedEvent);
+            
             eventDatabase[currentDateKey].push(updatedEvent);
-
-            // PERSIST
+            console.log(eventDatabase);
+            
             updateEventZoho({
                 ...evt,
                 startMinutes: finalStart,
@@ -5022,10 +5183,8 @@ document.body.classList.remove('dragging-active');
         });
     }
 
-    clearEventSelection();
     renderDayView();
 }
-
 
         function handleWeekDrop(e) {
             e.preventDefault();
@@ -5907,7 +6066,7 @@ var config = {
         'api_name': 'Most_Probable_Staff',
         'public_key': 'Av7kPvbZrGVvnaHgqXpR4wFE8',
         'payload':{
-            "id": "235935000010208204"
+            "id": evt.zoho_id
         }
         
     };

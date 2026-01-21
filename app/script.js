@@ -143,11 +143,7 @@ function getEmployeeIdsForEvent(evt) {
 
   const employeeIds = eventDatabase[dateKey]
     .filter(e =>
-      e.date === evt.date &&
-      e.title === evt.title &&
-      e.service === evt.service &&
-      e.from === evt.from &&
-      e.to === evt.to &&
+      e.id === evt.id &&
       e.employee
     )
     .map(e => {
