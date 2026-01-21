@@ -1,252 +1,883 @@
-let selectedStaff = [];
-function initStaffMultiSelect(initialStaff = []) {
-    console.log(activeEvent.id);
-        
-  selectedStaff = [...initialStaff];
+  let selectedStaff = [];
+  function initStaffMultiSelect(initialStaff = []) {
+      console.log(activeEvent.id);
+          
+    selectedStaff = [...initialStaff];
 
-  renderStaffPills();
-  renderStaffDropdown('');
+    renderStaffPills();
+    renderStaffDropdown('');
 
-  const input = document.getElementById('staffSearchInput');
-  const dropdown = document.getElementById('staffDropdown');
+    const input = document.getElementById('staffSearchInput');
+    const dropdown = document.getElementById('staffDropdown');
 
-  input.onfocus = () => dropdown.classList.add('active');
+    input.onfocus = () => dropdown.classList.add('active');
 
-  input.oninput = () => {
-    renderStaffDropdown(input.value);
-  };
-
-  input.onkeydown = (e) => {
-    if (e.key === 'Backspace' && input.value === '' && selectedStaff.length) {
-      selectedStaff.pop();
-      renderStaffPills();
-      renderStaffDropdown('');
-    }
-  };
-
-  document.addEventListener('click', (e) => {
-    if (!document.getElementById('staffMultiSelect').contains(e.target)) {
-      dropdown.classList.remove('active');
-    }
-  });
-}
-function renderStaffPills() {
-  const container = document.getElementById('staffMultiInput');
-  const input = document.getElementById('staffSearchInput');
-
-  container.querySelectorAll('.multi-pill').forEach(p => p.remove());
-
-  selectedStaff.forEach((name, index) => {
-    const pill = document.createElement('div');
-    pill.className = 'multi-pill';
-    pill.innerHTML = `
-      <span>${name}</span>
-      <button>&times;</button>
-    `;
-    pill.querySelector('button').onclick = () => {
-      selectedStaff.splice(index, 1);
-      renderStaffPills();
-      renderStaffDropdown('');
+    input.oninput = () => {
+      renderStaffDropdown(input.value);
     };
-    container.insertBefore(pill, input);
-  });
-}
-function renderStaffDropdown(query) {
-  const dropdown = document.getElementById('staffDropdown');
-  dropdown.innerHTML = '';
 
-  const q = query.toLowerCase();
+    input.onkeydown = (e) => {
+      if (e.key === 'Backspace' && input.value === '' && selectedStaff.length) {
+        selectedStaff.pop();
+        renderStaffPills();
+        renderStaffDropdown('');
+      }
+    };
 
-  employees
-    .filter(name =>
-      name &&
-      !selectedStaff.includes(name) &&
-      name.toLowerCase().includes(q)
-    )
-    .forEach(name => {
-      const opt = document.createElement('div');
-      opt.className = 'multi-option';
-      opt.textContent = name;
-
-      opt.onclick = () => {
-  if (selectedStaff.length >= activeEvent.no_of_staff ) {
-    showToast(`You can select a maximum of ${activeEvent.no_of_staff} staff only`);
-    return;
-  }
-
-  selectedStaff.push(name);
-  document.getElementById('staffSearchInput').value = '';
-  renderStaffPills();
-  renderStaffDropdown('');
-};
-
-
-      dropdown.appendChild(opt);
+    document.addEventListener('click', (e) => {
+      if (!document.getElementById('staffMultiSelect').contains(e.target)) {
+        dropdown.classList.remove('active');
+      }
     });
+  }
+  function renderStaffPills() {
+    const container = document.getElementById('staffMultiInput');
+    const input = document.getElementById('staffSearchInput');
 
-  dropdown.classList.add('active');
-}
-function isSameLogicalEvent(a, b) {
-  return (
-    a.date === b.date &&
-    a.title === b.title &&
-    a.service === b.service &&
-    a.from === b.from &&
-    a.to === b.to
-  );
-}
-function getEventGroupRows(activeEvent) {
-  const key = toYYYYMMDD(activeEvent.date);
-  return (eventDatabase[key] || []).filter(evt =>
-    isSameLogicalEvent(evt, activeEvent)
-  );
-}
-function cloneEventForEmployee(base, employee, employee_id = null) {
-    console.log(employee);
-    
-     if( employee ){
-               employee_id =  employeeDetails.find(emp => emp.name === employee).id;
-            }
-            else{
-                employee_id = null;
-            }
-  return {
-    ...base,
-    employee,
-    employee_id
+    container.querySelectorAll('.multi-pill').forEach(p => p.remove());
+
+    selectedStaff.forEach((name, index) => {
+      const pill = document.createElement('div');
+      pill.className = 'multi-pill';
+      pill.innerHTML = `
+        <span>${name}</span>
+        <button>&times;</button>
+      `;
+      pill.querySelector('button').onclick = () => {
+        selectedStaff.splice(index, 1);
+        renderStaffPills();
+        renderStaffDropdown('');
+      };
+      container.insertBefore(pill, input);
+    });
+  }
+  function renderStaffDropdown(query) {
+    const dropdown = document.getElementById('staffDropdown');
+    dropdown.innerHTML = '';
+
+    const q = query.toLowerCase();
+
+    employees
+      .filter(name =>
+        name &&
+        !selectedStaff.includes(name) &&
+        name.toLowerCase().includes(q)
+      )
+      .forEach(name => {
+        const opt = document.createElement('div');
+        opt.className = 'multi-option';
+        opt.textContent = name;
+
+        opt.onclick = () => {
+    if (selectedStaff.length >= activeEvent.no_of_staff ) {
+      showToast(`You can select a maximum of ${activeEvent.no_of_staff} staff only`);
+      return;
+    }
+
+    selectedStaff.push(name);
+    document.getElementById('staffSearchInput').value = '';
+    renderStaffPills();
+    renderStaffDropdown('');
   };
-}
-function isUnassigned(evt) {
-  return !evt.employee || evt.employee.trim() === "";
-}
 
-function ensurePlaceholderRow(activeEvent) {
-  const dateKey = toYYYYMMDD(activeEvent.date);
 
-  const rows = (eventDatabase[dateKey] || []).filter(evt =>
-    isSameLogicalEvent(evt, activeEvent)
-  );
+        dropdown.appendChild(opt);
+      });
 
-  if (rows.length === 0) {
-    const placeholder = {
-      ...activeEvent,
-      employee: "",
-      employee_id: null
-    };    
-    eventDatabase[dateKey].push(placeholder);
+    dropdown.classList.add('active');
   }
-}
-function getEmployeeIdsForEvent(evt) {
-  const dateKey = toYYYYMMDD(evt.date);
+  function isSameLogicalEvent(a, b) {
+    return (
+      a.date === b.date &&
+      a.title === b.title &&
+      a.service === b.service &&
+      a.from === b.from &&
+      a.to === b.to
+    );
+  }
+  function getEventGroupRows(activeEvent) {
+    const key = toYYYYMMDD(activeEvent.date);
+    return (eventDatabase[key] || []).filter(evt =>
+      isSameLogicalEvent(evt, activeEvent)
+    );
+  }
+  function cloneEventForEmployee(base, employee, employee_id = null) {
+      console.log(employee);
+      
+      if( employee ){
+                employee_id =  employeeDetails.find(emp => emp.name === employee).id;
+              }
+              else{
+                  employee_id = null;
+              }
+    return {
+      ...base,
+      employee,
+      employee_id
+    };
+  }
+  function isUnassigned(evt) {
+    return !evt.employee || evt.employee.trim() === "";
+  }
 
-  if (!eventDatabase[dateKey]) return [];
+  function ensurePlaceholderRow(activeEvent) {
+    const dateKey = toYYYYMMDD(activeEvent.date);
 
-  const employeeIds = eventDatabase[dateKey]
-    .filter(e =>
-      e.id === evt.id &&
-      e.employee
-    )
-    .map(e => {
-      const emp = employeeDetails.find(emp => emp.name === e.employee);
-      return emp ? emp.id : null;
-    })
-    .filter(Boolean);
+    const rows = (eventDatabase[dateKey] || []).filter(evt =>
+      isSameLogicalEvent(evt, activeEvent)
+    );
 
-  return employeeIds;
-}
+    if (rows.length === 0) {
+      const placeholder = {
+        ...activeEvent,
+        employee: "",
+        employee_id: null
+      };    
+      eventDatabase[dateKey].push(placeholder);
+    }
+  }
+  function getEmployeeIdsForEvent(evt) {
+    const dateKey = toYYYYMMDD(evt.date);
 
-function setupTabSwitching() {
-  // Remove any existing listeners to prevent duplicates
-  const tabButtons = document.querySelectorAll('.tab-btn');
-  
-  tabButtons.forEach(btn => {
-    // Clone and replace to remove old event listeners
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-  });
-  
-  // Add new event listeners
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tab = btn.dataset.tab;
+    if (!eventDatabase[dateKey]) return [];
 
-      // Update active tab button
-      document.querySelectorAll('.tab-btn')
-        .forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+    const employeeIds = eventDatabase[dateKey]
+      .filter(e =>
+        e.id === evt.id &&
+        e.employee
+      )
+      .map(e => {
+        const emp = employeeDetails.find(emp => emp.name === e.employee);
+        return emp ? emp.id : null;
+      })
+      .filter(Boolean);
 
-      // Update active tab panel
-      document.querySelectorAll('.tab-panel')
-        .forEach(p => p.classList.remove('active'));
-      document.getElementById(`tab-${tab}`).classList.add('active');
+    return employeeIds;
+  }
 
-      // ✅ Show/Hide Save and Cancel buttons based on active tab
-      const visitButtons = document.getElementById('visitTabButtons');
-      if (tab === 'visit') {
-        visitButtons.style.display = 'flex';
-      } else {
-        visitButtons.style.display = 'none';
-      }
-
-      // ✅ Populate insights table ONLY when Insights tab is clicked
-      if (tab === 'insights' && activeEvent) {
-        populateInsightsTable(activeEvent);
-      }
+  function setupTabSwitching() {
+    // Remove any existing listeners to prevent duplicates
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    
+    tabButtons.forEach(btn => {
+      // Clone and replace to remove old event listeners
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
     });
+    
+    // Add new event listeners
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+
+        // Update active tab button
+        document.querySelectorAll('.tab-btn')
+          .forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update active tab panel
+        document.querySelectorAll('.tab-panel')
+          .forEach(p => p.classList.remove('active'));
+        document.getElementById(`tab-${tab}`).classList.add('active');
+
+        // ✅ Show/Hide Save and Cancel buttons based on active tab
+        const visitButtons = document.getElementById('visitTabButtons');
+        if (tab === 'visit') {
+          visitButtons.style.display = 'flex';
+        } else {
+          visitButtons.style.display = 'none';
+        }
+
+        // ✅ Populate insights table ONLY when Insights tab is clicked
+        if (tab === 'insights' && activeEvent) {
+          populateInsightsTable(activeEvent);
+        }
+      });
+    });
+  }
+
+
+  function toggleViewSwitcher(e) {
+      e.stopPropagation();
+      const dropdown = document.getElementById('viewSwitcherDropdown');
+      dropdown.classList.toggle('active');
+  }
+
+  function selectViewType(viewType) {
+      currentViewType = viewType;
+      
+      // Update display text
+      const displayText = viewType === 'employee' ? 'Employee View' : 'Run View';
+      document.getElementById('currentViewType').textContent = displayText;
+      
+      // Update selected state in dropdown
+      document.querySelectorAll('.view-switcher-option').forEach(opt => {
+          opt.classList.remove('selected');
+          const checkIcon = opt.querySelector('.fa-check');
+          if (checkIcon) checkIcon.remove();
+      });
+      
+      const selectedOption = document.querySelector(`.view-switcher-option:nth-child(${viewType === 'employee' ? '1' : '2'})`);
+      selectedOption.classList.add('selected');
+      selectedOption.innerHTML += '<i class="fa fa-check"></i>';
+      
+      // Close dropdown
+      document.getElementById('viewSwitcherDropdown').classList.remove('active');
+      
+      // Re-render view based on selection
+      if (viewType === 'run') {
+          // TODO: Implement run view rendering
+          console.log('Run view selected - implement rendering logic');
+          showToast('Run view coming soon', 'error');
+      } else {
+          // Re-render current view (employee view)
+          if (currentView === 'day') {
+              renderDayView();
+          } else {
+              renderWeekView();
+          }
+      }
+  }
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', () => {
+      const dropdown = document.getElementById('viewSwitcherDropdown');
+      if (dropdown) {
+          dropdown.classList.remove('active');
+      }
   });
-}
-let currentViewType = 'employee'; // Default view type
-
-function toggleViewSwitcher(e) {
-    e.stopPropagation();
-    const dropdown = document.getElementById('viewSwitcherDropdown');
-    dropdown.classList.toggle('active');
-}
-
-function selectViewType(viewType) {
-    currentViewType = viewType;
+  async function selectViewType(type) {
+    if (currentViewType === type) return;
     
-    // Update display text
-    const displayText = viewType === 'employee' ? 'Employee View' : 'Run View';
-    document.getElementById('currentViewType').textContent = displayText;
+    showLoader();
+    currentViewType = type;
     
-    // Update selected state in dropdown
+    // Update UI - display text
+    document.getElementById('currentViewType').textContent = 
+        type === 'employee' ? 'Employee' : 'Run View';
+    
+    // ✅ Update selected state and checkmarks
     document.querySelectorAll('.view-switcher-option').forEach(opt => {
         opt.classList.remove('selected');
-        const checkIcon = opt.querySelector('.fa-check');
-        if (checkIcon) checkIcon.remove();
+        
+        // Remove any existing checkmark icons
+        const existingCheck = opt.querySelector('.fa-check');
+        if (existingCheck) {
+            existingCheck.remove();
+        }
     });
     
-    const selectedOption = document.querySelector(`.view-switcher-option:nth-child(${viewType === 'employee' ? '1' : '2'})`);
+    // ✅ Add checkmark to the selected option
+    const selectedOption = event.target.closest('.view-switcher-option');
     selectedOption.classList.add('selected');
-    selectedOption.innerHTML += '<i class="fa fa-check"></i>';
+    
+    // Create and append checkmark icon
+    const checkIcon = document.createElement('i');
+    checkIcon.className = 'fa fa-check';
+    selectedOption.appendChild(checkIcon);
     
     // Close dropdown
     document.getElementById('viewSwitcherDropdown').classList.remove('active');
     
-    // Re-render view based on selection
-    if (viewType === 'run') {
-        // TODO: Implement run view rendering
-        console.log('Run view selected - implement rendering logic');
-        showToast('Run view coming soon', 'error');
-    } else {
-        // Re-render current view (employee view)
-        if (currentView === 'day') {
-            renderDayView();
-        } else {
-            renderWeekView();
-        }
-    }
-}
-
-// Close dropdown when clicking outside
-document.addEventListener('click', (e) => {
-    const dropdown = document.getElementById('viewSwitcherDropdown');
-    const switcher = document.querySelector('.view-switcher');
     
-    if (dropdown && switcher && 
-        !switcher.contains(e.target) && 
-        dropdown.classList.contains('active')) {
-        dropdown.classList.remove('active');
+    // Re-render current view
+    if (currentView === 'day') {
+        if (type === 'employee') {
+            await renderDayView();
+        } else {
+            await renderRunView();
+        }
+    } else {
+        // Week view will need similar separate functions
+        await renderWeekView();
     }
-});
+    
+    hideLoader();
+}
+  function getEventsForRunGroup(runGroup, dateKey) {
+      const allEvents = eventDatabase[dateKey] || [];
+      return allEvents.filter(evt => {    
+          if (runGroup === '') {
+            // Show events with no run_view or run_view === ''
+            if (evt.run_view && evt.run_view !== '') return false;
+        } else {
+            // Show events matching this specific run group
+            if (evt.run_view !== runGroup) return false;
+        }
+
+          // Apply other filters
+          return appliedFilters.every(f => {
+              let search_key = null;
+              if (f.field === "persons") {
+                  search_key = 'title';
+              } else if (f.field === 'staff' || f.field === 'employee') {
+                  search_key = 'employee';
+              } else if (f.field === 'service') {
+                  search_key = 'service';
+              } else {
+                  search_key = f.field;
+              }
+              
+              const eventValue = evt[search_key];
+              if (eventValue == null) return false;
+
+              if (f.filterType === 'contains') {
+                  return f.searchValues.some(v =>
+                      String(eventValue)
+                          .toLowerCase()
+                          .includes(String(v).toLowerCase())
+                  );
+              } else if (f.filterType === 'is') {
+                  return f.searchValues.some(v =>
+                      String(eventValue).trim().toLowerCase() ===
+                      String(v).trim().toLowerCase()
+                  );
+              } else if (f.filterType === 'isNot') {
+                  return !f.searchValues.some(v =>
+                      String(eventValue) === String(v)
+                  );
+              } else if (f.filterType === 'isEmpty') {
+                  return isEmptyValue(eventValue);
+              } else if (f.filterType === 'isNotEmpty') {
+                  return !isEmptyValue(eventValue);
+              }
+              
+              return true;
+          });
+      });
+  }
+  async function renderRunViewRows() {
+      const rowsContainer = document.getElementById('calendarRows');
+      rowsContainer.innerHTML = '';
+
+      const dateKey = getCurrentDateKey();
+      const rowHeightsMap = {};
+      
+      const fillHeight = calculateFillHeight();
+      
+      // Use runGroups for display
+      let displayRunGroups = [...runGroups];
+      
+      displayRunGroups.forEach(runGroup => {
+          const rawEvents = getEventsForRunGroup(runGroup, dateKey);
+          const events = detectOverlaps([...rawEvents]);
+
+          const maxConcurrent = events.length ? Math.max(...events.map(e => e.maxConcurrent)) : 1;
+          const dynamicHeight = (maxConcurrent * (EVENT_HEIGHT + EVENT_GAP)) + (ROW_PADDING * 2);
+          
+          const finalRowHeight = Math.max(fillHeight, dynamicHeight);
+          rowHeightsMap[runGroup] = finalRowHeight;
+
+          const runRow = document.createElement('div');
+          runRow.className = 'employee-calendar-row';
+          runRow.dataset.runGroup = runGroup;
+          runRow.style.height = finalRowHeight + 'px';
+
+          const grid = document.createElement('div');
+          grid.className = 'calendar-grid';
+
+          for (let h = 0; h < 24; h++) {
+              const hourCol = document.createElement('div');
+              hourCol.className = 'hour-column';
+              const innerGrid = document.createElement('div');
+              innerGrid.className = 'hour-column-inner';
+              for (let i = 0; i < 4; i++) {
+                  const line = document.createElement('div');
+                  line.className = 'quarter-line';
+                  innerGrid.appendChild(line);
+              }
+              hourCol.appendChild(innerGrid);
+
+              for (let q = 0; q < 4; q++) {
+                  const slot = document.createElement('div');
+                  slot.className = 'quarter-slot';
+                  slot.dataset.hour = h;
+                  slot.dataset.quarter = q;
+                  slot.dataset.runGroup = runGroup;
+                  slot.dataset.viewType = 'run';
+                  
+                  
+                      slot.addEventListener('dragover', handleRunDragOver);
+                      slot.addEventListener('drop', handleRunDrop);
+                      slot.addEventListener('dragleave', handleDragLeave);
+                  
+                  hourCol.appendChild(slot);
+              }
+              grid.appendChild(hourCol);
+          }
+          
+          const eventsContainer = document.createElement('div');
+          eventsContainer.className = 'events-container';
+          eventsContainer.dataset.runGroup = runGroup;
+          renderRunEventsForGroup(eventsContainer, events);
+
+          grid.appendChild(eventsContainer);
+          runRow.appendChild(grid);
+          rowsContainer.appendChild(runRow);
+      });
+
+      renderRunViewColumn(rowHeightsMap);
+  }
+  function renderRunViewColumn(rowHeightsMap = {}) {
+      const column = document.getElementById('employeeColumn');
+      column.innerHTML = '';
+
+      const dateKey = getCurrentDateKey();
+      
+      runGroups.forEach(runGroup => {
+          const row = document.createElement('div');
+          row.className = 'employee-row';
+
+          if (runGroup === '') {
+              row.innerHTML = `
+                  <div class="employee-label">
+                      <div class="employee-name-row">
+                          <span class="employee-name">Unassigned</span>
+                      </div>
+                  </div>
+              `;
+          } else {
+              let total_mins = 0;
+              const events = getEventsForRunGroup(runGroup, dateKey);
+              events.forEach(evt => {
+                  total_mins += (evt.endMinutes - evt.startMinutes);
+              });
+              
+              const workingHours = total_mins / 60;
+              let displayHours = workingHours > 0 ? workingHours.toFixed(1) : '0.0';
+              
+              row.innerHTML = `
+                  <div class="employee-label">
+                      <div class="employee-name-row">
+                          <span class="employee-name">${runGroup}</span>
+                          <span class="employee-count">${displayHours}</span>
+                      </div>
+                  </div>
+              `;
+          }
+
+          const height = rowHeightsMap[runGroup] || MIN_ROW_HEIGHT;
+          row.style.height = height + 'px';
+          column.appendChild(row);
+      });
+  }
+  function renderRunEventsForGroup(container, events) {
+      const hourWidth = 100;
+
+      events.forEach(evt => {
+          const startHour = Math.floor(evt.startMinutes / 60);
+          const startMinute = evt.startMinutes % 60;
+          const duration = evt.endMinutes - evt.startMinutes;
+
+          const el = document.createElement('div');
+          el.className = `event status-${evt.status}`;
+          el.draggable = true;
+
+          el.dataset.eventId = evt.id;
+          el.dataset.viewType = 'run';
+          el.dataset.runGroup = evt.run_view || '';
+          el.dataset.serviceUser = evt.title || '';
+          el.dataset.staff = evt.employee || '—';
+          el.dataset.start = minutesToTime(evt.startMinutes).hour.toString().padStart(2,'0') + ':' +
+                          minutesToTime(evt.startMinutes).minute.toString().padStart(2,'0');
+          el.dataset.end = minutesToTime(evt.endMinutes).hour.toString().padStart(2,'0') + ':' +
+                          minutesToTime(evt.endMinutes).minute.toString().padStart(2,'0');
+
+          el.dataset.mismatch = evt.status ? evt.status.replace("_"," ") : "";
+          el.dataset.status = evt.event_status;
+          el.dataset.travel = evt.travel || '';
+
+          const left = (startHour * hourWidth) + ((startMinute / 60) * hourWidth);
+          const width = (duration / 60) * hourWidth;
+          const top = ROW_PADDING + (evt.stackLevel * (EVENT_HEIGHT + EVENT_GAP));
+
+          el.style.left = left + 'px';
+          el.style.width = width + 'px';
+          el.style.top = top + 'px';
+          el.style.height = EVENT_HEIGHT + 'px';
+
+          const title = document.createElement('div');
+          title.className = 'event-title';
+          title.textContent = evt.title;
+
+          if (evt.no_of_staff && evt.no_of_staff > 1) {
+              const staffBadge = document.createElement('div');
+              staffBadge.className = 'event-staff-badge';
+              staffBadge.innerHTML = `<i class="fa fa-users"></i>${evt.no_of_staff}`;
+              staffBadge.title = `${evt.no_of_staff} staff required`;
+              el.appendChild(staffBadge);
+          }
+          
+          if (evt.status === "Completed") {
+              el.appendChild(title);
+          } else {
+              const leftHandle = document.createElement('div');
+              leftHandle.className = 'resize-handle left';
+              leftHandle.addEventListener('mousedown', e => {
+                  e.preventDefault();   
+                  e.stopPropagation();
+                  startResize(e, evt, 'left');
+              });
+
+              const rightHandle = document.createElement('div');
+              rightHandle.className = 'resize-handle right';
+              rightHandle.addEventListener('mousedown', e => {
+                  e.preventDefault();    
+                  e.stopPropagation();
+                  startResize(e, evt, 'right');
+              });
+
+              el.appendChild(leftHandle);
+              el.appendChild(rightHandle);
+              el.appendChild(title);
+
+              el.addEventListener('dragstart', handleRunDragStart);
+              el.addEventListener('dragend', handleRunDragEnd);
+
+              el.addEventListener('mousedown', (e) => {
+                  mouseDownX = e.clientX;
+                  mouseDownY = e.clientY;
+                  if ((e.ctrlKey || e.metaKey) && e.button === 0) {
+                      e.preventDefault();
+                      e.stopPropagation();   
+                      toggleEventSelection(el);
+                  }
+              });
+
+              el.addEventListener('mouseup', (e) => {
+                  if (e.ctrlKey || e.metaKey) return;
+                  if (e.target.closest('.resize-handle')) return;
+                  if (e.target.closest('.event-edit')) return;
+
+                  const dx = Math.abs(e.clientX - mouseDownX);
+                  const dy = Math.abs(e.clientY - mouseDownY);
+
+                  if (dx > CLICK_TOLERANCE || dy > CLICK_TOLERANCE) return;
+                  openEventModal(evt);
+              });
+          }
+          
+          container.appendChild(el);
+      });
+  }
+  function handleRunDragStart(e) {
+      const baseEl = e.currentTarget;
+      const baseId = parseInt(baseEl.dataset.eventId);
+
+      if (!selectedEventIds.has(baseId)) {
+          clearEventSelection();
+          selectedEventIds.add(baseId);
+          baseEl.classList.add('selected');
+      }
+
+      draggedElement = baseEl;
+      draggedEventId = baseId;
+
+      const dateKey = getCurrentDateKey();
+      const events = eventDatabase[dateKey] || [];
+
+      draggedEventData = [...selectedEventIds].map(id => {
+          const evt = events.find(e => e.id === id);
+          return {
+              ...evt,
+              originalDateKey: dateKey
+          };
+      });
+
+      selectedEventIds.forEach(id => {
+          const el = document.querySelector(`.event[data-event-id="${id}"]`);
+          if (el) {
+              el.classList.add('dragging');
+          }
+      });
+
+      document.body.classList.add('dragging-active');
+      e.dataTransfer.effectAllowed = 'move';
+  }
+
+  function handleRunDragEnd(e) {
+      e.currentTarget.classList.remove('dragging');
+      document.body.classList.remove('dragging-active');
+      document.querySelectorAll('.drop-highlight').forEach(el => el.classList.remove('drop-highlight'));
+      
+      document.querySelectorAll('.event.dragging').forEach(el => {
+          el.classList.remove('dragging');
+      });
+      
+      draggedElement = null;
+      draggedEventId = null;
+      draggedEventData = null;
+  }
+
+  function handleRunDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const slot = e.currentTarget;
+      if (!slot.classList.contains('drop-highlight')) {
+          document.querySelectorAll('.drop-highlight').forEach(el => el.classList.remove('drop-highlight'));
+          slot.classList.add('drop-highlight');
+      }
+  }
+
+  function handleRunDrop(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const slot = e.currentTarget;
+      slot.classList.remove('drop-highlight');
+      console.log(!Array.isArray(draggedEventData) || draggedEventData.length === 0);
+      
+      if (!Array.isArray(draggedEventData) || draggedEventData.length === 0) {
+          return;
+      }
+
+      const newHour = parseInt(slot.dataset.hour, 10);
+      const newQuarter = parseInt(slot.dataset.quarter, 10);
+      const newRunGroup = slot.dataset.runGroup;
+      const currentDateKey = getCurrentDateKey();
+
+      const anchorEvent = draggedEventData[0];
+      const anchorStart = anchorEvent.startMinutes;
+      const newAnchorStart = newHour * 60 + newQuarter * 15;
+
+      const timeChanged = draggedEventData.length === 1 && newAnchorStart !== anchorStart;
+
+      if (timeChanged) {
+          pendingTimeChange = {
+              draggedEventData: draggedEventData,
+              newHour: newHour,
+              newQuarter: newQuarter,
+              newRunGroup: newRunGroup,
+              currentDateKey: currentDateKey,
+              anchorStart: anchorStart,
+              newAnchorStart: newAnchorStart,
+              type: 'run-drag'
+          };
+          showRunTimeChangeConfirmation();
+      } else {
+          applyRunDragChanges(draggedEventData, newHour, newQuarter, newRunGroup, currentDateKey, anchorStart, newAnchorStart);
+      }
+      
+      clearEventSelection();
+  }
+  async function applyRunDragChanges(draggedEventData, newHour, newQuarter, newRunGroup, currentDateKey, anchorStart, newAnchorStart) {
+      showLoader();
+      
+      if (!eventDatabase[currentDateKey]) {
+          eventDatabase[currentDateKey] = [];
+      }
+
+      if (draggedEventData.length > 1) {
+          draggedEventData.forEach(evt => {
+              if (eventDatabase[evt.originalDateKey]) {
+                  eventDatabase[evt.originalDateKey] =
+                      eventDatabase[evt.originalDateKey].filter(e => e.id !== evt.id);
+              }
+
+              const updatedEvent = {
+                  ...evt,
+                  startMinutes: evt.startMinutes,
+                  endMinutes: evt.endMinutes,
+                  run_view: newRunGroup,
+                  run_view_id: newRunGroup ? runGroupDetails[newRunGroup] : null
+              };
+
+              eventDatabase[currentDateKey].push(updatedEvent);
+
+              updateRunEventZoho(updatedEvent);
+          });
+      } else {
+          draggedEventData.forEach(evt => {
+              const offsetFromAnchor = evt.startMinutes - anchorStart;
+              const duration = evt.endMinutes - evt.startMinutes;
+
+              const finalStart = newAnchorStart + offsetFromAnchor;
+              const finalEnd = finalStart + duration;
+
+              if (eventDatabase[evt.originalDateKey]) {
+                  eventDatabase[evt.originalDateKey] =
+                      eventDatabase[evt.originalDateKey].filter(e => e.id !== evt.id);
+              }
+
+              const updatedEvent = {
+                  ...evt,
+                  startMinutes: finalStart,
+                  endMinutes: finalEnd,
+                  run_view: newRunGroup,
+                  run_view_id: newRunGroup ? runGroupDetails[newRunGroup] : null
+              };
+              
+              eventDatabase[currentDateKey].push(updatedEvent);
+              
+              updateRunEventZoho({
+                  ...evt,
+                  startMinutes: finalStart,
+                  endMinutes: finalEnd,
+                  from: minutesToHHMM(finalStart),
+                  to: minutesToHHMM(finalEnd),
+                  run_view: newRunGroup,
+                  run_view_id: newRunGroup ? runGroupDetails[newRunGroup] : null
+              });
+          });
+      }
+
+      await renderRunView();
+      hideLoader();
+  }
+  async function updateRunEventZoho(evt) {
+      const key = toYYYYMMDD(evt.date);
+      if (!eventDatabase[key]) {
+          eventDatabase[key] = [];
+      }
+      
+      const final_emp = getEmployeeIdsForEvent(evt);
+      let sts = evt.event_status.replace("_", " ");
+      let duration = evt.endMinutes - evt.startMinutes;
+      
+      const payload = {
+          "data": {
+              "Care_Providers": final_emp,
+              "Start_time": `${minutesToHHMM(evt.startMinutes)}`,
+              "End_time": `${minutesToHHMM(evt.endMinutes)}`,
+              "Duration": `${minutesToHHMM(duration)}`,
+              "From_Date_Time": formatDateStringWithMinutes(evt.date, evt.startMinutes),
+              "To_Date_Time": formatDateStringWithMinutes(evt.date, evt.endMinutes),
+              "Status": sts,
+              "Manager_notes": evt.Manager_Notes,
+              "Date_field1": evt.date
+          }
+      };
+      
+      // Add run_view if it exists
+      if (evt.run_view_id) {
+          payload.data.Care_Group = evt.run_view_id;
+      } else {
+          // Clear the Care_Group if moving to unassigned
+          payload.data.Care_Group = null;
+      }
+      
+      var update_config = {
+          app_name: app_name,
+          report_name: "Bookings_Backend",
+          id: evt.zoho_id,
+          payload: payload
+      };
+      
+      try {
+          const res = await ZOHO.CREATOR.DATA.updateRecordById(update_config);
+          console.log("Run update successful:", res);
+      } catch (err) {
+          console.error("Error updating run:", err);
+          showToast("Failed to update run assignment", "error");
+      }
+  }
+  function showRunTimeChangeConfirmation() {
+      const modal = document.getElementById('timeChangeConfirmModal');
+      
+      if (pendingTimeChange.type === 'run-drag') {
+          const evt = pendingTimeChange.draggedEventData[0];
+          const duration = evt.endMinutes - evt.startMinutes;
+          const newEnd = pendingTimeChange.newAnchorStart + duration;
+          
+          document.getElementById('confirmOldTime').textContent = 
+              `${minutesToHHMM(evt.startMinutes)} - ${minutesToHHMM(evt.endMinutes)}`;
+          document.getElementById('confirmNewTime').textContent = 
+              `${minutesToHHMM(pendingTimeChange.newAnchorStart)} - ${minutesToHHMM(newEnd)}`;
+          document.getElementById('confirmEventTitle').textContent = evt.title || 'Untitled';
+          
+          if (pendingTimeChange.draggedEventData.length > 1) {
+              document.getElementById('confirmEventStaff').textContent = 
+                  `${pendingTimeChange.draggedEventData.length} events`;
+          } else {
+              const oldRun = evt.run_view || 'Unassigned';
+              const newRun = pendingTimeChange.newRunGroup || 'Unassigned';
+              document.getElementById('confirmEventStaff').textContent = 
+                  `${oldRun} → ${newRun}`;
+          }
+      }
+      
+      modal.classList.remove('hidden');
+  }
+  async function confirmTimeChange() {
+      const modal = document.getElementById('timeChangeConfirmModal');
+      modal.classList.add('hidden');
+      
+      showLoader();
+      
+      if (pendingTimeChange.type === 'resize') {
+          clearTimeout(resizeDebounceTimer);
+          await updateEventZoho(pendingTimeChange.event);
+          currentView === 'day' ? 
+              (currentViewType === 'employee' ? renderDayView() : renderRunView()) : 
+              renderWeekView();
+      } else if (pendingTimeChange.type === 'drag') {
+          const {
+              draggedEventData,
+              newHour,
+              newQuarter,
+              newEmployee,
+              currentDateKey,
+              anchorStart,
+              newAnchorStart
+          } = pendingTimeChange;
+          
+          await applyDragChanges(draggedEventData, newHour, newQuarter, newEmployee, currentDateKey, anchorStart, newAnchorStart);
+      } else if (pendingTimeChange.type === 'run-drag') {
+          const {
+              draggedEventData,
+              newHour,
+              newQuarter,
+              newRunGroup,
+              currentDateKey,
+              anchorStart,
+              newAnchorStart
+          } = pendingTimeChange;
+          
+          await applyRunDragChanges(draggedEventData, newHour, newQuarter, newRunGroup, currentDateKey, anchorStart, newAnchorStart);
+      }
+      
+      pendingTimeChange = null;
+      resizeDirtyEvent = null;
+      hideLoader();
+  }
+  async function renderRunView() {
+    console.log("Called");
+    
+      showLoader();
+      renderHourHeaders();
+      await renderRunViewRows();
+      syncScroll();
+      hideLoader();
+  }
+  async function getRunGroups() {
+      runGroups = [];
+      runGroups.push(''); // Empty group first
+      
+      const serviceList = `[${services.join(",")}]`;
+      
+      try {
+          const run_config = {
+              app_name: app_name,
+              report_name: "Care_Group_Report", // Adjust to your actual report name
+              criteria: `Site_Name.ID == ${serviceList}`
+          };
+          
+          const run_resp = await ZOHO.CREATOR.DATA.getRecords(run_config);
+          
+          if (run_resp.code === 3000 && Array.isArray(run_resp.data)) {
+              run_resp.data.forEach(rec => {
+                  const runName = rec.Care_Group_Name; // Adjust field name
+                  const runId = rec.ID;
+                  
+                  if (!runGroups.includes(runName)) {
+                      runGroups.push(runName);
+                      runGroupDetails[runName] = runId;
+                  }
+              });
+          }
+          
+          runGroups.sort();
+      } catch (err) {
+          console.error("Error fetching run groups:", err);
+      }
+  }

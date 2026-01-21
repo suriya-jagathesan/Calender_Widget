@@ -2908,6 +2908,9 @@ min-width: 100px;
     <script>
         let inital_load = false;
         const selectedEventIds = new Set();
+        let currentViewType = 'employee'; 
+let runGroups = []; 
+let runGroupDetails = {}; 
         function toggleEventSelection(eventEl) {
     const id = parseInt(eventEl.dataset.eventId);
 
@@ -3116,10 +3119,17 @@ toAdd.forEach((staff, index) => {
     eventDatabase[dateKey].push(newEvt);
   }
 });
-  console.log(eventDatabase);
   showLoader();
   await updateEventZoho(activeEvent);
-  currentView === 'day' ? renderDayView() : renderWeekView();
+  if (currentView === 'day') {
+    if (currentViewType === 'employee') {
+      await renderDayView();
+    } else {
+      await renderRunView();
+    }
+  } else {
+    await renderWeekView();
+  }
   closeEventModal();
   hideLoader();
 }
@@ -3301,8 +3311,10 @@ function hideLoader() {
 }
 
        async function getTodayAllEmployees() {
+        console.log("Today Called");
         employees.length = 0;
         employees.push('');
+        
         const serviceList = `[${services.join(",")}]`;
         if( currentView == "day" ){
             const employees_config = {
@@ -3384,6 +3396,7 @@ function hideLoader() {
             }
         }    
         const employee_res1 = await ZOHO.CREATOR.DATA.getRecords(employees_config1);
+        
        if (employee_res1.code === 3000 && employee_res1.data?.length) {
 
     for (const rec of employee_res1.data) {
@@ -3393,16 +3406,16 @@ function hideLoader() {
             : rec.Care_Providers
                 ? [rec.Care_Providers]
                 : [];
-
+        
         for (const staff of staffList) {
-
+            
             const name = staff?.zc_display_value;
             const id = staff?.ID;
-
+            
             if (!name || !id) continue;
-
-            if (employeeDetails.some(e => e.id === id)) continue;
-
+            
+            
+            if (employees.includes(name)) continue;
             const skills_config = {
                 app_name,
                 report_name: "Staffs_Details_Backend",
@@ -3416,7 +3429,6 @@ function hideLoader() {
         .map(s => s?.Skills_Name)
         .filter(Boolean);
 }
-
             employees.push(name);
 
             employeeDetails.push({
@@ -3550,6 +3562,8 @@ function getEmployeeIconByCondition(employee, events) {
 }
 
         async function getBookings() { 
+            runGroups = [];
+            runGroups.push('');
             const serviceList = `[${services.join(",")}]`;
             let cur_date = formatDateDDMMYYYY( currentDate );
             const criteria_1 = `Site_Name.ID == ${serviceList} && Date_field1 == '${cur_date}'`;
@@ -3573,7 +3587,7 @@ function getEmployeeIconByCondition(employee, events) {
                 booking_resp.data.forEach(function (rec) {
                     if( rec.Care_Providers.length === 0 ){
                         let cur_book = createBookingObject(rec, null);
-                    date_booking.push(cur_book);
+                        date_booking.push(cur_book);
                     }
                     
                     rec.Care_Providers.forEach(function (emp) {
@@ -3587,7 +3601,10 @@ if (!eventDatabase[key]) {
     eventDatabase[key] = [];
 }
  eventDatabase[key] = [];
-eventDatabase[key].push(...date_booking);            
+eventDatabase[key].push(...date_booking);    
+console.log(runGroups);
+console.log(runGroupDetails);
+        
             } else {
                 console.log("No bookings found or error in fetching bookings.");
             }}
@@ -3854,7 +3871,6 @@ let originalEventState = null;
     resizeDirection = null;
 }
 function showTimeChangeConfirmation() {
-   
     
     const modal = document.getElementById('timeChangeConfirmModal');
     
@@ -3891,6 +3907,8 @@ function showTimeChangeConfirmation() {
 
 // New function to confirm time change
 async function confirmTimeChange() {
+    console.log(employees);
+    
     console.log(pendingTimeChange);
     
     const modal = document.getElementById('timeChangeConfirmModal');
@@ -4264,37 +4282,77 @@ if (existing) {
         }
 
          async function navigatePeriod(delta) {
-            showLoader();
+    showLoader();
+    console.log(currentViewType);
+    
+    try {
+        if (currentView === 'day') {
+            currentDate.setDate(currentDate.getDate() + delta);
+        } else {
+            currentDate.setDate(currentDate.getDate() + (delta * 7));
+        }
+        
+        if (currentViewType === 'employee') {
+            await getTodayAllEmployees();
             if (currentView === 'day') {
-                currentDate.setDate(currentDate.getDate() + delta);
-                await getTodayAllEmployees();
                 await getBookings();
                 await renderDayView();
                 startAt6();
             } else {
-                currentDate.setDate(currentDate.getDate() + (delta * 7));
-                await getTodayAllEmployees();
                 await getBookingsForWeek();
                 await renderWeekView();
             }
-            updateDateTitle();
-            
-
-
-    hideLoader();
-
-        }
-
-        function goToday() {
-            currentDate = new Date();
-            todayDate = new Date();
+        } else if (currentViewType === 'run') {
             if (currentView === 'day') {
-                renderDayView();
+                await getBookings();
+                await renderRunView();
             } else {
-                renderWeekView();
+                await getBookingsForWeek();
+                await renderRunViewWeek();
             }
-            updateDateTitle();
         }
+        
+        updateDateTitle();
+        
+    } catch (error) {
+        console.error('Error navigating period:', error);
+    } finally {
+        hideLoader();
+    }
+}
+
+        async function goToday() {
+    showLoader();
+    currentDate = new Date();
+    todayDate = new Date();
+    
+    try {
+        if (currentViewType === 'employee') {
+            await getTodayAllEmployees();
+            if (currentView === 'day') {
+                await getBookings();
+                await renderDayView();
+            } else {
+                await getBookingsForWeek();
+                await renderWeekView();
+            }
+        } else if (currentViewType === 'run') {
+            if (currentView === 'day') {
+                await getBookings();
+                await renderRunView();
+            } else {
+                await getBookingsForWeek();
+                await renderRunViewWeek();
+            }
+        }
+        
+        updateDateTitle();
+    } catch (error) {
+        console.error('Error going to today:', error);
+    } finally {
+        hideLoader();
+    }
+}
 
         function updateDateTitle() {
             if (currentView === 'day') {
@@ -4322,7 +4380,17 @@ if (existing) {
     cur_book.from = rec.Start_time;
     cur_book.to = rec.End_time;
     cur_book.no_of_staff = rec.No_of_Staff;
-    // Parse start time
+    const runName = rec.Care_Group?.Care_Group_Name ?? '';
+const runID   = rec.Care_Group?.ID ?? '';
+
+cur_book.run_view = runName;
+cur_book.run_view_id = runID;
+
+if (runName && !runGroups.includes(runName)) {
+    runGroups.push(runName);
+    runGroupDetails[runName] = runID;
+}
+
     const [, stime] = rec.From_Date_Time.split(" ");
     const [shours, sminutes] = stime.split(":").map(Number);
     cur_book.startMinutes = shours * 60 + sminutes;
@@ -4339,7 +4407,6 @@ if (existing) {
     } else {
         cur_book.employee = '';
     }
-    
     cur_book.overlap = false;
     cur_book.event_status = rec.Status;
     
@@ -4369,7 +4436,9 @@ if (existing) {
         }
         async function renderDayView() {    
             showLoader();
+            console.log(employees);
             await getTodayAllEmployees();
+            console.log(employees);
             renderHourHeaders();
             await renderEmployeeRows();
             syncScroll();
@@ -4575,7 +4644,7 @@ function syncScroll() {
     
     
     // Calculate how much height each row needs to fill the screen
-    const fillHeight = calculateFillHeight();
+    const fillHeight = calculateFillHeight();    
     const displayList = employees.length >= 0 ? employees : ['—'];   
     const employeeObj = appliedFilters.find(o => o.field === "staff" || o.field === "employee" );
     if(employeeObj){
@@ -5844,16 +5913,26 @@ formatFilterText = function(filter) {
 
         async function selectDate(day, month, year) {
             currentDate = new Date(year, month, day);
+            if (currentViewType === 'employee') {
+            // Employee view logic
             await getTodayAllEmployees();
             if (currentView === 'week') {
-                updateDateTitle();
                 await getBookingsForWeek();
                 renderWeekView();
             } else {
-                updateDateTitle();
                 await getBookings();
                 renderDayView();
             }
+        } else if (currentViewType === 'run') {
+            // Run view logic
+            if (currentView === 'week') {
+                await getBookingsForWeek();
+                await renderRunViewWeek();
+            } else {
+                await getBookings();
+                await renderRunView();
+            }
+        }
             
             renderMiniCalendar();
             toggleMiniCalendar();

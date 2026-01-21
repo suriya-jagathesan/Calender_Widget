@@ -206,21 +206,20 @@
 }
 .view-switcher {
     position: relative;
-    display: inline-block;
-    margin-right: 10px;
 }
 
 .view-switcher-btn {
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
     background: white;
+    border: 1px solid #d1d5db;
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
+    font-weight: 500;
     transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
 }
 
 .view-switcher-btn:hover {
@@ -231,11 +230,11 @@
     position: absolute;
     top: calc(100% + 4px);
     left: 0;
+    min-width: 180px;
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    min-width: 126px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
     z-index: 1000;
     display: none;
 }
@@ -245,13 +244,13 @@
 }
 
 .view-switcher-option {
-    padding: 10px 14px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background 0.2s;
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.15s;
 }
 
 .view-switcher-option:hover {
@@ -265,6 +264,5 @@
 }
 
 .view-switcher-option i.fa-check {
-    margin-left: auto;
-    font-size: 12px;
+    color: #4f46e5;
 }
