@@ -204,3 +204,67 @@
     width: 100%;
   }
 }
+.view-switcher {
+    position: relative;
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.view-switcher-btn {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.view-switcher-btn:hover {
+    background: #f9fafb;
+}
+
+.view-switcher-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 126px;
+    z-index: 1000;
+    display: none;
+}
+
+.view-switcher-dropdown.active {
+    display: block;
+}
+
+.view-switcher-option {
+    padding: 10px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.view-switcher-option:hover {
+    background: #f3f4f6;
+}
+
+.view-switcher-option.selected {
+    background: #eef2ff;
+    color: #4f46e5;
+    font-weight: 600;
+}
+
+.view-switcher-option i.fa-check {
+    margin-left: auto;
+    font-size: 12px;
+}

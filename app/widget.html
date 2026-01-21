@@ -659,7 +659,7 @@
 .week-header-row {
     position: sticky;
     top: 0; /* This will be relative to its scroll container */
-    z-index: 120;
+    z-index: 88;
     background: #ffffff;
 }
 
@@ -667,7 +667,7 @@
 .week-scroll-wrapper .week-header-row {
     position: sticky;
     top: 0;
-    z-index: 120;
+    z-index: 88;
     background: #ffffff;
 }
 
@@ -1600,13 +1600,33 @@ min-width: 100px;
 }
 .employee-label {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: start;
     justify-content: space-between;
-    gap: 6px;
+    gap: 0;
     width: 100%;
     padding: 6px 8px;
 }
+.employee-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+.employee-hours-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 10px;
+    color: #6b7280;
+    line-height: 1.3;
+}
 
+.employee-hours-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+}
 .employee-name {
     font-size: 13px;
     font-weight: 600;
@@ -2526,10 +2546,30 @@ min-width: 100px;
     <div class="calendar-container">
         
         <div class="calendar-header">
-            <div class="view-toggle">
-                <button id="weekViewBtn" onclick="switchView('week')">Week</button>
-                <button id="dayViewBtn" class="active" onclick="switchView('day')">Day</button>
+             <div style="display: flex; align-items: center; gap: 10px;">
+        <div class="view-switcher">
+            <button class="view-switcher-btn" onclick="toggleViewSwitcher(event)">
+                <i class="fa fa-th-list"></i>
+                <span id="currentViewType">Employee</span>
+                <i class="fa fa-chevron-down" style="font-size: 10px;"></i>
+            </button>
+            <div class="view-switcher-dropdown" id="viewSwitcherDropdown">
+                <div class="view-switcher-option selected" onclick="selectViewType('employee')">
+                    <span>Employee</span>
+                    <i class="fa fa-check"></i>
+                </div>
+                <div class="view-switcher-option" onclick="selectViewType('run')">
+                    <span>Run View</span>
+                </div>
             </div>
+        </div>
+        
+        <!-- Week/Day Toggle -->
+        <div class="view-toggle">
+            <button id="weekViewBtn" onclick="switchView('week')">Week</button>
+            <button id="dayViewBtn" class="active" onclick="switchView('day')">Day</button>
+        </div>
+    </div>
             <!-- Search Filters Display Section -->
         
 
@@ -3184,7 +3224,8 @@ const CLICK_TOLERANCE = 5;
                 scrollLeft = 6 * PIXELS_PER_HOUR;
 
         const PIXELS_PER_15_MIN = PIXELS_PER_HOUR / 4;
-        const MIN_ROW_HEIGHT = 28;  
+        // 28 to 70
+        const MIN_ROW_HEIGHT = 70;  
 
         const CALENDAR_BODY_SELECTOR = '.calendar-body-scrollable';
 
@@ -3194,6 +3235,7 @@ const CLICK_TOLERANCE = 5;
         const ROW_PADDING = 6;
 
         let currentDate = new Date();
+
         let todayDate = new Date();
         let draggedElement = null;
         let draggedEventId = null;
@@ -4369,7 +4411,6 @@ if (existing) {
         
         if (!employeeValues.includes('')) {
             employeeValues.unshift('');
-            console.log(employeeValues);
         }
     }
     else{
@@ -4389,6 +4430,14 @@ if (existing) {
                 total_mins += (evt.endMinutes - evt.startMinutes);
             });
             const t_count = total_mins / 60;
+            const workingHours = total_mins / 60;
+            let displayHours = workingHours > 0 ? workingHours.toFixed(1) : '0.0';
+             const shiftData = shiftsMap[employee];
+            let contractedHours = '0.0';
+            if (shiftData) {
+                const contractedMins = shiftData.endMinutes - shiftData.startMinutes;
+                contractedHours = (contractedMins / 60).toFixed(1);
+            }
             let count = null;
             if( t_count > 0 ){
                 count = t_count.toFixed(2);
@@ -4411,10 +4460,21 @@ count = 0;
             } 
             row.innerHTML = `
                 <div class="employee-label">
-                    <span class="employee-name">${employee}</span>
-                    ${iconHTML}
-                    <span class="employee-count">${count}</span>
-                    
+                    <div class="employee-name-row">
+                        <span class="employee-name">${employee}</span>
+                        ${iconHTML}
+                        <span class="employee-count">${displayHours}</span>
+                    </div>
+                    <div class="employee-hours-info">
+                        <div class="employee-hours-row">
+                            <span class="hours-label">Contracted Hours:</span>
+                            <span class="hours-value">${contractedHours}</span>
+                        </div>
+                        <div class="employee-hours-row">
+                            <span class="hours-label">Working Hours:</span>
+                            <span class="hours-value">${displayHours}</span>
+                        </div>
+                    </div>
                 </div>
             `;
         }
@@ -4422,7 +4482,8 @@ count = 0;
         const height =
             rowHeightsMap[employee] ||
             (employees.length === 0 ? 500 : MIN_ROW_HEIGHT);
-
+        console.log(height);
+        
         row.style.height = height + 'px';
         column.appendChild(row);
     });
@@ -4613,6 +4674,7 @@ function syncScroll() {
 
                 /* OPTIONAL – only if available */
                 el.dataset.mismatch = evt.status ? evt.status.replace("_"," ") : "";
+                el.dataset.status =  evt.event_status;
                 el.dataset.travel = evt.travel || '';
 
 
@@ -4929,6 +4991,7 @@ function renderWeekEmployeeRows() {
 
                 /* OPTIONAL – only if available */
                 el.dataset.mismatch = evt.status === 'Missed' ? 'Visit missed' : '';
+                el.dataset.status = evt.event_status;
                 el.dataset.travel = evt.travel || '';
 
 
@@ -6003,13 +6066,14 @@ function showTooltip(evtEl, mouseEvent) {
     document.getElementById('ttTime').textContent =
         `${evtEl.dataset.start} – ${evtEl.dataset.end}`;
 
+    document.getElementById('ttMismatch').textContent = evtEl.dataset.status;
     // Mismatch
-    if (evtEl.dataset.mismatch) {
-        document.getElementById('ttMismatch').textContent = evtEl.dataset.mismatch;
-        document.getElementById('ttMismatchRow').classList.remove('hidden');
-    } else {
-        document.getElementById('ttMismatchRow').classList.add('hidden');
-    }
+    // if (evtEl.dataset.mismatch) {
+        
+    //     document.getElementById('ttMismatchRow').classList.remove('hidden');
+    // } else {
+    //     document.getElementById('ttMismatchRow').classList.add('hidden');
+    // }
 
     // Travel
     if (evtEl.dataset.travel) {
