@@ -2866,6 +2866,7 @@ min-width: 100px;
 </div>
 
     <script>
+        let inital_load = false;
         const selectedEventIds = new Set();
         function toggleEventSelection(eventEl) {
     const id = parseInt(eventEl.dataset.eventId);
@@ -3249,7 +3250,7 @@ function hideLoader() {
             console.error("Zoho response error:", service_resp);
         }
         console.log(services_details);
-        await getTodayAllEmployees();
+        // await getTodayAllEmployees();
         await getBookings();
 
     } catch (err) {
@@ -3310,40 +3311,81 @@ function hideLoader() {
         }
         const employee_res = await ZOHO.CREATOR.DATA.getRecords(employees_config);
         
-        if (employee_res.code === 3000 && employee_res.data.length) {
-            employee_res.data.forEach(rec => {
+        if (employee_res.code === 3000 && employee_res.data?.length) {
+
+            for (const rec of employee_res.data) {
                 const name = rec.Staff?.zc_display_value;
-                if (name && !employees.includes(name)) {
-                    employees.push(name);
-                    employeeDetails.push({
-                        name,
-                        id: rec.Staff.ID
-                    });
-                }
-            });            
-        }
-        const employee_res1 = await ZOHO.CREATOR.DATA.getRecords(employees_config1);
-       if (employee_res1.code === 3000 && employee_res1.data.length) {
-            employee_res1.data.forEach(rec => {
-                const staffList = Array.isArray(rec.Care_Providers)
-                    ? rec.Care_Providers
-                    : rec.Care_Providers
-                        ? [rec.Care_Providers]
-                        : [];
+                const staffId = rec.Staff?.ID;
+
+                if (!name || !staffId || employees.includes(name)) continue;
+
+                const skills_config = {
+                    app_name,
+                    report_name: "Staffs_Details_Backend",
+                    id: `${staffId}`
+                };
                 
-                staffList.forEach(staff => {
-                    const name = staff?.zc_display_value;
-                    const id = staff?.ID;
-
-                    if (!name || !id) return;
-
-                    if (!employees.includes(name)) {
-                        employees.push(name);
-                        employeeDetails.push({ name, id });
-                    }
+                const skills_res = await ZOHO.CREATOR.DATA.getRecordById(skills_config);
+                let skills = [];
+                if (skills_res.code === 3000) {
+    skills = (skills_res?.data?.Skills_Experience_Capacity || [])
+        .map(s => s?.Skills_Name)
+        .filter(Boolean);
+}
+                
+                employees.push(name);
+                employeeDetails.push({
+                    name,
+                    id: staffId,
+                    skills
                 });
+            }
+        }    
+        const employee_res1 = await ZOHO.CREATOR.DATA.getRecords(employees_config1);
+       if (employee_res1.code === 3000 && employee_res1.data?.length) {
+
+    for (const rec of employee_res1.data) {
+
+        const staffList = Array.isArray(rec.Care_Providers)
+            ? rec.Care_Providers
+            : rec.Care_Providers
+                ? [rec.Care_Providers]
+                : [];
+
+        for (const staff of staffList) {
+
+            const name = staff?.zc_display_value;
+            const id = staff?.ID;
+
+            if (!name || !id) continue;
+
+            if (employeeDetails.some(e => e.id === id)) continue;
+
+            const skills_config = {
+                app_name,
+                report_name: "Staffs_Details_Backend",
+                id: `${id}`
+            };
+
+            const skills_res = await ZOHO.CREATOR.DATA.getRecordById(skills_config);
+
+           if (skills_res.code === 3000) {
+    skills = (skills_res?.data?.Skills_Experience_Capacity || [])
+        .map(s => s?.Skills_Name)
+        .filter(Boolean);
+}
+
+            employees.push(name);
+
+            employeeDetails.push({
+                name,
+                id,
+                skills
             });
         }
+    }
+}
+
         employees.sort();
         await getEmployeeShifts(currentDate);
     } catch (err) {
@@ -4152,7 +4194,9 @@ if (existing) {
             const weekView = document.getElementById('weekView');
             
             if (view === 'day') {
-                await getTodayAllEmployees();
+                if( !inital_load ){
+                    await getTodayAllEmployees();
+                }
                 await getBookings();
                 dayViewBtn.classList.add('active');
                 weekViewBtn.classList.remove('active');
@@ -4183,16 +4227,20 @@ if (existing) {
                 currentDate.setDate(currentDate.getDate() + delta);
                 await getTodayAllEmployees();
                 await getBookings();
-                renderDayView();
+                await renderDayView();
                 startAt6();
             } else {
                 currentDate.setDate(currentDate.getDate() + (delta * 7));
                 await getTodayAllEmployees();
                 await getBookingsForWeek();
-                renderWeekView();
+                await renderWeekView();
             }
             updateDateTitle();
-            hideLoader();
+            
+
+
+    hideLoader();
+
         }
 
         function goToday() {
@@ -4349,12 +4397,18 @@ if (existing) {
 count = 0;
             }
             let iconHTML = '';
-            if ( true) {
-                iconHTML = `<i class="fa-solid fa-circle-xmark"></i>`;
-            } else if (/* your condition */ false) {
-                iconHTML = `<i class="fa-solid fa-circle-xmark"></i>`;
-            }
-
+            const hasDrivingSkill = employeeDetails.some(e =>
+    e.name?.trim().toLowerCase() === employee?.trim().toLowerCase() &&
+    Array.isArray(e.skills) &&
+    e.skills.some(
+        skill =>
+            typeof skill === "string" &&
+            skill.trim().toLowerCase() === "driver"
+    )
+);        
+            if ( hasDrivingSkill) {
+                iconHTML = `<i class="fa-solid fa-car"></i>`;
+            } 
             row.innerHTML = `
                 <div class="employee-label">
                     <span class="employee-name">${employee}</span>
@@ -5759,6 +5813,7 @@ formatFilterText = function(filter) {
 
         // INITIALIZATION
         async function init() {
+            inital_load = true;
             try {
         await getZohoData();
         await switchView('day');
@@ -5776,6 +5831,7 @@ formatFilterText = function(filter) {
         console.error('Initialization error:', error);
     } finally {
         hideLoader();
+        inital_load = false;
     }
         }
 
