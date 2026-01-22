@@ -951,6 +951,7 @@ async function loadTravelDetails(evt) {
       document.getElementById('travelBeforeName').textContent = travelData.BName || '—';
       document.getElementById('travelBeforeDist').textContent = travelData.BDist || '—';
       document.getElementById('travelBeforeDur').textContent = travelData.BDur || '—';
+      document.getElementById('travelAvail').textContent = travelData.Avail || '—';
     } else {
       beforeSection.style.display = 'none';
     }
