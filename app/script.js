@@ -187,7 +187,9 @@
         } else {
           visitButtons.style.display = 'none';
         }
-
+         if (tab === 'travel' && activeEvent) {
+            loadTravelDetails(activeEvent);
+        }
         // ✅ Populate insights table ONLY when Insights tab is clicked
         if (tab === 'insights' && activeEvent) {
           populateInsightsTable(activeEvent);
@@ -881,3 +883,99 @@
           console.error("Error fetching run groups:", err);
       }
   }
+
+  /**
+ * Fetch and display travel details for an event
+ */
+async function loadTravelDetails(evt) {
+  const loadingEl = document.getElementById('travelLoading');
+  const noDataEl = document.getElementById('travelNoData');
+  const contentEl = document.getElementById('travelContent');
+  const beforeSection = document.getElementById('beforeTravelSection');
+  const afterSection = document.getElementById('afterTravelSection');
+
+  // Show loading state
+  loadingEl.style.display = 'block';
+  noDataEl.style.display = 'none';
+  contentEl.style.display = 'none';
+
+  try {
+    // Call your custom API
+    const config = {
+      'http_method': 'POST',
+      'api_name': 'Distance_Duration', 
+      'public_key': 'ahg0WmdMKZpOW8SMYFUOrsFv5',    
+      'payload': {
+        "id": evt.zoho_id
+      }
+    };
+
+    const response = await ZOHO.CREATOR.DATA.invokeCustomApi(config);
+    console.log(response);
+    
+    // Hide loading
+    loadingEl.style.display = 'none';
+
+    
+    if (!response || Object.keys(response).length === 0) {
+      noDataEl.style.display = 'block';
+      return;
+    }
+
+    // Get travel data (assuming first key is the record ID)
+    const recordId = Object.keys(response)[0];
+    const empId = String(evt.employee_id);
+    const travelMap = response.result;
+
+    const travelData = travelMap?.[empId];
+
+    
+    if (!travelData) {
+      noDataEl.style.display = 'block';
+      return;
+    }
+
+    // Show content
+    contentEl.style.display = 'block';
+    console.log(travelData);
+    
+    
+    // Populate "Before" travel section
+    const hasBefore =
+  Boolean(travelData?.BName) && travelData.BName !== 'N/A';
+    console.log(hasBefore);
+    console.log(evt.employee_id);
+    
+    
+    if (travelData.BName) {
+      beforeSection.style.display = 'block';
+      document.getElementById('travelBeforeName').textContent = travelData.BName || '—';
+      document.getElementById('travelBeforeDist').textContent = travelData.BDist || '—';
+      document.getElementById('travelBeforeDur').textContent = travelData.BDur || '—';
+    } else {
+      beforeSection.style.display = 'none';
+    }
+
+    // Populate "After" travel section
+    const hasAfter = travelData.AName && travelData.AName !== 'N/A';
+    if (travelData.AName) {
+      afterSection.style.display = 'block';
+      document.getElementById('travelAfterName').textContent = travelData.AName || '—';
+      document.getElementById('travelAfterDist').textContent = travelData.ADist || '—';
+      document.getElementById('travelAfterDur').textContent = travelData.ADur || '—';
+    } else {
+      afterSection.style.display = 'none';
+    }
+
+    // If neither section has data, show no data message
+    if (!hasBefore && !hasAfter) {
+      contentEl.style.display = 'none';
+      noDataEl.style.display = 'block';
+    }
+
+  } catch (error) {
+    console.error('Error loading travel details:', error);
+    loadingEl.style.display = 'none';
+    noDataEl.style.display = 'block';
+  }
+}

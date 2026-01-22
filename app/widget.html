@@ -2837,22 +2837,74 @@ min-width: 100px;
       <!-- ================= TRAVEL TAB ================= -->
       <div class="tab-panel" id="tab-travel">
 
-        <div class="modal-form-row">
-          <label>Travel Time</label>
-          <input class="modal-input" type="text" id="mTravelTime">
-        </div>
+  <div id="travelDetailsContainer">
+    
+    <!-- Loading state -->
+    <div id="travelLoading" class="travel-loading">
+      <i class="fa fa-spinner fa-spin"></i> Loading travel details...
+    </div>
 
-        <div class="modal-form-row">
-          <label>Distance</label>
-          <input class="modal-input" type="text" id="mTravelDistance">
-        </div>
+    <!-- No data state -->
+    <div id="travelNoData" class="travel-no-data" style="display: none;">
+      <i class="fa fa-info-circle"></i> No travel information available for this appointment.
+    </div>
 
-        <div class="modal-form-row">
-          <label>Travel Notes</label>
-          <textarea class="modal-input" rows="3" id="mTravelNotes"></textarea>
+    <!-- Travel details content -->
+    <div id="travelContent" style="display: none;">
+      
+      <!-- Before Travel Section -->
+      <div class="travel-section" id="beforeTravelSection" style="display: none;">
+        <h4 class="travel-section-title">
+          <i class="fa fa-arrow-right"></i> Travel To Appointment
+        </h4>
+        
+        <div class="travel-info-grid">
+          <div class="travel-info-item">
+            <span class="travel-label">From:</span>
+            <span class="travel-value" id="travelBeforeName">—</span>
+          </div>
+          
+          <div class="travel-info-item">
+            <span class="travel-label">Distance:</span>
+            <span class="travel-value" id="travelBeforeDist">—</span>
+          </div>
+          
+          <div class="travel-info-item">
+            <span class="travel-label">Duration:</span>
+            <span class="travel-value" id="travelBeforeDur">—</span>
+          </div>
         </div>
-
       </div>
+
+      <!-- After Travel Section -->
+      <div class="travel-section" id="afterTravelSection" style="display: none;">
+        <h4 class="travel-section-title">
+          <i class="fa fa-arrow-left"></i> Travel From Appointment
+        </h4>
+        
+        <div class="travel-info-grid">
+          <div class="travel-info-item">
+            <span class="travel-label">To:</span>
+            <span class="travel-value" id="travelAfterName">—</span>
+          </div>
+          
+          <div class="travel-info-item">
+            <span class="travel-label">Distance:</span>
+            <span class="travel-value" id="travelAfterDist">—</span>
+          </div>
+          
+          <div class="travel-info-item">
+            <span class="travel-label">Duration:</span>
+            <span class="travel-value" id="travelAfterDur">—</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
 
       <!-- ================= INSIGHTS TAB ================= -->
       <div class="tab-panel" id="tab-insights">
@@ -4483,7 +4535,6 @@ if (runName && !runGroups.includes(runName)) {
     const displayList = employees.length > 0 ? employees : ['—'];
     const employeeObj = appliedFilters.find(o => o.field === "staff" || o.field === "employee" );
     if(employeeObj){
-        console.log(appliedFilters);
         employeeValues = returnEmployees(employeeObj.searchValues);
         
         if (!employeeValues.includes('')) {
@@ -4507,21 +4558,27 @@ if (runName && !runGroups.includes(runName)) {
                 total_mins += (evt.endMinutes - evt.startMinutes);
             });
             const t_count = total_mins / 60;
-            const workingHours = total_mins / 60;
-            let displayHours = workingHours > 0 ? workingHours.toFixed(1) : '0.0';
-             const shiftData = shiftsMap[employee];
-            let contractedHours = '0.0';
-            if (shiftData) {
-                const contractedMins = shiftData.endMinutes - shiftData.startMinutes;
-                contractedHours = (contractedMins / 60).toFixed(1);
-            }
-            let count = null;
-            if( t_count > 0 ){
-                count = t_count.toFixed(2);
-            }
-            else{
-count = 0;
-            }
+const workingHours = total_mins / 60;
+let displayHours = workingHours > 0 ? workingHours.toFixed(1) : '0.0';
+
+// Get contracted hours from shift data
+const shiftData = shiftsMap[employee];
+let contractedHours = '0.0';
+let contractedMinutes = 0;
+
+if (shiftData) {
+    contractedMinutes = shiftData.endMinutes - shiftData.startMinutes;
+    contractedHours = (contractedMinutes / 60).toFixed(1);
+}
+
+// ✅ CALCULATE PERCENTAGE
+let percentage = 0;
+if (contractedMinutes > 0) {
+    percentage = Math.round((total_mins / contractedMinutes) * 100);
+}
+
+// ✅ DISPLAY PERCENTAGE (not hours)
+let displayPercentage = `${percentage}%`;
             let iconHTML = '';
             const hasDrivingSkill = employeeDetails.some(e =>
     e.name?.trim().toLowerCase() === employee?.trim().toLowerCase() &&
@@ -4540,7 +4597,7 @@ count = 0;
                     <div class="employee-name-row">
                         <span class="employee-name">${employee}</span>
                         ${iconHTML}
-                        <span class="employee-count">${displayHours}</span>
+                        <span class="employee-count">${displayPercentage}</span>
                     </div>
                     <div class="employee-hours-info">
                         <div class="employee-hours-row">

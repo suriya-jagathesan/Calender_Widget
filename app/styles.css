@@ -266,3 +266,86 @@
 .view-switcher-option i.fa-check {
     color: #4f46e5;
 }
+.travel-loading,
+.travel-no-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.travel-loading i {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 12px;
+  color: #4f46e5;
+}
+
+.travel-no-data i {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 12px;
+  color: #9ca3af;
+}
+
+.travel-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.travel-section:last-child {
+  margin-bottom: 0;
+}
+
+.travel-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 16px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.travel-section-title i {
+  color: #4f46e5;
+}
+
+.travel-info-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.travel-info-item {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.travel-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.travel-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.fa-spinner.fa-spin {
+  animation: spin 1s linear infinite;
+}
