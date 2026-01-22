@@ -3888,6 +3888,9 @@ let resizeDirtyEvent = null;
                 eventDatabase[key] = [];
             }
             const final_emp = getEmployeeIdsForEvent(evt);
+            // console.log( JSON.stringify(eventDatabase[key]) );
+            // console.log(final_emp);
+            
             
             
             let sts = evt.event_status.replace("_"," "); 
@@ -5340,6 +5343,7 @@ el.addEventListener('mouseup', (e) => {
         function handleDragStart(e) {
 
 
+
     const baseEl = e.currentTarget;
     const baseId = parseInt(baseEl.dataset.eventId);
 
@@ -5377,10 +5381,11 @@ el.addEventListener('mouseup', (e) => {
 
 document.body.classList.add('dragging-active');
 e.dataTransfer.effectAllowed = 'move';
+console.log("Drag Ended");
 }
 
 
-        function handleDragEnd(e) {
+        function handleDragEnd(e) {            
             e.currentTarget.classList.remove('dragging');
             document.body.classList.remove('dragging-active');
             document.querySelectorAll('.drop-highlight').forEach(el => el.classList.remove('drop-highlight'));
@@ -5460,7 +5465,6 @@ document.body.classList.remove('dragging-active');
     const anchorStart = anchorEvent.startMinutes;
     const newAnchorStart = newHour * 60 + newQuarter * 15;
 
-    console.log(newAnchorStart, anchorStart);
     
     const timeChanged = draggedEventData.length === 1 && newAnchorStart !== anchorStart;
     
@@ -5494,7 +5498,9 @@ async function applyDragChanges(draggedEventData, newHour, newQuarter, newEmploy
         draggedEventData.forEach(evt => {
             if (eventDatabase[evt.originalDateKey]) {
                 eventDatabase[evt.originalDateKey] =
-                    eventDatabase[evt.originalDateKey].filter(e => e.id !== evt.id);
+                    eventDatabase[evt.originalDateKey].filter(
+                        e => !(e.id === evt.id && e.employee_id === evt.employee_id)
+                    );
             }
 
             const updatedEvent = {
@@ -5522,19 +5528,22 @@ async function applyDragChanges(draggedEventData, newHour, newQuarter, newEmploy
 
             const finalStart = newAnchorStart + offsetFromAnchor;
             const finalEnd = finalStart + duration;
-
+            console.log(eventDatabase[evt.originalDateKey]);
+            console.log(evt.id + " - " +  evt.employee_id);
+            
             if (eventDatabase[evt.originalDateKey]) {
                 eventDatabase[evt.originalDateKey] =
-                    eventDatabase[evt.originalDateKey].filter(e => e.id !== evt.id);
+                    eventDatabase[evt.originalDateKey].filter(
+                        e => !(e.id === evt.id && e.employee_id === evt.employee_id)
+                    );
             }
-
             const updatedEvent = {
                 ...evt,
                 startMinutes: finalStart,
                 endMinutes: finalEnd,
                 employee: newEmployee
             };
-            console.log(updatedEvent);
+            
             
             eventDatabase[currentDateKey].push(updatedEvent);
             console.log(eventDatabase);

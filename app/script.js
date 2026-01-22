@@ -138,7 +138,6 @@
   }
   function getEmployeeIdsForEvent(evt) {
     const dateKey = toYYYYMMDD(evt.date);
-
     if (!eventDatabase[dateKey]) return [];
 
     const employeeIds = eventDatabase[dateKey]
