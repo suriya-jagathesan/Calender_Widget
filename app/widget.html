@@ -3025,6 +3025,8 @@ min-width: 100px;
         let currentViewType = 'employee'; 
 let runGroups = []; 
 let runGroupDetails = {}; 
+let persons = [];
+let personDetails = {};
         function toggleEventSelection(eventEl) {
     const id = parseInt(eventEl.dataset.eventId);
 
@@ -3677,6 +3679,7 @@ function getEmployeeIconByCondition(employee, events) {
 
         async function getBookings() { 
             runGroups = [];
+            persons = [];
             runGroups.push('');
             const serviceList = `[${services.join(",")}]`;
             let cur_date = formatDateDDMMYYYY( currentDate );
@@ -3716,9 +3719,7 @@ if (!eventDatabase[key]) {
 }
  eventDatabase[key] = [];
 eventDatabase[key].push(...date_booking);    
-console.log(runGroups);
-console.log(runGroupDetails);
-        
+console.log(persons);
             } else {
                 console.log("No bookings found or error in fetching bookings.");
             }}
@@ -4506,6 +4507,12 @@ if (existing) {
     cur_book.no_of_staff = rec.No_of_Staff;
     const runName = rec.Care_Group?.Care_Group_Name ?? '';
 const runID   = rec.Care_Group?.ID ?? '';
+    const personName = rec.Care_Service_User.zc_display_value;
+    const person_id = rec.Care_Service_User.ID;
+
+    if( personName && !persons.includes(personName) ){
+        persons.push(personName);
+    }
 
 cur_book.run_view = runName;
 cur_book.run_view_id = runID;
