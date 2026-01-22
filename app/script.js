@@ -979,3 +979,124 @@ async function loadTravelDetails(evt) {
     noDataEl.style.display = 'block';
   }
 }
+function toggleInfoDropdown(e) {
+    e.stopPropagation();
+    const dropdown = document.getElementById('infoDropdown');
+    const wasActive = dropdown.classList.contains('active');
+    
+    // Close all other dropdowns
+    document.querySelectorAll('.info-dropdown.active').forEach(d => {
+        if (d !== dropdown) d.classList.remove('active');
+    });
+    
+    dropdown.classList.toggle('active');
+    
+    // Calculate and update stats when opening
+    if (!wasActive) {
+        updateInfoStats();
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.info-btn-wrapper')) {
+        document.getElementById('infoDropdown')?.classList.remove('active');
+    }
+});
+
+function updateInfoStats() {
+    if (currentView === 'day') {
+        updateDayStats();
+    } else {
+        updateWeekStats();
+    }
+}
+
+function updateDayStats() {
+    const dateKey = getCurrentDateKey();
+    const events = eventDatabase[dateKey] || [];
+    
+    // Required Hours: Sum of duration of all events
+    let totalRequiredMinutes = 0;
+    events.forEach(evt => {
+        totalRequiredMinutes += (evt.endMinutes - evt.startMinutes);
+    });
+    const requiredHours = (totalRequiredMinutes / 60).toFixed(1);
+    let totalCarerMinutes = 0;
+    employees.forEach(employee => {
+        const shift = shiftsMap[employee];
+        if (shift) {
+            totalCarerMinutes += (shift.endMinutes - shift.startMinutes);
+        }
+    });
+    const carersHours = (totalCarerMinutes / 60).toFixed(1);
+    // Update UI
+    document.getElementById('statRequiredHours').textContent = `${requiredHours}h`;
+    document.getElementById('statCarersWorking').textContent = employees.length - 1;
+    document.getElementById('statCarersHours').textContent = `${carersHours}h`;
+}
+
+function updateWeekStats() {
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    
+    let totalRequiredMinutes = 0;
+    const uniqueCarers = new Set();
+    const carerDaysWorked = new Map(); // Track unique employee-day combinations
+    
+    // Loop through all 7 days
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        const dateKey = getDateKey(d);
+        const dateStr = formatDateDDMMYYYY(d);
+        
+        const events = eventDatabase[dateKey] || [];
+        
+        // Sum required hours
+        events.forEach(evt => {
+            totalRequiredMinutes += (evt.endMinutes - evt.startMinutes);
+        });
+        
+        // Track unique carers
+        events.forEach(evt => {
+            if (evt.employee && evt.employee !== '') {
+                uniqueCarers.add(evt.employee);
+                
+                // Track unique employee-day for shift calculation
+                const key = `${evt.employee}-${dateStr}`;
+                if (!carerDaysWorked.has(key)) {
+                    carerDaysWorked.set(key, dateStr);
+                }
+            }
+        });
+    }
+    
+    const requiredHours = (totalRequiredMinutes / 60).toFixed(1);
+
+    let totalCarerMinutes = 0;
+    
+    // For now, use the current shiftsMap (day view)
+    // In a full implementation, you'd need to store shifts for each day
+    employees.forEach(employee => {
+        const shift = shiftsMap[employee];
+        if (shift) {
+            // Multiply by number of days they worked
+            const daysWorked = Array.from(carerDaysWorked.keys())
+                .filter(key => key.startsWith(employee + '-')).length;
+            totalCarerMinutes += (shift.endMinutes - shift.startMinutes) * daysWorked;
+        }
+    });
+    
+    const carersHours = (totalCarerMinutes / 60).toFixed(1);
+    
+    // Update UI
+    document.getElementById('statRequiredHours').textContent = `${requiredHours}h`;
+    document.getElementById('statCarersWorking').textContent = employees.length - 1;
+    document.getElementById('statCarersHours').textContent = `${carersHours}h`;
+}
+
+// Helper function to format hours with decimal
+function formatHoursDecimal(minutes) {
+    return (minutes / 60).toFixed(1);
+}

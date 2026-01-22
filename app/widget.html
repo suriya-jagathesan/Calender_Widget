@@ -2586,6 +2586,31 @@ min-width: 100px;
                 <button class="nav-btn" onclick="navigatePeriod(-1)"><i class="fa fa-angle-left"></i></button>
                 <button class="nav-btn" onclick="navigatePeriod(1)"><i class="fa fa-angle-right"></i></button>
                 <button class="nav-btn" onclick="goToday()">Today</button>
+                <div class="info-btn-wrapper">
+                    <button class="info-btn" onclick="toggleInfoDropdown(event)">
+                        <i class="fa fa-info-circle"></i>
+                    </button>
+                    <div class="info-tooltip">View Statistics</div>
+                    
+                    <div class="info-dropdown" id="infoDropdown">
+                        <div class="info-dropdown-header">Calendar Statistics</div>
+                        
+                        <div class="info-stat-row">
+                            <span class="info-stat-label">Required Hours:</span>
+                            <span class="info-stat-value" id="statRequiredHours">0.0h</span>
+                        </div>
+                        
+                        <div class="info-stat-row">
+                            <span class="info-stat-label">Carers Working:</span>
+                            <span class="info-stat-value highlight" id="statCarersWorking">0</span>
+                        </div>
+                        
+                        <div class="info-stat-row">
+                            <span class="info-stat-label">Carers Working Hours:</span>
+                            <span class="info-stat-value" id="statCarersHours">0.0h</span>
+                        </div>
+                    </div>
+                </div>  
                 <button class="calendar-icon" onclick="toggleSearch()"><i class="fa fa-search fa-lg"></i></button>
                 <button class="calendar-icon" onclick="toggleQuickFilter(event)">
     <i class="fa fa-filter fa-lg"></i>
