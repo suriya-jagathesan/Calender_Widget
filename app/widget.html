@@ -1272,6 +1272,7 @@
             <div class="view-toggle">
                 <button id="weekViewBtn" onclick="switchView('week')">Week</button>
                 <button id="dayViewBtn" class="active" onclick="switchView('day')">Day</button>
+                <button id="PlannerBtn" onclick="">Planner</button>
             </div>
             <div class="date-title" id="dateTitle">Wednesday, December 31, 2025</div>
             <div class="header-controls">
@@ -1501,22 +1502,37 @@
         function switchView(view) {
             currentView = view;
             const dayViewBtn = document.getElementById('dayViewBtn');
+            const PlannerBtn = document.getElementById('PlannerBtn');
             const weekViewBtn = document.getElementById('weekViewBtn');
             const dayView = document.getElementById('dayView');
             const weekView = document.getElementById('weekView');
-            
+            const planview = document.getElementById('planview');
             if (view === 'day') {
                 dayViewBtn.classList.add('active');
                 weekViewBtn.classList.remove('active');
+                PlannerBtn.classList.remove('active');
                 dayView.classList.add('active');
                 weekView.classList.remove('active');
+                planview.classList.remove('active');
                 renderDayView();
-            } else {
+            } else if (view === 'week') {
                 weekViewBtn.classList.add('active');
                 dayViewBtn.classList.remove('active');
                 weekView.classList.add('active');
                 dayView.classList.remove('active');
+                PlannerBtn.classList.remove('active');
+                planview.classList.remove('active');
                 renderWeekView();
+            }
+            else if(view=='plan')
+            {
+                weekViewBtn.classList.remove('active');
+                dayViewBtn.classList.remove('active');
+                weekView.classList.remove('active');
+                dayView.classList.remove('active');
+                PlannerBtn.classList.add('active');
+                planview.classList.add('active');
+                renderPlanView();
             }
             updateDateTitle();
             
@@ -1806,6 +1822,9 @@
             renderWeekDaysHeader();
             renderWeekEmployeeRows();
             syncWeekScroll();
+        }
+        function renderPlanView()
+        {
         }
 
         function renderWeekDaysHeader() {
