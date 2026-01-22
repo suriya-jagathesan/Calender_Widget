@@ -2591,13 +2591,7 @@ min-width: 100px;
                 <i class="fa fa-chevron-down" style="font-size: 10px;"></i>
             </button>
             <div class="view-switcher-dropdown" id="viewSwitcherDropdown">
-                <div class="view-switcher-option selected" onclick="selectViewType('employee')">
-                    <span>Employee</span>
-                    <i class="fa fa-check"></i>
-                </div>
-                <div class="view-switcher-option" onclick="selectViewType('run')">
-                    <span>Run View</span>
-                </div>
+               
             </div>
         </div>
         
@@ -3887,17 +3881,17 @@ let resizeDirtyEvent = null;
 
 
         async function updateEventZoho(evt){
-            console.log(evt);
+            
             
             const key = toYYYYMMDD( evt.date );            
             if (!eventDatabase[key]) {
                 eventDatabase[key] = [];
             }
             const final_emp = getEmployeeIdsForEvent(evt);
-            console.log(final_emp);
+            
             
             let sts = evt.event_status.replace("_"," "); 
-            console.log(final_emp);
+            
             
             let duration = evt.endMinutes - evt.startMinutes; 
             var update_config = {
@@ -3918,10 +3912,10 @@ let resizeDirtyEvent = null;
                     }
                 }
             }
-            console.log(update_config);
+            console.log(JSON.stringify(update_config));
             try{
             res = await ZOHO.CREATOR.DATA.updateRecordById(update_config);
-            console.log(res);
+            console.log( JSON.stringify(res));
             }
             catch(err){
                 console.log(err);
@@ -4374,45 +4368,52 @@ if (existing) {
 
 
         async function switchView(view) {
-            document.getElementById("employeeSearchInput").value = '';
-            showLoader();
-            currentView = view;
-            const dayViewBtn = document.getElementById('dayViewBtn');
-            const weekViewBtn = document.getElementById('weekViewBtn');
-            const dayView = document.getElementById('dayView');
-            const weekView = document.getElementById('weekView');
-            
-            if (view === 'day') {
-                if( !inital_load ){
-                    await getTodayAllEmployees();
-                }
-                await getBookings();
-                dayViewBtn.classList.add('active');
-                weekViewBtn.classList.remove('active');
-                dayView.classList.add('active');
-                weekView.classList.remove('active');
-                await renderDayView();
-            } else {
-                await getTodayAllEmployees();
-                await getBookingsForWeek();
-                weekViewBtn.classList.add('active');
-                dayViewBtn.classList.remove('active');
-                weekView.classList.add('active');
-                dayView.classList.remove('active');
-                await renderWeekView();
-            }
-            updateDateTitle();
-            
-            const miniCal = document.getElementById('miniCalendar');
-            if (miniCal.classList.contains('active')) {
-                renderMiniCalendar();
-            }
-            hideLoader();
+    document.getElementById("employeeSearchInput").value = '';
+    showLoader();
+    currentView = view;
+    
+    // Reset to employee view when switching
+    currentViewType = 'employee';
+    document.getElementById('currentViewType').textContent = 'Employee';
+    
+    const dayViewBtn = document.getElementById('dayViewBtn');
+    const weekViewBtn = document.getElementById('weekViewBtn');
+    const dayView = document.getElementById('dayView');
+    const weekView = document.getElementById('weekView');
+    
+    // Update view switcher options
+    updateViewSwitcherOptions();
+    
+    if (view === 'day') {
+        if (!inital_load) {
+            await getTodayAllEmployees();
         }
+        await getBookings();
+        dayViewBtn.classList.add('active');
+        weekViewBtn.classList.remove('active');
+        dayView.classList.add('active');
+        weekView.classList.remove('active');
+        await renderDayView();
+    } else {
+        await getTodayAllEmployees();
+        await getBookingsForWeek();
+        weekViewBtn.classList.add('active');
+        dayViewBtn.classList.remove('active');
+        weekView.classList.add('active');
+        dayView.classList.remove('active');
+        await renderWeekView();
+    }
+    updateDateTitle();
+    
+    const miniCal = document.getElementById('miniCalendar');
+    if (miniCal.classList.contains('active')) {
+        renderMiniCalendar();
+    }
+    hideLoader();
+}
 
          async function navigatePeriod(delta) {
     showLoader();
-    console.log(currentViewType);
     
     try {
         if (currentView === 'day') {
@@ -4438,6 +4439,11 @@ if (existing) {
             } else {
                 await getBookingsForWeek();
                 await renderRunViewWeek();
+            }
+        } else if (currentViewType === 'person') {
+            if (currentView === 'week') {
+                await getBookingsForWeek();
+                await renderWeekPersonView();
             }
         }
         
@@ -4473,6 +4479,11 @@ if (existing) {
                 await getBookingsForWeek();
                 await renderRunViewWeek();
             }
+        } else if (currentViewType === 'person') {
+            if (currentView === 'week') {
+                await getBookingsForWeek();
+                await renderWeekPersonView();
+            }
         }
         
         updateDateTitle();
@@ -4482,6 +4493,7 @@ if (existing) {
         hideLoader();
     }
 }
+
 
         function updateDateTitle() {
             if (currentView === 'day') {
@@ -4689,7 +4701,7 @@ let displayPercentage = `${percentage}%`;
         const height =
             rowHeightsMap[employee] ||
             (employees.length === 0 ? 500 : MIN_ROW_HEIGHT);
-        console.log(height);
+        
         
         row.style.height = height + 'px';
         column.appendChild(row);
@@ -6124,9 +6136,13 @@ formatFilterText = function(filter) {
 
         // INITIALIZATION
         async function init() {
-            inital_load = true;
-            try {
+    inital_load = true;
+    try {
         await getZohoData();
+        
+        // Initialize view switcher options
+        updateViewSwitcherOptions();
+        
         await switchView('day');
         await renderMiniCalendar();
         
@@ -6144,7 +6160,7 @@ formatFilterText = function(filter) {
         hideLoader();
         inital_load = false;
     }
-        }
+}
 
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);

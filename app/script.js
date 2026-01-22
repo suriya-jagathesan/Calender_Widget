@@ -199,64 +199,34 @@
   }
 
 
-  function toggleViewSwitcher(e) {
-      e.stopPropagation();
-      const dropdown = document.getElementById('viewSwitcherDropdown');
-      dropdown.classList.toggle('active');
-  }
+ function toggleViewSwitcher(e) {
+    e.stopPropagation();
+    const dropdown = document.getElementById('viewSwitcherDropdown');
+    
+    // Update options before showing
+    updateViewSwitcherOptions();
+    
+    dropdown.classList.toggle('active');
+}
 
-  function selectViewType(viewType) {
-      currentViewType = viewType;
-      
-      // Update display text
-      const displayText = viewType === 'employee' ? 'Employee View' : 'Run View';
-      document.getElementById('currentViewType').textContent = displayText;
-      
-      // Update selected state in dropdown
-      document.querySelectorAll('.view-switcher-option').forEach(opt => {
-          opt.classList.remove('selected');
-          const checkIcon = opt.querySelector('.fa-check');
-          if (checkIcon) checkIcon.remove();
-      });
-      
-      const selectedOption = document.querySelector(`.view-switcher-option:nth-child(${viewType === 'employee' ? '1' : '2'})`);
-      selectedOption.classList.add('selected');
-      selectedOption.innerHTML += '<i class="fa fa-check"></i>';
-      
-      // Close dropdown
-      document.getElementById('viewSwitcherDropdown').classList.remove('active');
-      
-      // Re-render view based on selection
-      if (viewType === 'run') {
-          // TODO: Implement run view rendering
-          console.log('Run view selected - implement rendering logic');
-          showToast('Run view coming soon', 'error');
-      } else {
-          // Re-render current view (employee view)
-          if (currentView === 'day') {
-              renderDayView();
-          } else {
-              renderWeekView();
-          }
-      }
-  }
-
-  // Close dropdown when clicking outside
-  document.addEventListener('click', () => {
-      const dropdown = document.getElementById('viewSwitcherDropdown');
-      if (dropdown) {
-          dropdown.classList.remove('active');
-      }
-  });
   async function selectViewType(type) {
+    console.log("Select view type");
+    
     if (currentViewType === type) return;
     
     showLoader();
     currentViewType = type;
     
     // Update UI - display text
-    document.getElementById('currentViewType').textContent = 
-        type === 'employee' ? 'Employee' : 'Run View';
+    let displayText = '';
+    if (type === 'employee') {
+        displayText = 'Employee';
+    } else if (type === 'run') {
+        displayText = 'Run View';
+    } else if (type === 'person') {
+        displayText = 'Person';
+    }
+    document.getElementById('currentViewType').textContent = displayText;
     
     // ✅ Update selected state and checkmarks
     document.querySelectorAll('.view-switcher-option').forEach(opt => {
@@ -269,33 +239,58 @@
         }
     });
     
-    // ✅ Add checkmark to the selected option
-    const selectedOption = event.target.closest('.view-switcher-option');
-    selectedOption.classList.add('selected');
+    // ✅ Add checkmark to the selected option based on type
+    const selectedOption = Array.from(document.querySelectorAll('.view-switcher-option')).find(opt => {
+        const spanText = opt.querySelector('span').textContent.toLowerCase();
+        if (type === 'employee' && spanText === 'employee') return true;
+        if (type === 'run' && spanText === 'run view') return true;
+        if (type === 'person' && spanText === 'person') return true;
+        return false;
+    });
     
-    // Create and append checkmark icon
-    const checkIcon = document.createElement('i');
-    checkIcon.className = 'fa fa-check';
-    selectedOption.appendChild(checkIcon);
+    if (selectedOption) {
+        selectedOption.classList.add('selected');
+        
+        // Create and append checkmark icon
+        const checkIcon = document.createElement('i');
+        checkIcon.className = 'fa fa-check';
+        selectedOption.appendChild(checkIcon);
+    }
     
     // Close dropdown
     document.getElementById('viewSwitcherDropdown').classList.remove('active');
     
-    
     // Re-render current view
-    if (currentView === 'day') {
-        if (type === 'employee') {
-            await renderDayView();
+    try {
+        if (currentView === 'day') {
+            if (type === 'employee') {
+                await renderDayView();
+            } else if (type === 'run') {
+                await renderRunView();
+            }
         } else {
-            await renderRunView();
+            // Week view
+            if (type === 'employee') {
+                await renderWeekView();
+            } else if (type === 'person') {
+                await renderWeekPersonView();
+            }
         }
-    } else {
-        // Week view will need similar separate functions
-        await renderWeekView();
+    } catch (error) {
+        console.error('Error rendering view:', error);
     }
     
     hideLoader();
 }
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', () => {
+      const dropdown = document.getElementById('viewSwitcherDropdown');
+      if (dropdown) {
+          dropdown.classList.remove('active');
+      }
+  });
+  
   function getEventsForRunGroup(runGroup, dateKey) {
       const allEvents = eventDatabase[dateKey] || [];
       return allEvents.filter(evt => {    
@@ -1099,4 +1094,280 @@ function updateWeekStats() {
 // Helper function to format hours with decimal
 function formatHoursDecimal(minutes) {
     return (minutes / 60).toFixed(1);
+}
+
+function updateViewSwitcherOptions() {
+    const dropdown = document.getElementById('viewSwitcherDropdown');
+    dropdown.innerHTML = '';
+    console.log(currentView);
+    
+    if (currentView === 'day') {
+        // Day view options: Employee and Run View
+        const employeeOption = document.createElement('div');
+        employeeOption.className = 'view-switcher-option' + (currentViewType === 'employee' ? ' selected' : '');
+        employeeOption.innerHTML = `
+            <span>Employee</span>
+            ${currentViewType === 'employee' ? '<i class="fa fa-check"></i>' : ''}
+        `;
+        employeeOption.onclick = () => selectViewType('employee');
+        
+        const runOption = document.createElement('div');
+        runOption.className = 'view-switcher-option' + (currentViewType === 'run' ? ' selected' : '');
+        runOption.innerHTML = `
+            <span>Run View</span>
+            ${currentViewType === 'run' ? '<i class="fa fa-check"></i>' : ''}
+        `;
+        runOption.onclick = () => selectViewType('run');
+        
+        dropdown.appendChild(employeeOption);
+        dropdown.appendChild(runOption);
+    } else {
+        // Week view options: Employee and Person
+        const employeeOption = document.createElement('div');
+        employeeOption.className = 'view-switcher-option' + (currentViewType === 'employee' ? ' selected' : '');
+        employeeOption.innerHTML = `
+            <span>Employee</span>
+            ${currentViewType === 'employee' ? '<i class="fa fa-check"></i>' : ''}
+        `;
+        employeeOption.onclick = () => selectViewType('employee');
+        
+        const personOption = document.createElement('div');
+        personOption.className = 'view-switcher-option' + (currentViewType === 'person' ? ' selected' : '');
+        personOption.innerHTML = `
+            <span>Person</span>
+            ${currentViewType === 'person' ? '<i class="fa fa-check"></i>' : ''}
+        `;
+        personOption.onclick = () => selectViewType('person');
+        
+        dropdown.appendChild(employeeOption);
+        dropdown.appendChild(personOption);
+    }
+}
+function getEventsForPerson(personName, dateKey) {
+    const allEvents = eventDatabase[dateKey] || [];
+    
+    return allEvents.filter(evt => {
+        if (evt.title !== personName) return false;
+        
+        return appliedFilters.every(f => {
+            let search_key = null;
+            if (f.field === "persons") {
+                search_key = 'title';
+            } else if (f.field === 'staff' || f.field === 'employee') {
+                search_key = 'employee';
+            } else if (f.field === 'service') {
+                search_key = 'service';
+            } else {
+                search_key = f.field;
+            }
+            
+            const eventValue = evt[search_key];
+            if (eventValue == null) return false;
+            
+            if (f.filterType === 'contains') {
+                return f.searchValues.some(v =>
+                    String(eventValue)
+                        .toLowerCase()
+                        .includes(String(v).toLowerCase())
+                );
+            } else if (f.filterType === 'is') {
+                return f.searchValues.some(v =>
+                    String(eventValue).trim().toLowerCase() ===
+                    String(v).trim().toLowerCase()
+                );
+            } else if (f.filterType === 'isNot') {
+                return !f.searchValues.some(v =>
+                    String(eventValue) === String(v)
+                );
+            } else if (f.filterType === 'isEmpty') {
+                return isEmptyValue(eventValue);
+            } else if (f.filterType === 'isNotEmpty') {
+                return !isEmptyValue(eventValue);
+            }
+            
+            return true;
+        });
+    });
+}
+
+
+async function renderWeekPersonView() {
+    renderWeekDaysHeaderPerson();
+    renderWeekPersonRows();
+    syncWeekScroll();
+}
+
+// New function: Render week days header for person view
+function renderWeekDaysHeaderPerson() {
+    const header = document.getElementById('weekDaysHeader');
+    header.innerHTML = '';
+    
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    for (let i = 0; i < 7; i++) {
+        const dayDate = new Date(weekStart);
+        dayDate.setDate(weekStart.getDate() + i);
+        
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'week-day-header';
+        
+        if (dayDate.toDateString() === todayDate.toDateString()) {
+            dayHeader.classList.add('today');
+        }
+        
+        const dName = dayNames[i].toUpperCase();
+        const dNum = dayDate.getDate();
+        const mName = monthNames[dayDate.getMonth()].toUpperCase();
+        
+        dayHeader.innerHTML = `
+            <div class="week-day-name">${dName}, ${dNum} ${mName}</div>
+        `;
+        header.appendChild(dayHeader);
+    }
+}
+
+// New function: Render person rows
+function renderWeekPersonRows() {
+    const rowsContainer = document.getElementById('weekCalendarRows');
+    rowsContainer.innerHTML = '';
+    
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    const rowHeightsMap = {};
+    
+    const fillHeight = calculateFillHeight();
+    
+    // Get unique persons from the persons array
+    const displayPersons = persons.length > 0 ? [...new Set(persons)] : ['—'];
+    
+    displayPersons.forEach(person => {
+        let maxEventsInDay = 1;
+        
+        if (person !== '—') {
+            for (let day = 0; day < 7; day++) {
+                const dayDate = new Date(weekStart);
+                dayDate.setDate(weekStart.getDate() + day);
+                const events = getEventsForPerson(person, getDateKey(dayDate));
+                if (events.length > 0) maxEventsInDay = Math.max(maxEventsInDay, events.length);
+            }
+        }
+        
+        const eventNeededHeight = (maxEventsInDay * (EVENT_HEIGHT + EVENT_GAP)) + (ROW_PADDING * 2);
+        const finalRowHeight = Math.max(fillHeight, eventNeededHeight);
+        rowHeightsMap[person] = finalRowHeight;
+        
+        const personRow = document.createElement('div');
+        personRow.className = 'week-employee-calendar-row';
+        personRow.style.height = finalRowHeight + 'px';
+        
+        for (let day = 0; day < 7; day++) {
+            const dayDate = new Date(weekStart);
+            dayDate.setDate(weekStart.getDate() + day);
+            const dateKey = getDateKey(dayDate);
+            
+            const dayColumn = document.createElement('div');
+            dayColumn.className = 'week-day-column';
+            dayColumn.style.flex = "1 1 0";
+            
+            // No drag and drop for person view
+            const eventsContainer = document.createElement('div');
+            eventsContainer.className = 'week-events-container';
+            const events = person === '—' ? [] : getEventsForPerson(person, dateKey);
+            renderWeekEventsForPerson(eventsContainer, events, dateKey);
+            
+            dayColumn.appendChild(eventsContainer);
+            personRow.appendChild(dayColumn);
+        }
+        rowsContainer.appendChild(personRow);
+    });
+    
+    renderWeekPersonColumn(rowHeightsMap);
+}
+
+// New function: Render person column
+function renderWeekPersonColumn(rowHeightsMap = {}) {
+    const column = document.getElementById('weekEmployeeColumn');
+    column.innerHTML = '';
+    
+    const displayPersons = persons.length > 0 ? [...new Set(persons)] : ['—'];
+    
+    displayPersons.forEach(person => {
+        const row = document.createElement('div');
+        row.className = 'week-employee-row';
+        
+        if (person !== '—') {
+            row.innerHTML = `
+                <div class="employee-label">
+                    <div class="employee-name">${person}</div>
+                </div>
+            `;
+        }
+        
+        const height = rowHeightsMap[person] || MIN_ROW_HEIGHT;
+        row.style.height = height + 'px';
+        column.appendChild(row);
+    });
+}
+
+// New function: Render events for person (no drag & drop)
+function renderWeekEventsForPerson(container, events, dateKey) {
+    events.forEach((evt, index) => {
+        const el = document.createElement('div');
+        el.className = `event status-${evt.status}`;
+        el.draggable = false; // Disable dragging
+        
+        el.dataset.eventId = evt.id;
+        el.dataset.viewType = 'week-person';
+        el.dataset.eventDate = dateKey;
+        el.dataset.person = evt.title;
+        el.dataset.serviceUser = evt.title || '';
+        el.dataset.staff = evt.employee || '—';
+        el.dataset.start = minutesToTime(evt.startMinutes).hour.toString().padStart(2,'0') + ':' +
+                        minutesToTime(evt.startMinutes).minute.toString().padStart(2,'0');
+        el.dataset.end = minutesToTime(evt.endMinutes).hour.toString().padStart(2,'0') + ':' +
+                        minutesToTime(evt.endMinutes).minute.toString().padStart(2,'0');
+        el.dataset.mismatch = evt.status === 'Missed' ? 'Visit missed' : '';
+        el.dataset.status = evt.event_status;
+        el.dataset.travel = evt.travel || '';
+        
+        const topPosition = ROW_PADDING + (index * (EVENT_HEIGHT + EVENT_GAP));
+        
+        el.style.top = `${topPosition}px`;
+        el.style.height = `${EVENT_HEIGHT}px`;
+        el.style.left = '2px';
+        el.style.right = '2px';
+        el.style.width = 'auto';
+        
+        const title = document.createElement('div');
+        title.className = 'event-title';
+        title.textContent = evt.employee || 'Unassigned';
+        
+        const time = document.createElement('div');
+        time.className = 'event-time';
+        time.textContent = formatTimeRange(evt.startMinutes, evt.endMinutes);
+        
+        el.appendChild(title);
+        el.appendChild(time);
+        
+        // Click to view details only
+        el.addEventListener('mousedown', (e) => {
+            mouseDownX = e.clientX;
+            mouseDownY = e.clientY;
+        });
+        
+        el.addEventListener('mouseup', (e) => {
+            const dx = Math.abs(e.clientX - mouseDownX);
+            const dy = Math.abs(e.clientY - mouseDownY);
+            
+            if (dx > CLICK_TOLERANCE || dy > CLICK_TOLERANCE) return;
+            
+            openEventModal(evt);
+        });
+        
+        container.appendChild(el);
+    });
 }
