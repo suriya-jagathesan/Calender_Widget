@@ -3026,21 +3026,21 @@ let runGroupDetails = {};
 let persons = [];
 let personDetails = {};
         function toggleEventSelection(eventEl) {
-    const id = parseInt(eventEl.dataset.eventId);
+    const eventKey = eventEl.dataset.eventKey; 
 
-    if (selectedEventIds.has(id)) {
-        selectedEventIds.delete(id);
+    if (selectedEventIds.has(eventKey)) {
+        selectedEventIds.delete(eventKey);
         eventEl.classList.remove('selected');
     } else {
-        selectedEventIds.add(id);
+        selectedEventIds.add(eventKey);
         eventEl.classList.add('selected');
     }
 }
 
 function clearEventSelection() {
-    selectedEventIds.forEach(id => {
+    selectedEventIds.forEach(eventKey => {
         document
-            .querySelector(`.event[data-event-id="${id}"]`)
+            .querySelector(`.event[data-event-key="${eventKey}"]`)
             ?.classList.remove('selected');
     });
     selectedEventIds.clear();
@@ -4915,7 +4915,8 @@ function syncScroll() {
                 const el = document.createElement('div');
                 el.className = `event status-${evt.status}`;
                 el.draggable = true;
-
+                const compositeKey = `${evt.id}-${evt.employee || 'unassigned'}-${evt.employee_id || 'none'}`;
+                el.dataset.eventKey = compositeKey
                 el.dataset.eventId = evt.id;
                 el.dataset.viewType = 'day';
                 el.dataset.employee = evt.employee;
@@ -5230,7 +5231,8 @@ function renderWeekEmployeeRows() {
                 const el = document.createElement('div');
                 el.className = `event status-${evt.status}`;
                 el.draggable = true;
-
+                const compositeKey = `${evt.id}-${evt.employee || 'unassigned'}-${evt.employee_id || 'none'}`;
+                el.dataset.eventKey = compositeKey
                 el.dataset.eventId = evt.id;
                 el.dataset.viewType = 'week';
                 el.dataset.eventDate = dateKey;
@@ -5278,7 +5280,7 @@ function renderWeekEmployeeRows() {
 function handleDragStartWeek(e) {
             draggedElement = e.currentTarget;
             draggedEventId = parseInt(e.currentTarget.dataset.eventId);
-            console.log(draggedEventId);
+            
             
             const viewType = e.currentTarget.dataset.viewType;
             let dateKey = viewType === 'week' ? e.currentTarget.dataset.eventDate : getCurrentDateKey();
@@ -5346,11 +5348,14 @@ el.addEventListener('mouseup', (e) => {
 
     const baseEl = e.currentTarget;
     const baseId = parseInt(baseEl.dataset.eventId);
-
+    const baseEventKey = baseEl.dataset.eventKey;
+    console.log('Element dataset:', baseEl.dataset);
+    console.log('eventKey from element:', baseEl.dataset.eventKey);
+    console.log('Looking for key:', baseEventKey);
     // If dragging unselected event → reset selection
-    if (!selectedEventIds.has(baseId)) {
+    if (!selectedEventIds.has(baseEventKey)) { 
         clearEventSelection();
-        selectedEventIds.add(baseId);
+        selectedEventIds.add(baseEventKey); 
         baseEl.classList.add('selected');
     }
 
@@ -5364,24 +5369,43 @@ el.addEventListener('mouseup', (e) => {
 
     const events = eventDatabase[dateKey] || [];
 
-    draggedEventData = [...selectedEventIds].map(id => {
-        const evt = events.find(e => e.id === id);
-        return {
+     console.log('Events in database:', events.map(e => ({
+        id: e.id,
+        employee: e.employee,
+        employee_id: e.employee_id,
+        generatedKey: getEventCompositeKey(e)
+    })));
+    
+    draggedEventData = [...selectedEventIds].map(eventKey => {
+        const evt = events.find(e => {
+            const eKey = `${e.id}-${e.employee || 'unassigned'}-${e.employee_id || 'none'}`;
+            return eKey === eventKey;
+        });
+        if (!evt) {
+            console.error(`❌ Event not found for key: ${eventKey}`);
+            console.log('Available events:', events);
+            return null;
+        }
+        console.log('✅ Found event:', evt);
+        return evt ? {
             ...evt,
-            originalDateKey: dateKey
-        };
+            originalDateKey: dateKey,
+            eventKey: eventKey
+        } : null;
+    }).filter(Boolean);
+    
+    console.log('Final draggedEventData:', draggedEventData);
+    // ✅ Update dragging class using composite key
+    selectedEventIds.forEach(eventKey => {
+        const el = document.querySelector(`.event[data-event-key="${eventKey}"]`);
+        if (el) {
+            el.classList.add('dragging');
+        }
     });
-
-   selectedEventIds.forEach(id => {
-    const el = document.querySelector(`.event[data-event-id="${id}"]`);
-    if (el) {
-        el.classList.add('dragging');
-    }
-});
 
 document.body.classList.add('dragging-active');
 e.dataTransfer.effectAllowed = 'move';
-console.log("Drag Ended");
+console.log('Drag started with data:', draggedEventData);
 }
 
 
@@ -5465,7 +5489,11 @@ document.body.classList.remove('dragging-active');
     const anchorStart = anchorEvent.startMinutes;
     const newAnchorStart = newHour * 60 + newQuarter * 15;
 
-    
+    console.log('Dropping event:', {
+        anchorEvent,
+        newEmployee,
+        newTime: newAnchorStart
+    }); 
     const timeChanged = draggedEventData.length === 1 && newAnchorStart !== anchorStart;
     
 
@@ -5493,14 +5521,14 @@ async function applyDragChanges(draggedEventData, newHour, newQuarter, newEmploy
     if (!eventDatabase[currentDateKey]) {
         eventDatabase[currentDateKey] = [];
     }
-
     if (draggedEventData.length > 1) {
         draggedEventData.forEach(evt => {
             if (eventDatabase[evt.originalDateKey]) {
                 eventDatabase[evt.originalDateKey] =
-                    eventDatabase[evt.originalDateKey].filter(
-                        e => !(e.id === evt.id && e.employee_id === evt.employee_id)
-                    );
+                    eventDatabase[evt.originalDateKey] = eventDatabase[evt.originalDateKey].filter(e => {
+                    const eKey = `${e.id}-${e.employee || 'unassigned'}-${e.employee_id || 'none'}`;
+                    return eKey !== evt.eventKey;
+                });
             }
 
             const updatedEvent = {
@@ -5509,7 +5537,12 @@ async function applyDragChanges(draggedEventData, newHour, newQuarter, newEmploy
                 endMinutes: evt.endMinutes,
                 employee: newEmployee
             };
-
+             if (newEmployee) {
+                const empDetail = employeeDetails.find(emp => emp.name === newEmployee);
+                updatedEvent.employee_id = empDetail?.id || null;
+            } else {
+                updatedEvent.employee_id = null;
+            }
             eventDatabase[currentDateKey].push(updatedEvent);
 
             updateEventZoho({
@@ -5527,15 +5560,12 @@ async function applyDragChanges(draggedEventData, newHour, newQuarter, newEmploy
             const duration = evt.endMinutes - evt.startMinutes;
 
             const finalStart = newAnchorStart + offsetFromAnchor;
-            const finalEnd = finalStart + duration;
-            console.log(eventDatabase[evt.originalDateKey]);
-            console.log(evt.id + " - " +  evt.employee_id);
-            
+            const finalEnd = finalStart + duration;    
             if (eventDatabase[evt.originalDateKey]) {
-                eventDatabase[evt.originalDateKey] =
-                    eventDatabase[evt.originalDateKey].filter(
-                        e => !(e.id === evt.id && e.employee_id === evt.employee_id)
-                    );
+                eventDatabase[evt.originalDateKey] = eventDatabase[evt.originalDateKey].filter(e => {
+                    const eKey = `${e.id}-${e.employee || 'unassigned'}-${e.employee_id || 'none'}`;
+                    return eKey !== evt.eventKey;
+                });
             }
             const updatedEvent = {
                 ...evt,
@@ -5543,7 +5573,12 @@ async function applyDragChanges(draggedEventData, newHour, newQuarter, newEmploy
                 endMinutes: finalEnd,
                 employee: newEmployee
             };
-            
+            if (newEmployee) {
+                const empDetail = employeeDetails.find(emp => emp.name === newEmployee);
+                updatedEvent.employee_id = empDetail?.id || null;
+            } else {
+                updatedEvent.employee_id = null;
+            }
             
             eventDatabase[currentDateKey].push(updatedEvent);
             console.log(eventDatabase);
@@ -5559,7 +5594,7 @@ async function applyDragChanges(draggedEventData, newHour, newQuarter, newEmploy
         });
     }
 
-    renderDayView();
+    re_renderDayView();
 }
 
         function handleWeekDrop(e) {

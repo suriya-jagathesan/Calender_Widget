@@ -95,12 +95,13 @@
       a.to === b.to
     );
   }
-  function getEventGroupRows(activeEvent) {
-    const key = toYYYYMMDD(activeEvent.date);
-    return (eventDatabase[key] || []).filter(evt =>
-      isSameLogicalEvent(evt, activeEvent)
-    );
-  }
+  function getEventGroupRows(evt) {
+    const dateKey = toYYYYMMDD(evt.date);
+    const events = eventDatabase[dateKey] || [];
+    
+    // ✅ Group by id only (not by employee)
+    return events.filter(e => e.id === evt.id);
+}
   function cloneEventForEmployee(base, employee, employee_id = null) {
       console.log(employee);
       
@@ -1369,4 +1370,18 @@ function renderWeekEventsForPerson(container, events, dateKey) {
         
         container.appendChild(el);
     });
+}
+
+function getEventCompositeKey(evt) {
+    // ✅ Use zoho_id as the primary unique identifier
+    if (evt.zoho_id) {
+        return `${evt.zoho_id}`;
+    }
+    
+    // Fallback for events without zoho_id (shouldn't happen in your case)
+    if (evt.employee_id) {
+        return `${evt.id}-${evt.employee_id}-${evt.startMinutes}`;
+    }
+    
+    return `${evt.id}-${evt.employee || 'unassigned'}-${evt.startMinutes}`;
 }
