@@ -2587,7 +2587,7 @@ min-width: 100px;
         <div class="view-switcher">
             <button class="view-switcher-btn" onclick="toggleViewSwitcher(event)">
                 <i class="fa fa-th-list"></i>
-                <span id="currentViewType">Employee</span>
+                <span id="currentViewType">Staff</span>
                 <i class="fa fa-chevron-down" style="font-size: 10px;"></i>
             </button>
             <div class="view-switcher-dropdown" id="viewSwitcherDropdown">
@@ -2653,7 +2653,7 @@ min-width: 100px;
 
         <div class="quick-dropdown" data-field="employee">
             <div class="quick-dropdown-display" onclick="toggleQuickDropdown(this)">
-                <span>Select employee</span>
+                <span>Select Staff</span>
                 <i class="fa fa-chevron-down"></i>
             </div>
             <div class="quick-dropdown-options"></div>
@@ -2756,7 +2756,7 @@ min-width: 100px;
  
         <!-- STICKY HEADER INSIDE SCROLL -->
         <div class="week-header-row sticky-header">
-            <div class="week-employee-header">Employee</div>
+            <div class="week-employee-header">Staff</div>
             <div class="week-days-container">
                 <div class="week-days-header" id="weekDaysHeader"></div>
                 <div class="week-days-summary" id="weekDaysSummary"></div>
@@ -4703,26 +4703,58 @@ function renderEmployeeColumnBasedOnFilter(rowHeightsMap = {},emp) {
                 total_mins += (evt.endMinutes - evt.startMinutes);
             });
             const t_count = total_mins / 60;
-            let count = null;
-            if( t_count > 0 ){
-                count = t_count.toFixed(2);
-            }
-            else{
-count = 0;
-            }
+const workingHours = total_mins / 60;
+let displayHours = workingHours > 0 ? workingHours.toFixed(1) : '0.0';
+
+// Get contracted hours from shift data
+const shiftData = shiftsMap[employee];
+let contractedHours = '0.0';
+let contractedMinutes = 0;
+
+if (shiftData) {
+    contractedMinutes = shiftData.endMinutes - shiftData.startMinutes;
+    contractedHours = (contractedMinutes / 60).toFixed(1);
+}
+
+// ✅ CALCULATE PERCENTAGE
+let percentage = 0;
+if (contractedMinutes > 0) {
+    percentage = Math.round((total_mins / contractedMinutes) * 100);
+}
+
+// ✅ DISPLAY PERCENTAGE (not hours)
+let displayPercentage = `${percentage}%`;
             let iconHTML = '';
-            if ( true) {
-                iconHTML = `<i class="fa-solid fa-circle-xmark"></i>`;
-            } else if (/* your condition */ false) {
-                iconHTML = `<i class="fa-solid fa-circle-xmark"></i>`;
-            }
+            const hasDrivingSkill = employeeDetails.some(e =>
+    e.name?.trim().toLowerCase() === employee?.trim().toLowerCase() &&
+    Array.isArray(e.skills) &&
+    e.skills.some(
+        skill =>
+            typeof skill === "string" &&
+            skill.trim().toLowerCase() === "driver"
+    )
+);        
+            if ( hasDrivingSkill) {
+                iconHTML = `<i class="fa-solid fa-car"></i>`;
+            } 
 
             row.innerHTML = `
                 <div class="employee-label">
-                    <span class="employee-name">${employee}</span>
-                    ${iconHTML}
-                    <span class="employee-count">${count}</span>
-                    
+                    <div class="employee-name-row">
+                        <span class="employee-name">${employee}</span>
+                        ${iconHTML}
+                        <span class="employee-count">${displayPercentage}</span>
+                    </div>
+                    <div class="employee-hours-info">
+                        <div class="employee-hours-row">
+                            <span class="hours-label">Contracted Hours:</span>
+                            <span class="hours-value">${contractedHours}</span>
+                        </div>
+                        <div class="employee-hours-row">
+                            <span class="hours-label">Working Hours:</span>
+                            <span class="hours-value">${displayHours}</span>
+                        </div>
+                    </div>
                 </div>
             `;
         }
