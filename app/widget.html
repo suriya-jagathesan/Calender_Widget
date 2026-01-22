@@ -961,15 +961,44 @@
         
         .week-employee-row {
             display: flex;
-            align-items: start;
-            justify-content: start;
+            align-items: center;
+            justify-content: center;
             border-bottom: 1px solid #e5e7eb;
-            padding: 10px;
+            padding: 10px 8px;
             font-size: 14px;
             font-weight: 500;
             color: #374151;
             text-align: center;
+            overflow: hidden; /* Prevent overflow */
         }
+.week-employee-row .employee-label {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    overflow: hidden;
+}
+
+.week-employee-row .employee-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+    text-align: center;
+}
+
+.week-employee-row .employee-total-hours {
+    font-size: 11px;
+    color: #6b7280;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
         
         .week-scroll-wrapper {
                 display: block;  
@@ -3745,6 +3774,10 @@ function removeFilterByFieldValue(field, value) {
     return Math.max(MIN_ROW_HEIGHT, fillHeight);
 }
 function getTotalWeekHours(employee) {
+    if (!employee || employee === '' || employee === '—') {
+        return "0.0";
+    }
+
     let totalMinutes = 0;
 
     const weekStart = new Date(currentDate);
@@ -3756,12 +3789,18 @@ function getTotalWeekHours(employee) {
         const key = getDateKey(d);
 
         const events = getEventsForEmployee(employee, key);
+        
         events.forEach(evt => {
-            totalMinutes += (evt.endMinutes - evt.startMinutes);
+            const duration = evt.endMinutes - evt.startMinutes;
+            if (duration > 0) {
+                totalMinutes += duration;
+            }
         });
     }
 
-    return (totalMinutes / 60) == 0 ? "0" :(totalMinutes / 60).toFixed(2);
+    // Return formatted hours
+    const hours = totalMinutes / 60;
+    return hours > 0 ? hours.toFixed(1) : "0.0";
 }
 
 function renderWeekSummaryRow() {
@@ -4521,9 +4560,7 @@ if (runName && !runGroups.includes(runName)) {
         }
         async function renderDayView() {    
             showLoader();
-            console.log(employees);
             await getTodayAllEmployees();
-            console.log(employees);
             renderHourHeaders();
             await renderEmployeeRows();
             syncScroll();
@@ -5085,7 +5122,6 @@ function renderWeekEmployeeRows() {
     // 4. Update the side employee labels to match the new heights
     renderWeekEmployeeColumn(rowHeightsMap);
 }
-
 // window.addEventListener('resize', () => {
 //     if (currentView === 'day') renderDayView();
 //     else renderWeekView();

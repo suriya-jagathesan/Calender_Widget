@@ -843,9 +843,8 @@
       hideLoader();
   }
   async function renderRunView() {
-    console.log("Called");
-    
       showLoader();
+      await getBookings();
       renderHourHeaders();
       await renderRunViewRows();
       syncScroll();
