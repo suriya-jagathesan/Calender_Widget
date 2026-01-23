@@ -206,21 +206,23 @@
 }
 .view-switcher {
     position: relative;
+    width: 80px;
 }
 
 .view-switcher-btn {
+    width: 100%;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border: 1px solid #e5e7eb;
     background: white;
-    border: 1px solid #d1d5db;
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
-    font-weight: 500;
-    transition: all 0.2s;
 }
+
+
 
 .view-switcher-btn:hover {
     background: #f9fafb;
@@ -230,7 +232,7 @@
     position: absolute;
     top: calc(100% + 4px);
     left: 0;
-    min-width: 180px;
+    width: 100%;
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 6px;

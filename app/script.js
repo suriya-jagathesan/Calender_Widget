@@ -211,7 +211,7 @@
 }
 
   async function selectViewType(type) {
-    console.log("Select view type");
+    
     
     if (currentViewType === type) return;
     
@@ -221,9 +221,9 @@
     // Update UI - display text
     let displayText = '';
     if (type === 'employee') {
-        displayText = 'Employee';
+        displayText = 'Staff';
     } else if (type === 'run') {
-        displayText = 'Run View';
+        displayText = 'Run';
     } else if (type === 'person') {
         displayText = 'Person';
     }
@@ -473,8 +473,14 @@
           const el = document.createElement('div');
           el.className = `event status-${evt.status}`;
           el.draggable = true;
-
+          if (evt.Time_Critical_Visit === "Yes") {
+            el.classList.add('time-critical');
+        }
           el.dataset.eventId = evt.id;
+          el.dataset.timeCritical = evt.Time_Critical_Visit || "No";
+          el.dataset.female = evt.Female_Only || "No";
+          const compositeKey = `${evt.zoho_id}-${evt.employee || 'unassigned'}-${evt.employee_id || 'none'}`;
+          el.dataset.eventKey = compositeKey;
           el.dataset.viewType = 'run';
           el.dataset.runGroup = evt.run_view || '';
           el.dataset.serviceUser = evt.title || '';
@@ -508,7 +514,13 @@
               staffBadge.title = `${evt.no_of_staff} staff required`;
               el.appendChild(staffBadge);
           }
-          
+          if (evt.Time_Critical_Visit === "Yes") {
+                    const lockIcon = document.createElement('div');
+                    lockIcon.className = 'event-lock-icon';
+                    lockIcon.innerHTML = '<i class="fa fa-lock"></i>';
+                    lockIcon.title = 'Time Critical Visit - Time cannot be changed';
+                    el.appendChild(lockIcon);
+            }
           if (evt.status === "Completed") {
               el.appendChild(title);
           } else {
@@ -564,12 +576,13 @@
   function handleRunDragStart(e) {
       const baseEl = e.currentTarget;
       const baseId = parseInt(baseEl.dataset.eventId);
+       const baseEventKey = baseEl.dataset.eventKey;
 
-      if (!selectedEventIds.has(baseId)) {
-          clearEventSelection();
-          selectedEventIds.add(baseId);
-          baseEl.classList.add('selected');
-      }
+      if (!selectedEventIds.has(baseEventKey)) { 
+        clearEventSelection();
+        selectedEventIds.add(baseEventKey); 
+        baseEl.classList.add('selected');
+    }
 
       draggedElement = baseEl;
       draggedEventId = baseId;
@@ -577,20 +590,30 @@
       const dateKey = getCurrentDateKey();
       const events = eventDatabase[dateKey] || [];
 
-      draggedEventData = [...selectedEventIds].map(id => {
-          const evt = events.find(e => e.id === id);
-          return {
-              ...evt,
-              originalDateKey: dateKey
-          };
-      });
+      draggedEventData = [...selectedEventIds].map(eventKey => {
+        const evt = events.find(e => {
+            const eKey = `${e.zoho_id}-${e.employee || 'unassigned'}-${e.employee_id || 'none'}`;
+            return eKey === eventKey;
+        });
+        if (!evt) {
+            console.error(`❌ Event not found for key: ${eventKey}`);
+            console.log('Available events:', events);
+            return null;
+        }
+        console.log('✅ Found event:', evt);
+        return evt ? {
+            ...evt,
+            originalDateKey: dateKey,
+            eventKey: eventKey
+        } : null;
+    }).filter(Boolean);
 
-      selectedEventIds.forEach(id => {
-          const el = document.querySelector(`.event[data-event-id="${id}"]`);
-          if (el) {
-              el.classList.add('dragging');
-          }
-      });
+      selectedEventIds.forEach(eventKey => {
+        const el = document.querySelector(`.event[data-event-key="${eventKey}"]`);
+        if (el) {
+            el.classList.add('dragging');
+        }
+    });
 
       document.body.classList.add('dragging-active');
       e.dataTransfer.effectAllowed = 'move';
@@ -627,7 +650,7 @@
 
       const slot = e.currentTarget;
       slot.classList.remove('drop-highlight');
-      console.log(!Array.isArray(draggedEventData) || draggedEventData.length === 0);
+      console.log(draggedEventData);
       
       if (!Array.isArray(draggedEventData) || draggedEventData.length === 0) {
           return;
@@ -637,6 +660,20 @@
       const newQuarter = parseInt(slot.dataset.quarter, 10);
       const newRunGroup = slot.dataset.runGroup;
       const currentDateKey = getCurrentDateKey();
+      const hasTimeCritical = draggedEventData.some(evt => evt.Time_Critical_Visit === "Yes");
+    
+    if (hasTimeCritical) {
+        // ✅ ALLOW EMPLOYEE CHANGE BUT NOT TIME CHANGE
+        const anchorEvent = draggedEventData[0];
+        const originalStartMinutes = anchorEvent.startMinutes;
+        const newAnchorStart = newHour * 60 + newQuarter * 15;
+        
+        if (newAnchorStart !== originalStartMinutes) {
+            showToast("Time Critical Visits cannot be moved to a different time", "error");
+            clearEventSelection();
+            return;
+        }
+    }
 
       const anchorEvent = draggedEventData[0];
       const anchorStart = anchorEvent.startMinutes;
@@ -678,7 +715,6 @@
     }
 
     const processedZohoIds = new Set();
-    console.log(draggedEventData );
     
     draggedEventData.forEach(evt => {
         if (processedZohoIds.has(evt.zoho_id)) return;
@@ -696,7 +732,7 @@
             (eventDatabase[originalDateKey] || [])
                 .filter(e => e.zoho_id !== evt.zoho_id);
 
-        // Compute time shift ONLY if single drag
+        
         let timeDelta = 0;
         if (draggedEventData.length === 1) {
             const offsetFromAnchor = evt.startMinutes - anchorStart;
@@ -737,6 +773,8 @@
 
 
   async function updateRunEventZoho(evt) {
+    console.log("Zoho Update Function called");
+    
       const key = toYYYYMMDD(evt.date);
       if (!eventDatabase[key]) {
           eventDatabase[key] = [];
@@ -816,6 +854,7 @@
       
       showLoader();
       console.log(currentViewType,currentViewType);
+      console.log(pendingTimeChange.type);
       
       if (pendingTimeChange.type === 'resize') {
           clearTimeout(resizeDebounceTimer);
@@ -1120,6 +1159,8 @@ function formatHoursDecimal(minutes) {
 }
 
 function updateViewSwitcherOptions() {
+    console.log(updateViewSwitcherOptions);
+    
     const dropdown = document.getElementById('viewSwitcherDropdown');
     dropdown.innerHTML = '';
     console.log(currentView);
@@ -1129,7 +1170,7 @@ function updateViewSwitcherOptions() {
         const employeeOption = document.createElement('div');
         employeeOption.className = 'view-switcher-option' + (currentViewType === 'employee' ? ' selected' : '');
         employeeOption.innerHTML = `
-            <span>Employee</span>
+            <span>Staff</span>
             ${currentViewType === 'employee' ? '<i class="fa fa-check"></i>' : ''}
         `;
         employeeOption.onclick = () => selectViewType('employee');
@@ -1149,7 +1190,7 @@ function updateViewSwitcherOptions() {
         const employeeOption = document.createElement('div');
         employeeOption.className = 'view-switcher-option' + (currentViewType === 'employee' ? ' selected' : '');
         employeeOption.innerHTML = `
-            <span>Employee</span>
+            <span>Staff</span>
             ${currentViewType === 'employee' ? '<i class="fa fa-check"></i>' : ''}
         `;
         employeeOption.onclick = () => selectViewType('employee');

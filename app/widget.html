@@ -2713,21 +2713,22 @@ min-width: 100px;
         
         <div class="calendar-header">
              <div style="display: flex; align-items: center; gap: 10px;">
+        
+        
+        <!-- Week/Day Toggle -->
+        <div class="view-toggle">
+            <button id="weekViewBtn" onclick="switchView('week')">Week</button>
+            <button id="dayViewBtn" class="active" onclick="switchView('day')">Day</button>
+        </div>
         <div class="view-switcher">
             <button class="view-switcher-btn" onclick="toggleViewSwitcher(event)">
-                <i class="fa fa-th-list"></i>
+                
                 <span id="currentViewType">Staff</span>
                 <i class="fa fa-chevron-down" style="font-size: 10px;"></i>
             </button>
             <div class="view-switcher-dropdown" id="viewSwitcherDropdown">
                
             </div>
-        </div>
-        
-        <!-- Week/Day Toggle -->
-        <div class="view-toggle">
-            <button id="weekViewBtn" onclick="switchView('week')">Week</button>
-            <button id="dayViewBtn" class="active" onclick="switchView('day')">Day</button>
         </div>
     </div>
             <!-- Search Filters Display Section -->
@@ -2764,7 +2765,7 @@ min-width: 100px;
                     </div>
                 </div>  
                 <button class="calendar-icon" onclick="toggleSearch()"><i class="fa fa-search fa-lg"></i></button>
-                <button class="calendar-icon" onclick="goToday()"><i class="fa-solid fa-arrow-rotate-right"></i></i></button>
+                <button class="calendar-icon" onclick="init()"><i class="fa-solid fa-arrow-rotate-right"></i></i></button>
                 <button class="calendar-icon" onclick="toggleQuickFilter(event)">
     <i class="fa fa-filter fa-lg"></i>
 </button>
@@ -4221,38 +4222,38 @@ function showTimeChangeConfirmation() {
 }
 
 // New function to confirm time change
-async function confirmTimeChange() {
-    console.log(employees);
+// async function confirmTimeChange() {
+//     console.log(employees);
     
-    console.log(pendingTimeChange);
+//     console.log(pendingTimeChange);
     
-    const modal = document.getElementById('timeChangeConfirmModal');
-    modal.classList.add('hidden');
+//     const modal = document.getElementById('timeChangeConfirmModal');
+//     modal.classList.add('hidden');
     
-    showLoader();
+//     showLoader();
     
-    if (pendingTimeChange.type === 'resize') {
-        clearTimeout(resizeDebounceTimer);
-        await updateEventZoho(pendingTimeChange.event);
-        currentView === 'day' ? renderDayView() : renderWeekView();
-    } else if (pendingTimeChange.type === 'drag') {
-        const {
-            draggedEventData,
-            newHour,
-            newQuarter,
-            newEmployee,
-            currentDateKey,
-            anchorStart,
-            newAnchorStart
-        } = pendingTimeChange;
+//     if (pendingTimeChange.type === 'resize') {
+//         clearTimeout(resizeDebounceTimer);
+//         await updateEventZoho(pendingTimeChange.event);
+//         currentView === 'day' ? renderDayView() : renderWeekView();
+//     } else if (pendingTimeChange.type === 'drag') {
+//         const {
+//             draggedEventData,
+//             newHour,
+//             newQuarter,
+//             newEmployee,
+//             currentDateKey,
+//             anchorStart,
+//             newAnchorStart
+//         } = pendingTimeChange;
         
-        await applyDragChanges(draggedEventData, newHour, newQuarter, newEmployee, currentDateKey, anchorStart, newAnchorStart);
-    }
+//         await applyDragChanges(draggedEventData, newHour, newQuarter, newEmployee, currentDateKey, anchorStart, newAnchorStart);
+//     }
     
-    pendingTimeChange = null;
-    resizeDirtyEvent = null;
-    hideLoader();
-}
+//     pendingTimeChange = null;
+//     resizeDirtyEvent = null;
+//     hideLoader();
+// }
 
 // New function to cancel time change
 function cancelTimeChange() {
@@ -4270,7 +4271,7 @@ function cancelTimeChange() {
     resizeDirtyEvent = null;
     
     // Re-render to show original state
-    currentView === 'day' ? renderDayView() : renderWeekView();
+    currentView === 'day' ? re_renderDayView() : renderWeekView();
 }
        
         let appliedFilters = [];
@@ -4568,7 +4569,7 @@ if (existing) {
     
     // Reset to employee view when switching
     currentViewType = 'employee';
-    document.getElementById('currentViewType').textContent = 'Employee';
+    document.getElementById('currentViewType').textContent = 'Staff';
     
     const dayViewBtn = document.getElementById('dayViewBtn');
     const weekViewBtn = document.getElementById('weekViewBtn');
@@ -4651,36 +4652,37 @@ if (existing) {
 }
 
         async function goToday() {
+            console.log("Today Called");
+            
     showLoader();
     currentDate = new Date();
     todayDate = new Date();
     
     try {
         await getTodayAllEmployees();
-        await getBookings();
-                await renderDayView();
-        // if (currentViewType === 'employee') {
+        
+        if (currentViewType === 'employee') {
             
-        //     if (currentView === 'day') {
+            if (currentView === 'day') {
                 
-        //     } else {
-        //         await getBookingsForWeek();
-        //         await renderWeekView();
-        //     }
-        // } else if (currentViewType === 'run') {
-        //     if (currentView === 'day') {
-        //         await getBookings();
-        //         await renderRunView();
-        //     } else {
-        //         await getBookingsForWeek();
-        //         await renderRunViewWeek();
-        //     }
-        // } else if (currentViewType === 'person') {
-        //     if (currentView === 'week') {
-        //         await getBookingsForWeek();
-        //         await renderWeekPersonView();
-        //     }
-        // }
+            } else {
+                await getBookingsForWeek();
+                await renderWeekView();
+            }
+        } else if (currentViewType === 'run') {
+            if (currentView === 'day') {
+                await getBookings();
+                await renderRunView();
+            } else {
+                await getBookingsForWeek();
+                await renderRunViewWeek();
+            }
+        } else if (currentViewType === 'person') {
+            if (currentView === 'week') {
+                await getBookingsForWeek();
+                await renderWeekPersonView();
+            }
+        }
         
         updateDateTitle();
     } catch (error) {
@@ -5153,10 +5155,11 @@ function syncScroll() {
                     lockIcon.title = 'Time Critical Visit - Time cannot be changed';
                     el.appendChild(lockIcon);
                 }
-                if( evt.status === "Completed" || evt.Time_Critical_Visit !== "Yes"  ){
+                if( evt.status === "Completed"  ){
                     el.appendChild(title);
                 }
                 else{
+                    // if( evt.Time_Critical_Visit === "Yes" ){
                 const leftHandle = document.createElement('div');
                 leftHandle.className = 'resize-handle left';
                 leftHandle.addEventListener('mousedown', e => {
@@ -5175,6 +5178,7 @@ function syncScroll() {
 
                 el.appendChild(leftHandle);
                 el.appendChild(rightHandle);
+            // }
                 el.appendChild(title);
 
                 el.addEventListener('dragstart', handleDragStart);
@@ -5542,6 +5546,13 @@ function openEmployeeWeekPDF(employeeName) {
                 const title = document.createElement('div');
                 title.className = 'event-title';
                 title.textContent = evt.title;
+                if (evt.no_of_staff && evt.no_of_staff > 1) {
+                    const staffBadge = document.createElement('div');
+                    staffBadge.className = 'event-staff-badge';
+                    staffBadge.innerHTML = `<i class="fa fa-users"></i>${evt.no_of_staff}`;
+                    staffBadge.title = `${evt.no_of_staff} staff required`;
+                    el.appendChild(staffBadge);
+                }
                 if (evt.Time_Critical_Visit === "Yes") {
             const lockIcon = document.createElement('div');
             lockIcon.className = 'event-lock-icon';
@@ -5564,7 +5575,7 @@ function openEmployeeWeekPDF(employeeName) {
     mouseDownX = e.clientX;
     mouseDownY = e.clientY;
 });
-function handleDragStartWeek(e) {
+function handleDragStartWeek(e) { 
             draggedElement = e.currentTarget;
             draggedEventId = parseInt(e.currentTarget.dataset.eventId);
             
@@ -5573,7 +5584,7 @@ function handleDragStartWeek(e) {
             let dateKey = viewType === 'week' ? e.currentTarget.dataset.eventDate : getCurrentDateKey();
             
             const events = eventDatabase[dateKey] || [];
-            console.log(events);
+            
             
             draggedEventData = events.find(evt => evt.id === draggedEventId);
             if (draggedEventData) {
@@ -5631,12 +5642,15 @@ el.addEventListener('mouseup', (e) => {
         // DRAG AND DROP HANDLERS
         function handleDragStart(e) {
 
-
+            console.log("drag started");
+            
 
     const baseEl = e.currentTarget;
     const baseId = parseInt(baseEl.dataset.eventId);
     const baseEventKey = baseEl.dataset.eventKey;
-    // If dragging unselected event → reset selection
+    console.log(selectedEventIds,baseEventKey);
+    
+    
     if (!selectedEventIds.has(baseEventKey)) { 
         clearEventSelection();
         selectedEventIds.add(baseEventKey); 
@@ -5653,6 +5667,7 @@ el.addEventListener('mouseup', (e) => {
 
     const events = eventDatabase[dateKey] || [];
 
+    console.log(selectedEventIds);
      
     
     draggedEventData = [...selectedEventIds].map(eventKey => {
@@ -5753,8 +5768,7 @@ document.body.classList.remove('dragging-active');
     e.stopPropagation();
 
     const slot = e.currentTarget;
-    slot.classList.remove('drop-highlight');
-
+    slot.classList.remove('drop-highlight');     
     if (!Array.isArray(draggedEventData) || draggedEventData.length === 0) {
         return;
     }
@@ -5909,23 +5923,21 @@ async function applyDragChanges(
             const slot = e.currentTarget;
             slot.classList.remove('drop-highlight');
             
+            console.log(draggedEventData);
             
             if (!draggedElement || !draggedEventId || !draggedEventData) return;
+
+            if( draggedEventData.status === "Completed" ){
+                showToast("Completed Task Can't be Changed", "error");
+                return;
+            }
             
             const newDateKey = slot.dataset.dateKey;
             const newEmployee = slot.dataset.employee;
             const originalDateKey = draggedEventData.originalDateKey;
             const originalEmployee = draggedEventData.employee;
 
-            const isTimeCritical = draggedEventData.Time_Critical_Visit === "Yes";
-    
-    if (isTimeCritical) {
-        
-        if (newDateKey !== originalDateKey) {
-            showToast("Time Critical Visits cannot be moved to a different day", "error");
-            return;
-        }
-    }
+           
             console.log(originalDateKey,newDateKey);
             
             // Prevent drop if it's the same column (same day AND same employee)
@@ -6706,8 +6718,6 @@ function showTooltip(evtEl, mouseEvent) {
     } else {
         document.getElementById('ttTravelRow').classList.add('hidden');
     }
-    console.log(evtEl.dataset.timeCritical);
-    
     if( evtEl.dataset.timeCritical === "Yes" ){
         document.getElementById('ttTimeCrict').textContent = evtEl.dataset.timeCritical;
         document.getElementById('ttTimeCritical').classList.remove('hidden');
