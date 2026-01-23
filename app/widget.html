@@ -3180,6 +3180,11 @@ function openEventModal(evt) {
     document.getElementById('mDuration').value = minutesToHHMM(durationMins || 0   );
     document.getElementById('mNotes').value = evt.Manager_Notes || '';
     document.getElementById('mService').value = evt.service || '';
+    const isTimeCritical = evt.Time_Critical_Visit === "Yes";
+    const fromInput = document.getElementById('mFrom');
+    const toInput = document.getElementById('mTo');
+    fromInput.disabled = isTimeCritical;
+    toInput.disabled = isTimeCritical;
 
   if (statusInput && statusText) {
     statusInput.value = status;
@@ -3932,6 +3937,10 @@ function renderWeekSummaryRow() {
 let resizeDebounceTimer = null;
 let resizeDirtyEvent = null;
         function startResize(e, evt, direction) {
+            if (evt.Time_Critical_Visit === "Yes") {
+        showToast("Time Critical Visit - Time cannot be changed", "error");
+        return;
+    }
             resizeEvent = evt;
             resizeDirection = direction;
             resizeStartX = e.clientX;
@@ -4626,6 +4635,8 @@ if (existing) {
     cur_book.from = rec.Start_time;
     cur_book.to = rec.End_time;
     cur_book.no_of_staff = rec.No_of_Staff;
+    cur_book.Female_Only = rec["Visit.Female_Only"] ?? "";
+    cur_book.Time_Critical_Visit = rec["Visit.Time_Critical_Visit"] ?? "";;
     const runName = rec.Care_Group?.Care_Group_Name ?? '';
 const runID   = rec.Care_Group?.ID ?? '';
     const personName = rec.Care_Service_User.zc_display_value;
@@ -5006,7 +5017,11 @@ function syncScroll() {
 
                 const el = document.createElement('div');
                 el.className = `event status-${evt.status}`;
+                if (evt.Time_Critical_Visit === "Yes") {
+                    el.classList.add('time-critical');
+                }
                 el.draggable = true;
+                 el.dataset.timeCritical = evt.Time_Critical_Visit || "No";
                 const compositeKey = `${evt.zoho_id}-${evt.employee || 'unassigned'}-${evt.employee_id || 'none'}`;
                 el.dataset.eventKey = compositeKey
                 el.dataset.eventId = evt.id;
@@ -5048,7 +5063,14 @@ function syncScroll() {
                     staffBadge.title = `${evt.no_of_staff} staff required`;
                     el.appendChild(staffBadge);
                 }
-                if( evt.status === "Completed" ){
+                if (evt.Time_Critical_Visit === "Yes") {
+                    const lockIcon = document.createElement('div');
+                    lockIcon.className = 'event-lock-icon';
+                    lockIcon.innerHTML = '<i class="fa fa-lock"></i>';
+                    lockIcon.title = 'Time Critical Visit - Time cannot be changed';
+                    el.appendChild(lockIcon);
+                }
+                if( evt.status === "Completed" || evt.Time_Critical_Visit !== "Yes"  ){
                     el.appendChild(title);
                 }
                 else{
@@ -5322,6 +5344,9 @@ function renderWeekEmployeeRows() {
             events.forEach((evt, index) => {
                 const el = document.createElement('div');
                 el.className = `event status-${evt.status}`;
+                 if (evt.Time_Critical_Visit === "Yes") {
+            el.classList.add('time-critical');
+        }
                 el.draggable = true;
                 const compositeKey = `${evt.zoho_id}-${evt.employee || 'unassigned'}-${evt.employee_id || 'none'}`;
                 el.dataset.eventKey = compositeKey
@@ -5340,7 +5365,7 @@ function renderWeekEmployeeRows() {
                 el.dataset.mismatch = evt.status === 'Missed' ? 'Visit missed' : '';
                 el.dataset.status = evt.event_status;
                 el.dataset.travel = evt.travel || '';
-
+                el.dataset.timeCritical = evt.Time_Critical_Visit || "No";
 
                 // Stack events from top to bottom instead of time-based positioning
                 const topPosition = ROW_PADDING + (index * (EVENT_HEIGHT + EVENT_GAP));
@@ -5354,6 +5379,13 @@ function renderWeekEmployeeRows() {
                 const title = document.createElement('div');
                 title.className = 'event-title';
                 title.textContent = evt.title;
+                if (evt.Time_Critical_Visit === "Yes") {
+            const lockIcon = document.createElement('div');
+            lockIcon.className = 'event-lock-icon';
+            lockIcon.innerHTML = '<i class="fa fa-lock"></i>';
+            lockIcon.title = 'Time Critical Visit - Time cannot be changed';
+            el.appendChild(lockIcon);
+        }
 
                 const time = document.createElement('div');
                 time.className = 'event-time';
@@ -5568,13 +5600,20 @@ document.body.classList.remove('dragging-active');
     const newQuarter = parseInt(slot.dataset.quarter, 10);
     const newEmployee = slot.dataset.employee;
     const currentDateKey = getCurrentDateKey();
-    console.log(draggedEventData);
-    console.log( hasEmployeeConflict(
-        draggedEventData[0].zoho_id,
-        newEmployee,
-        currentDateKey,
-        draggedEventData[0].eventKey
-    ) );
+    const hasTimeCritical = draggedEventData.some(evt => evt.Time_Critical_Visit === "Yes");
+    
+    if (hasTimeCritical) {
+        // ✅ ALLOW EMPLOYEE CHANGE BUT NOT TIME CHANGE
+        const anchorEvent = draggedEventData[0];
+        const originalStartMinutes = anchorEvent.startMinutes;
+        const newAnchorStart = newHour * 60 + newQuarter * 15;
+        
+        if (newAnchorStart !== originalStartMinutes) {
+            showToast("Time Critical Visits cannot be moved to a different time", "error");
+            clearEventSelection();
+            return;
+        }
+    }
     
     const hasConflict = draggedEventData.some(evt =>
     newEmployee &&
@@ -5714,6 +5753,16 @@ async function applyDragChanges(
             const newEmployee = slot.dataset.employee;
             const originalDateKey = draggedEventData.originalDateKey;
             const originalEmployee = draggedEventData.employee;
+
+            const isTimeCritical = draggedEventData.Time_Critical_Visit === "Yes";
+    
+    if (isTimeCritical) {
+        
+        if (newDateKey !== originalDateKey) {
+            showToast("Time Critical Visits cannot be moved to a different day", "error");
+            return;
+        }
+    }
             console.log(originalDateKey,newDateKey);
             
             // Prevent drop if it's the same column (same day AND same employee)
