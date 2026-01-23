@@ -5478,7 +5478,29 @@ document.body.classList.remove('dragging-active');
     const newQuarter = parseInt(slot.dataset.quarter, 10);
     const newEmployee = slot.dataset.employee;
     const currentDateKey = getCurrentDateKey();
+    console.log(draggedEventData);
+    console.log( hasEmployeeConflict(
+        draggedEventData[0].zoho_id,
+        newEmployee,
+        currentDateKey,
+        draggedEventData[0].eventKey
+    ) );
+    
+    const hasConflict = draggedEventData.some(evt =>
+    newEmployee &&
+    hasEmployeeConflict(
+        evt.zoho_id,
+        newEmployee,
+        currentDateKey,
+        evt.eventKey
+    )
+);
 
+if (hasConflict) {
+    showToast(`Employee ${newEmployee} is already assigned to this event`);
+    clearEventSelection();
+    return;
+}
     const anchorEvent = draggedEventData[0];
     const anchorStart = anchorEvent.startMinutes;
     const newAnchorStart = newHour * 60 + newQuarter * 15;

@@ -1380,3 +1380,15 @@ function getEventCompositeKey(evt) {
 
     return `${evt.zoho_id}-${evt.employee || 'unassigned'}-${evt.employee_id || 'none'}`;
 }
+function hasEmployeeConflict(zohoId, employee, dateKey, draggedEventKey) {
+    const events = eventDatabase[dateKey] || [];
+    console.log( eventDatabase[dateKey] );
+    console.log( zohoId, employee, dateKey, draggedEventKey );
+    
+    return events.some(e =>
+        e.zoho_id === zohoId &&
+        e.employee === employee &&
+        `${e.zoho_id}-${e.employee || 'unassigned'}-${e.employee_id || 'none'}`
+            !== draggedEventKey
+    );
+}
