@@ -1665,6 +1665,7 @@ min-width: 100px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-align: left;
     flex: 1; /* Take available space */
     min-width: 0; /* Critical for text truncation */
 }
@@ -2613,10 +2614,10 @@ min-width: 100px;
                     <button class="info-btn" onclick="toggleInfoDropdown(event)">
                         <i class="fa fa-info-circle"></i>
                     </button>
-                    <div class="info-tooltip">View Statistics</div>
+                    <div class="info-tooltip">Capacity</div>
                     
                     <div class="info-dropdown" id="infoDropdown">
-                        <div class="info-dropdown-header">Calendar Statistics</div>
+                        <div class="info-dropdown-header">Capacity</div>
                         
                         <div class="info-stat-row">
                             <span class="info-stat-label">Required Hours:</span>
@@ -4608,8 +4609,8 @@ if (runName && !runGroups.includes(runName)) {
             for (let i = 0; i < 24; i++) {
                 const label = document.createElement('div');
                 label.className = 'hour-label';
-                const hour = i % 12 || 12;
-                const period = i < 12 ? 'am' : 'pm';
+                const hour = i;
+                const period = ':00';
                 label.textContent = `${hour}${period}`;
                 header.appendChild(label);
             }
@@ -4688,11 +4689,11 @@ let displayPercentage = `${percentage}%`;
                     </div>
                     <div class="employee-hours-info">
                         <div class="employee-hours-row">
-                            <span class="hours-label">Contracted Hours:</span>
+                            
                             <span class="hours-value">${contractedHours}</span>
                         </div>
                         <div class="employee-hours-row">
-                            <span class="hours-label">Working Hours:</span>
+                            
                             <span class="hours-value">${displayHours}</span>
                         </div>
                     </div>
@@ -5348,9 +5349,6 @@ el.addEventListener('mouseup', (e) => {
     const baseEl = e.currentTarget;
     const baseId = parseInt(baseEl.dataset.eventId);
     const baseEventKey = baseEl.dataset.eventKey;
-    console.log('Element dataset:', baseEl.dataset);
-    console.log('eventKey from element:', baseEl.dataset.eventKey);
-    console.log('Looking for key:', baseEventKey);
     // If dragging unselected event → reset selection
     if (!selectedEventIds.has(baseEventKey)) { 
         clearEventSelection();

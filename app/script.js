@@ -514,7 +514,7 @@
               leftHandle.addEventListener('mousedown', e => {
                   e.preventDefault();   
                   e.stopPropagation();
-                  startResize(e, evt, 'left');
+                //   startResize(e, evt, 'left');
               });
 
               const rightHandle = document.createElement('div');
@@ -522,7 +522,7 @@
               rightHandle.addEventListener('mousedown', e => {
                   e.preventDefault();    
                   e.stopPropagation();
-                  startResize(e, evt, 'right');
+                //   startResize(e, evt, 'right');
               });
 
               el.appendChild(leftHandle);
@@ -593,6 +593,7 @@
       e.dataTransfer.effectAllowed = 'move';
   }
 
+
   function handleRunDragEnd(e) {
       e.currentTarget.classList.remove('dragging');
       document.body.classList.remove('dragging-active');
@@ -658,70 +659,80 @@
       
       clearEventSelection();
   }
-  async function applyRunDragChanges(draggedEventData, newHour, newQuarter, newRunGroup, currentDateKey, anchorStart, newAnchorStart) {
-      showLoader();
-      
-      if (!eventDatabase[currentDateKey]) {
-          eventDatabase[currentDateKey] = [];
-      }
+  async function applyRunDragChanges(
+    draggedEventData,
+    newHour,
+    newQuarter,
+    newRunGroup,
+    currentDateKey,
+    anchorStart,
+    newAnchorStart
+) {
+    showLoader();
 
-      if (draggedEventData.length > 1) {
-          draggedEventData.forEach(evt => {
-              if (eventDatabase[evt.originalDateKey]) {
-                  eventDatabase[evt.originalDateKey] =
-                      eventDatabase[evt.originalDateKey].filter(e => e.id !== evt.id);
-              }
+    if (!eventDatabase[currentDateKey]) {
+        eventDatabase[currentDateKey] = [];
+    }
 
-              const updatedEvent = {
-                  ...evt,
-                  startMinutes: evt.startMinutes,
-                  endMinutes: evt.endMinutes,
-                  run_view: newRunGroup,
-                  run_view_id: newRunGroup ? runGroupDetails[newRunGroup] : null
-              };
+    const processedZohoIds = new Set();
+    console.log(draggedEventData );
+    
+    draggedEventData.forEach(evt => {
+        if (processedZohoIds.has(evt.zoho_id)) return;
+        processedZohoIds.add(evt.zoho_id);
 
-              eventDatabase[currentDateKey].push(updatedEvent);
+        const originalDateKey = evt.originalDateKey;
 
-              updateRunEventZoho(updatedEvent);
-          });
-      } else {
-          draggedEventData.forEach(evt => {
-              const offsetFromAnchor = evt.startMinutes - anchorStart;
-              const duration = evt.endMinutes - evt.startMinutes;
+        // Collect ALL rows for this zoho_id
+        const groupEvents =
+            (eventDatabase[originalDateKey] || [])
+                .filter(e => e.zoho_id === evt.zoho_id);
 
-              const finalStart = newAnchorStart + offsetFromAnchor;
-              const finalEnd = finalStart + duration;
+        // Remove ALL of them from original date
+        eventDatabase[originalDateKey] =
+            (eventDatabase[originalDateKey] || [])
+                .filter(e => e.zoho_id !== evt.zoho_id);
 
-              if (eventDatabase[evt.originalDateKey]) {
-                  eventDatabase[evt.originalDateKey] =
-                      eventDatabase[evt.originalDateKey].filter(e => e.id !== evt.id);
-              }
+        // Compute time shift ONLY if single drag
+        let timeDelta = 0;
+        if (draggedEventData.length === 1) {
+            const offsetFromAnchor = evt.startMinutes - anchorStart;
+            const duration = evt.endMinutes - evt.startMinutes;
+            const finalStart = newAnchorStart + offsetFromAnchor;
+            timeDelta = finalStart - evt.startMinutes;
+        }
 
-              const updatedEvent = {
-                  ...evt,
-                  startMinutes: finalStart,
-                  endMinutes: finalEnd,
-                  run_view: newRunGroup,
-                  run_view_id: newRunGroup ? runGroupDetails[newRunGroup] : null
-              };
-              
-              eventDatabase[currentDateKey].push(updatedEvent);
-              
-              updateRunEventZoho({
-                  ...evt,
-                  startMinutes: finalStart,
-                  endMinutes: finalEnd,
-                  from: minutesToHHMM(finalStart),
-                  to: minutesToHHMM(finalEnd),
-                  run_view: newRunGroup,
-                  run_view_id: newRunGroup ? runGroupDetails[newRunGroup] : null
-              });
-          });
-      }
+        // Reinsert rows
+        groupEvents.forEach(e => {
+            const updated = {
+                ...e,
+                startMinutes: e.startMinutes + timeDelta,
+                endMinutes: e.endMinutes + timeDelta,
+                run_view: newRunGroup,
+                run_view_id: newRunGroup ? runGroupDetails[newRunGroup] : null
+            };
 
-      await renderRunView();
-      hideLoader();
-  }
+            eventDatabase[currentDateKey].push(updated);
+        });
+
+        // 🔥 Zoho update ONCE per zoho_id
+        const zohoEvent = groupEvents[0];
+        updateRunEventZoho({
+            ...zohoEvent,
+            startMinutes: zohoEvent.startMinutes + timeDelta,
+            endMinutes: zohoEvent.endMinutes + timeDelta,
+            from: minutesToHHMM(zohoEvent.startMinutes + timeDelta),
+            to: minutesToHHMM(zohoEvent.endMinutes + timeDelta),
+            run_view: newRunGroup,
+            run_view_id: newRunGroup ? runGroupDetails[newRunGroup] : null
+        });
+    });
+
+    await re_renderRunView(); // must NOT refetch from Zoho
+    hideLoader();
+}
+
+
   async function updateRunEventZoho(evt) {
       const key = toYYYYMMDD(evt.date);
       if (!eventDatabase[key]) {
@@ -801,6 +812,7 @@
       modal.classList.add('hidden');
       
       showLoader();
+      console.log(currentViewType,currentViewType);
       
       if (pendingTimeChange.type === 'resize') {
           clearTimeout(resizeDebounceTimer);
@@ -841,6 +853,13 @@
   async function renderRunView() {
       showLoader();
       await getBookings();
+      renderHourHeaders();
+      await renderRunViewRows();
+      syncScroll();
+      hideLoader();
+  }
+  async function re_renderRunView() {
+      showLoader();
       renderHourHeaders();
       await renderRunViewRows();
       syncScroll();

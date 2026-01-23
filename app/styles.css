@@ -355,15 +355,28 @@
 }
 
 .info-btn {
-    padding: 8px 12px;
+    width: 36px;
+    height: 36px;
+    padding: 0;                 /* critical */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border: 1px solid #d1d5db;
     background: white;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s;
     color: #4f46e5;
 }
+.info-btn i {
+    font-size: 20px;            /* 🔥 bigger icon */
+    line-height: 1;
+}
+
+.info-btn:hover {
+    background: #f9fafb;
+    border-color: #4f46e5;
+}
+
 
 .info-btn:hover {
     background: #f9fafb;
