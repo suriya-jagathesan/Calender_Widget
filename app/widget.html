@@ -1963,7 +1963,12 @@ min-width: 100px;
 .event-tooltip.hidden {
     display: none;
 }
-
+.hidden {
+    display: none !important;
+}
+.tt-row.hidden {
+    display: none;
+}
 .tt-row {
     display: grid;
     grid-template-columns: 95px 1fr;
@@ -3080,6 +3085,14 @@ min-width: 100px;
     <div class="tt-row hidden" id="ttTravelRow">
         <span class="tt-label">Next Travel</span>
         <span class="tt-value" id="ttTravel"></span>
+    </div>
+    <div class="tt-row hidden" id="ttFemaleOnly">
+        <span class="tt-label">Female Only</span>
+        <span class="tt-value" id="ttFemal"></span>
+    </div>
+    <div class="tt-row hidden" id="ttTimeCritical">
+        <span class="tt-label">Time Critical</span>
+        <span class="tt-value" id="ttTimeCrict"></span>
     </div>
 </div>
 <div class="status-legend">
@@ -5021,7 +5034,8 @@ function syncScroll() {
                     el.classList.add('time-critical');
                 }
                 el.draggable = true;
-                 el.dataset.timeCritical = evt.Time_Critical_Visit || "No";
+                el.dataset.timeCritical = evt.Time_Critical_Visit || "No";
+                el.dataset.female = evt.Female_Only || "No";
                 const compositeKey = `${evt.zoho_id}-${evt.employee || 'unassigned'}-${evt.employee_id || 'none'}`;
                 el.dataset.eventKey = compositeKey
                 el.dataset.eventId = evt.id;
@@ -6543,7 +6557,25 @@ function showTooltip(evtEl, mouseEvent) {
     } else {
         document.getElementById('ttTravelRow').classList.add('hidden');
     }
-
+    console.log(evtEl.dataset.timeCritical);
+    
+    if( evtEl.dataset.timeCritical === "Yes" ){
+        document.getElementById('ttTimeCrict').textContent = evtEl.dataset.timeCritical;
+        document.getElementById('ttTimeCritical').classList.remove('hidden');
+    }
+    else{
+        document.getElementById('ttTimeCritical').classList.add('hidden');
+    }
+    console.log();
+    
+    if( evtEl.dataset.female === "Yes" ){
+         document.getElementById('ttFemal').textContent = evtEl.dataset.female;
+        document.getElementById('ttFemaleOnly').classList.remove('hidden');
+    }
+    else{
+        document.getElementById('ttFemaleOnly').classList.add('hidden');
+    }
+    
     tooltip.style.top = rect.bottom + 6 + 'px';
     tooltip.style.left = rect.left + 'px';
     tooltip.classList.remove('hidden');
