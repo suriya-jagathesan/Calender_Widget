@@ -1129,6 +1129,7 @@ min-width: 100px;
             max-width: 100%;
         }
         .event-time {
+            color: black;
             font-size: 9px;
             opacity: 0.9;
             line-height: 1.2;
@@ -5380,6 +5381,7 @@ function renderWeekEmployeeRows() {
                 el.dataset.status = evt.event_status;
                 el.dataset.travel = evt.travel || '';
                 el.dataset.timeCritical = evt.Time_Critical_Visit || "No";
+                el.dataset.female = evt.Female_Only || "No";
 
                 // Stack events from top to bottom instead of time-based positioning
                 const topPosition = ROW_PADDING + (index * (EVENT_HEIGHT + EVENT_GAP));
