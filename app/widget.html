@@ -3888,8 +3888,7 @@ let resizeDirtyEvent = null;
                 eventDatabase[key] = [];
             }
             const final_emp = getEmployeeIdsForEvent(evt);
-            // console.log( JSON.stringify(eventDatabase[key]) );
-            // console.log(final_emp);
+            
             
             
             
@@ -4915,7 +4914,7 @@ function syncScroll() {
                 const el = document.createElement('div');
                 el.className = `event status-${evt.status}`;
                 el.draggable = true;
-                const compositeKey = `${evt.id}-${evt.employee || 'unassigned'}-${evt.employee_id || 'none'}`;
+                const compositeKey = `${evt.zoho_id}-${evt.employee || 'unassigned'}-${evt.employee_id || 'none'}`;
                 el.dataset.eventKey = compositeKey
                 el.dataset.eventId = evt.id;
                 el.dataset.viewType = 'day';
@@ -5231,7 +5230,7 @@ function renderWeekEmployeeRows() {
                 const el = document.createElement('div');
                 el.className = `event status-${evt.status}`;
                 el.draggable = true;
-                const compositeKey = `${evt.id}-${evt.employee || 'unassigned'}-${evt.employee_id || 'none'}`;
+                const compositeKey = `${evt.zoho_id}-${evt.employee || 'unassigned'}-${evt.employee_id || 'none'}`;
                 el.dataset.eventKey = compositeKey
                 el.dataset.eventId = evt.id;
                 el.dataset.viewType = 'week';
@@ -5369,16 +5368,11 @@ el.addEventListener('mouseup', (e) => {
 
     const events = eventDatabase[dateKey] || [];
 
-     console.log('Events in database:', events.map(e => ({
-        id: e.id,
-        employee: e.employee,
-        employee_id: e.employee_id,
-        generatedKey: getEventCompositeKey(e)
-    })));
+     
     
     draggedEventData = [...selectedEventIds].map(eventKey => {
         const evt = events.find(e => {
-            const eKey = `${e.id}-${e.employee || 'unassigned'}-${e.employee_id || 'none'}`;
+            const eKey = `${e.zoho_id}-${e.employee || 'unassigned'}-${e.employee_id || 'none'}`;
             return eKey === eventKey;
         });
         if (!evt) {
@@ -5489,11 +5483,7 @@ document.body.classList.remove('dragging-active');
     const anchorStart = anchorEvent.startMinutes;
     const newAnchorStart = newHour * 60 + newQuarter * 15;
 
-    console.log('Dropping event:', {
-        anchorEvent,
-        newEmployee,
-        newTime: newAnchorStart
-    }); 
+    
     const timeChanged = draggedEventData.length === 1 && newAnchorStart !== anchorStart;
     
 
@@ -5517,85 +5507,87 @@ document.body.classList.remove('dragging-active');
     
     clearEventSelection();
 }
-async function applyDragChanges(draggedEventData, newHour, newQuarter, newEmployee, currentDateKey, anchorStart, newAnchorStart) {
+async function applyDragChanges(
+    draggedEventData,
+    newHour,
+    newQuarter,
+    newEmployee,
+    currentDateKey,
+    anchorStart,
+    newAnchorStart
+) {
     if (!eventDatabase[currentDateKey]) {
         eventDatabase[currentDateKey] = [];
     }
-    if (draggedEventData.length > 1) {
-        draggedEventData.forEach(evt => {
-            if (eventDatabase[evt.originalDateKey]) {
-                eventDatabase[evt.originalDateKey] =
-                    eventDatabase[evt.originalDateKey] = eventDatabase[evt.originalDateKey].filter(e => {
-                    const eKey = `${e.id}-${e.employee || 'unassigned'}-${e.employee_id || 'none'}`;
-                    return eKey !== evt.eventKey;
-                });
+
+    const syncedZohoIds = new Set(); // 🔥 prevents duplicate calls
+
+    draggedEventData.forEach(evt => {
+        const offsetFromAnchor = evt.startMinutes - anchorStart;
+        const duration = evt.endMinutes - evt.startMinutes;
+
+        const finalStart = newAnchorStart + offsetFromAnchor;
+        const finalEnd = finalStart + duration;
+        const timeDelta = finalStart - evt.startMinutes;
+
+        const originalDateKey = evt.originalDateKey;
+
+        // 1️⃣ Collect group
+        const groupEvents =
+            eventDatabase[originalDateKey]?.filter(e => e.zoho_id === evt.zoho_id) || [];
+
+        // 2️⃣ Remove all from original date
+        eventDatabase[originalDateKey] =
+            eventDatabase[originalDateKey]?.filter(e => e.zoho_id !== evt.zoho_id) || [];
+
+        let zohoPayload = null;
+
+        // 3️⃣ Reinsert rows
+        groupEvents.forEach(e => {
+            const isDraggedRow =
+                `${e.zoho_id}-${e.employee || 'unassigned'}-${e.employee_id || 'none'}`
+                === evt.eventKey;
+
+            const updated = {
+                ...e,
+                startMinutes: e.startMinutes + timeDelta,
+                endMinutes: e.endMinutes + timeDelta
+            };
+
+            if (isDraggedRow) {
+                updated.employee = newEmployee;
+
+                if (newEmployee) {
+                    const empDetail = employeeDetails.find(emp => emp.name === newEmployee);
+                    updated.employee_id = empDetail?.id || null;
+                } else {
+                    updated.employee_id = null;
+                }
+
+                // 🔥 Use dragged row for Zoho sync
+                zohoPayload = updated;
             }
 
-            const updatedEvent = {
-                ...evt,
-                startMinutes: evt.startMinutes,
-                endMinutes: evt.endMinutes,
-                employee: newEmployee
-            };
-             if (newEmployee) {
-                const empDetail = employeeDetails.find(emp => emp.name === newEmployee);
-                updatedEvent.employee_id = empDetail?.id || null;
-            } else {
-                updatedEvent.employee_id = null;
-            }
-            eventDatabase[currentDateKey].push(updatedEvent);
+            eventDatabase[currentDateKey].push(updated);
+        });
+
+        // 4️⃣ Sync Zoho ONCE per zoho_id
+        if (!syncedZohoIds.has(evt.zoho_id) && zohoPayload) {
+            syncedZohoIds.add(evt.zoho_id);
 
             updateEventZoho({
-                ...evt,
-                startMinutes: evt.startMinutes,
-                endMinutes: evt.endMinutes,
-                from: minutesToHHMM(evt.startMinutes),
-                to: minutesToHHMM(evt.endMinutes),
-                employee: newEmployee
+                ...zohoPayload,
+                from: minutesToHHMM(zohoPayload.startMinutes),
+                to: minutesToHHMM(zohoPayload.endMinutes),
+                employee: zohoPayload.employee
             });
-        });
-    } else {
-        draggedEventData.forEach(evt => {
-            const offsetFromAnchor = evt.startMinutes - anchorStart;
-            const duration = evt.endMinutes - evt.startMinutes;
-
-            const finalStart = newAnchorStart + offsetFromAnchor;
-            const finalEnd = finalStart + duration;    
-            if (eventDatabase[evt.originalDateKey]) {
-                eventDatabase[evt.originalDateKey] = eventDatabase[evt.originalDateKey].filter(e => {
-                    const eKey = `${e.id}-${e.employee || 'unassigned'}-${e.employee_id || 'none'}`;
-                    return eKey !== evt.eventKey;
-                });
-            }
-            const updatedEvent = {
-                ...evt,
-                startMinutes: finalStart,
-                endMinutes: finalEnd,
-                employee: newEmployee
-            };
-            if (newEmployee) {
-                const empDetail = employeeDetails.find(emp => emp.name === newEmployee);
-                updatedEvent.employee_id = empDetail?.id || null;
-            } else {
-                updatedEvent.employee_id = null;
-            }
-            
-            eventDatabase[currentDateKey].push(updatedEvent);
-            console.log(eventDatabase);
-            
-            updateEventZoho({
-                ...evt,
-                startMinutes: finalStart,
-                endMinutes: finalEnd,
-                from: minutesToHHMM(finalStart),
-                to: minutesToHHMM(finalEnd),
-                employee: newEmployee
-            });
-        });
-    }
+        }
+    });
 
     re_renderDayView();
 }
+
+
 
         function handleWeekDrop(e) {
             e.preventDefault();

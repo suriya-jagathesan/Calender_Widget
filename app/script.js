@@ -98,9 +98,10 @@
   function getEventGroupRows(evt) {
     const dateKey = toYYYYMMDD(evt.date);
     const events = eventDatabase[dateKey] || [];
-    
-    // ✅ Group by id only (not by employee)
-    return events.filter(e => e.id === evt.id);
+
+    const evtKey = getEventCompositeKey(evt);
+
+    return events.filter(e => getEventCompositeKey(e) === evtKey);
 }
   function cloneEventForEmployee(base, employee, employee_id = null) {
       console.log(employee);
@@ -143,7 +144,7 @@
 
     const employeeIds = eventDatabase[dateKey]
       .filter(e =>
-        e.id === evt.id &&
+        e.zoho_id === evt.zoho_id &&
         e.employee
       )
       .map(e => {
@@ -1373,15 +1374,9 @@ function renderWeekEventsForPerson(container, events, dateKey) {
 }
 
 function getEventCompositeKey(evt) {
-    // ✅ Use zoho_id as the primary unique identifier
-    if (evt.zoho_id) {
-        return `${evt.zoho_id}`;
+    if (!evt || !evt.zoho_id) {
+        throw new Error("getEventCompositeKey: zoho_id is mandatory");
     }
-    
-    // Fallback for events without zoho_id (shouldn't happen in your case)
-    if (evt.employee_id) {
-        return `${evt.id}-${evt.employee_id}-${evt.startMinutes}`;
-    }
-    
-    return `${evt.id}-${evt.employee || 'unassigned'}-${evt.startMinutes}`;
+
+    return `${evt.zoho_id}-${evt.employee || 'unassigned'}-${evt.employee_id || 'none'}`;
 }
