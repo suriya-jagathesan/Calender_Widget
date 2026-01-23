@@ -960,23 +960,24 @@
         }
         
         .week-employee-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-bottom: 1px solid #e5e7eb;
-            padding: 10px 8px;
-            font-size: 14px;
-            font-weight: 500;
-            color: #374151;
-            text-align: center;
-            overflow: hidden; /* Prevent overflow */
-        }
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 10px 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    text-align: left;
+    overflow: hidden;
+}
+
 .week-employee-row .employee-label {
     width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: flex-start;
     gap: 4px;
     overflow: hidden;
 }
@@ -989,16 +990,83 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     width: 100%;
-    text-align: center;
+    text-align: left;
 }
 
-.week-employee-row .employee-total-hours {
+/* Week employee hours row - contains hours and PDF icon */
+.week-employee-hours-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 8px;
+}
+
+/* Single hours value on the left */
+.week-employee-hours-info {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
     font-size: 11px;
-    color: #6b7280;
-    font-weight: 500;
-    white-space: nowrap;
+    color: #374151;
+    line-height: 1.3;
 }
 
+.week-employee-hours-value {
+    position: relative;
+    cursor: help;
+    font-weight: 500;
+}
+
+/* Tooltip for hours */
+.week-employee-hours-value:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background: #1f2937;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 6px;
+}
+
+.week-employee-hours-value:hover::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 12px;
+    border: 5px solid transparent;
+    border-top-color: #1f2937;
+    z-index: 1000;
+    margin-bottom: 1px;
+}
+
+/* PDF icon on the right */
+.week-employee-pdf-icon {
+    color: #dc2626;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+}
+
+.week-employee-pdf-icon:hover {
+    color: #991b1b;
+    transform: scale(1.1);
+}
+
+.week-employee-pdf-icon i {
+    pointer-events: none;
+}
         
         .week-scroll-wrapper {
                 display: block;  
@@ -5320,30 +5388,74 @@ function renderWeekEmployeeRows() {
     column.innerHTML = '';
 
     const displayList = employees.length > 0 ? employees : ['—'];
-    const employeeObj = appliedFilters.find(o => o.field === "staff" || o.field === "employee" );
-    if(employeeObj){
+    const employeeObj = appliedFilters.find(o => o.field === "staff" || o.field === "employee");
+    
+    let employeeValues;
+    if (employeeObj) {
         employeeValues = returnEmployees(employeeObj.searchValues);
-        console.log(employeeValues);
         if (!employeeValues.includes('')) {
             employeeValues.unshift('');
         }
-    }
-    else{
+    } else {
         employeeValues = employees;
     }
+    
     employeeValues.forEach(employee => {
         const row = document.createElement('div');
         row.className = 'week-employee-row';
 
-        if (employee !== '—') {
-            const hours = getTotalWeekHours(employee);
+        if (employee !== '—' && employee !== '') {
+            // Calculate actual hours worked
+            const actualHours = getTotalWeekHours(employee);
+            
+            // Calculate contracted hours for the week
+            let weekContractedHours = '0.0';
+            let totalContractedMinutes = 0;
+
+            const weekStart = new Date(currentDate);
+            weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(weekStart);
+                d.setDate(weekStart.getDate() + i);
+                const shiftData = shiftsMap[employee];
+                
+                if (shiftData) {
+                    totalContractedMinutes += (shiftData.endMinutes - shiftData.startMinutes);
+                }
+            }
+
+            
+
+            // Decide which hours to show (you can choose one):
+            // Option 1: Show actual hours
+            const displayHours = actualHours;
+            const tooltipText = `Actual: ${actualHours}h`;
+            
+            // Option 2: Show contracted hours
+            // const displayHours = weekContractedHours;
+            // const tooltipText = `Contracted: ${weekContractedHours}h | Actual: ${actualHours}h`;
+            
+            // Option 3: Show difference
+            // const difference = (parseFloat(actualHours) - parseFloat(weekContractedHours)).toFixed(1);
+            // const displayHours = difference >= 0 ? `+${difference}` : difference;
+            // const tooltipText = `Difference | Actual: ${actualHours}h | Contracted: ${weekContractedHours}h`;
 
             row.innerHTML = `
                 <div class="employee-label">
                     <div class="employee-name">${employee}</div>
-                    <div class="employee-total-hours">${hours}</div>
+                    <div class="week-employee-hours-row">
+                        <div class="week-employee-hours-info">
+                            <span class="week-employee-hours-value" data-tooltip="${tooltipText}">${displayHours}h</span>
+                        </div>
+                        <div class="week-employee-pdf-icon" onclick="openEmployeeWeekPDF('${employee}')" title="Download Week Schedule">
+                            <i class="fa fa-file-pdf"></i>
+                        </div>
+                    </div>
                 </div>
             `;
+        } else {
+            row.innerHTML = '';
         }
 
         const height =
@@ -5354,7 +5466,42 @@ function renderWeekEmployeeRows() {
         column.appendChild(row);
     });
 }
+function openEmployeeWeekPDF(employeeName) {
+    if (!employeeName || employeeName === '—' || employeeName === '') {
+        showToast("No employee selected", "error");
+        return;
+    }
+    
+    // Calculate week start and end dates
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    weekStart.setDate(weekStart.getDate() + 1);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    
+    const startDate = formatDateDDMMYYYY(weekStart);
+    const endDate = formatDateDDMMYYYY(weekEnd);
+    
+    // Get employee ID
+    const empDetails = employeeDetails.find(emp => emp.name === employeeName);
+    const employeeId = empDetails?.id || '';
+    
+    if (!employeeId) {
+        showToast("Employee ID not found", "error");
+        return;
+    }
+    
 
+    const pdfUrl = `https://creatorapp.zoho.eu/export/homegroup/${app_name}/pdf/Pdf_Staff_View?zc_PdfSize=A4&zc_PdfOrientation=landscape&staff=${employeeId}&start=${startDate}`;
+    
+    
+    
+    
+    // Open in new window/tab
+    window.open(pdfUrl, '_blank');
+    
+    console.log(`Opening PDF for ${employeeName} (${employeeId}) - Week: ${startDate} to ${endDate}`);
+}
         function renderWeekEventsForEmployee(container, events, dateKey) {
             events.forEach((evt, index) => {
                 const el = document.createElement('div');
