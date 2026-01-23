@@ -5835,6 +5835,8 @@ if (hasConflict) {
     
     clearEventSelection();
 }
+const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+
 async function applyDragChanges(
     draggedEventData,
     newHour,
@@ -5848,9 +5850,9 @@ async function applyDragChanges(
         eventDatabase[currentDateKey] = [];
     }
 
-    const syncedZohoIds = new Set(); // 🔥 prevents duplicate calls
+    const syncedZohoIds = new Set(); // 🔥 prevent duplicate API calls
 
-    draggedEventData.forEach(evt => {
+    for (const evt of draggedEventData) {
         const offsetFromAnchor = evt.startMinutes - anchorStart;
         const duration = evt.endMinutes - evt.startMinutes;
 
@@ -5860,21 +5862,20 @@ async function applyDragChanges(
 
         const originalDateKey = evt.originalDateKey;
 
-        // 1️⃣ Collect group
+        // 1️⃣ Collect all rows for this zoho_id
         const groupEvents =
             eventDatabase[originalDateKey]?.filter(e => e.zoho_id === evt.zoho_id) || [];
 
-        // 2️⃣ Remove all from original date
+        // 2️⃣ Remove them from original date
         eventDatabase[originalDateKey] =
             eventDatabase[originalDateKey]?.filter(e => e.zoho_id !== evt.zoho_id) || [];
 
         let zohoPayload = null;
 
-        // 3️⃣ Reinsert rows
-        groupEvents.forEach(e => {
+        // 3️⃣ Reinsert rows with updates
+        for (const e of groupEvents) {
             const isDraggedRow =
-                `${e.zoho_id}-${e.employee || 'unassigned'}-${e.employee_id || 'none'}`
-                === evt.eventKey;
+                `${e.zoho_id}-${e.employee || 'unassigned'}-${e.employee_id || 'none'}` === evt.eventKey;
 
             const updated = {
                 ...e,
@@ -5892,28 +5893,31 @@ async function applyDragChanges(
                     updated.employee_id = null;
                 }
 
-                // 🔥 Use dragged row for Zoho sync
-                zohoPayload = updated;
+                zohoPayload = updated; // 🔥 only this row syncs to Zoho
             }
 
             eventDatabase[currentDateKey].push(updated);
-        });
-
-        // 4️⃣ Sync Zoho ONCE per zoho_id
-        if (!syncedZohoIds.has(evt.zoho_id) && zohoPayload) {
+        }
+        showLoader();
+        // 4️⃣ Sync Zoho ONCE per zoho_id + throttle
+        if (zohoPayload && !syncedZohoIds.has(evt.zoho_id)) {
             syncedZohoIds.add(evt.zoho_id);
 
-            updateEventZoho({
+            await updateEventZoho({
                 ...zohoPayload,
                 from: minutesToHHMM(zohoPayload.startMinutes),
                 to: minutesToHHMM(zohoPayload.endMinutes),
                 employee: zohoPayload.employee
             });
+
+            await sleep(100); // ⏳ REQUIRED throttle
         }
-    });
+    }
 
     re_renderDayView();
+    hideLoader();
 }
+
 
 
 
