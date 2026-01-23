@@ -1123,9 +1123,10 @@ min-width: 100px;
             margin-bottom: 1px;
             white-space: nowrap;
             color: black;
-            /* overflow: hidden; */
+            overflow: hidden;
             text-overflow: ellipsis;
             line-height: 1.2;
+            max-width: 100%;
         }
         .event-time {
             font-size: 9px;
@@ -1228,8 +1229,13 @@ min-width: 100px;
     display: none;
 }
 .event.status-Not_Started {
-    background: linear-gradient(135deg, #c7d2fe, #ddd6fe);
-    color: #4338ca;
+    background: linear-gradient(
+        135deg,
+        #c7d2fe 0%,
+        #a5b4fc 45%,
+        #c7d2fe 100%
+    );
+    color: #1e3a8a;
 }
 .event.status-Missed {
     background: linear-gradient(135deg, #fca5a5, #f87171);
@@ -2684,6 +2690,7 @@ min-width: 100px;
                     </div>
                 </div>  
                 <button class="calendar-icon" onclick="toggleSearch()"><i class="fa fa-search fa-lg"></i></button>
+                <button class="calendar-icon" onclick="goToday()"><i class="fa-solid fa-arrow-rotate-right"></i></i></button>
                 <button class="calendar-icon" onclick="toggleQuickFilter(event)">
     <i class="fa fa-filter fa-lg"></i>
 </button>
@@ -3065,7 +3072,36 @@ min-width: 100px;
         <span class="tt-value" id="ttTravel"></span>
     </div>
 </div>
-
+<div class="status-legend">
+            <div class="status-legend-item">
+                <div class="status-legend-box not-started"></div>
+                <span class="status-legend-label">Not Started</span>
+            </div>
+            <div class="status-legend-item">
+                <div class="status-legend-box started"></div>
+                <span class="status-legend-label">Started</span>
+            </div>
+            <div class="status-legend-item">
+                <div class="status-legend-box completed"></div>
+                <span class="status-legend-label">Completed</span>
+            </div>
+            <div class="status-legend-item">
+                <div class="status-legend-box not-completed"></div>
+                <span class="status-legend-label">Not Completed</span>
+            </div>
+            <div class="status-legend-item">
+                <div class="status-legend-box missed"></div>
+                <span class="status-legend-label">Missed</span>
+            </div>
+            <div class="status-legend-item">
+                <div class="status-legend-box cancelled"></div>
+                <span class="status-legend-label">Cancelled</span>
+            </div>
+            <div class="status-legend-item">
+                <div class="status-legend-box overlapped"></div>
+                <span class="status-legend-label">Overlapped</span>
+            </div>
+        </div>
     <script>
         let inital_load = false;
         const selectedEventIds = new Set();
@@ -3481,14 +3517,16 @@ function hideLoader() {
         employees.push('');
         
         const serviceList = `[${services.join(",")}]`;
+        let employees_config;
+        let employees_config1;
         if( currentView == "day" ){
-            const employees_config = {
+            employees_config = {
             app_name,
             report_name: "Daily_Shift_Report",
             criteria: "(Date_From == '" + formatDateDDMMYYYY(currentDate) + "')"
         };
 
-        const employees_config1 = {
+        employees_config1 = {
             app_name,
             report_name: "Bookings_Backend",
             criteria: `Site_Name.ID == ${serviceList} && Care_Providers != null && Date_field1 == '${formatDateDDMMYYYY(currentDate)}'`
@@ -3504,30 +3542,30 @@ function hideLoader() {
             let zoho_start_date = formatDateDDMMYYYY( weekStart );
             let zoho_end_date = formatDateDDMMYYYY( weekEnd );
 
-             const employees_config = {
+             employees_config = {
             app_name,
             report_name: "Daily_Shift_Report",
             criteria: `Date_From >= '${zoho_start_date}' &&  Date_From <= ${zoho_end_date} `
         };
 
-        const employees_config1 = {
+        employees_config1 = {
             app_name,
             report_name: "Bookings_Backend",
             criteria: `Site_Name.ID == ${serviceList} && Care_Providers != null && Date_field1 >= '${zoho_start_date}' && Date_field1 <= '${zoho_end_date}' `
         }
         }
     try {
-        const employees_config = {
-            app_name,
-            report_name: "Daily_Shift_Report",
-            criteria: "(Date_From == '" + formatDateDDMMYYYY(currentDate) + "')"
-        };
+        // const employees_config = {
+        //     app_name,
+        //     report_name: "Daily_Shift_Report",
+        //     criteria: "(Date_From == '" + formatDateDDMMYYYY(currentDate) + "')"
+        // };
 
-        const employees_config1 = {
-            app_name,
-            report_name: "Bookings_Backend",
-            criteria: `Site_Name.ID == ${serviceList} && Care_Providers != null && Date_field1 == '${formatDateDDMMYYYY(currentDate)}'`
-        }
+        // const employees_config1 = {
+        //     app_name,
+        //     report_name: "Bookings_Backend",
+        //     criteria: `Site_Name.ID == ${serviceList} && Care_Providers != null && Date_field1 == '${formatDateDDMMYYYY(currentDate)}'`
+        // }
         const employee_res = await ZOHO.CREATOR.DATA.getRecords(employees_config);
         
         if (employee_res.code === 3000 && employee_res.data?.length) {
@@ -4515,29 +4553,31 @@ if (existing) {
     todayDate = new Date();
     
     try {
-        if (currentViewType === 'employee') {
-            await getTodayAllEmployees();
-            if (currentView === 'day') {
-                await getBookings();
+        await getTodayAllEmployees();
+        await getBookings();
                 await renderDayView();
-            } else {
-                await getBookingsForWeek();
-                await renderWeekView();
-            }
-        } else if (currentViewType === 'run') {
-            if (currentView === 'day') {
-                await getBookings();
-                await renderRunView();
-            } else {
-                await getBookingsForWeek();
-                await renderRunViewWeek();
-            }
-        } else if (currentViewType === 'person') {
-            if (currentView === 'week') {
-                await getBookingsForWeek();
-                await renderWeekPersonView();
-            }
-        }
+        // if (currentViewType === 'employee') {
+            
+        //     if (currentView === 'day') {
+                
+        //     } else {
+        //         await getBookingsForWeek();
+        //         await renderWeekView();
+        //     }
+        // } else if (currentViewType === 'run') {
+        //     if (currentView === 'day') {
+        //         await getBookings();
+        //         await renderRunView();
+        //     } else {
+        //         await getBookingsForWeek();
+        //         await renderRunViewWeek();
+        //     }
+        // } else if (currentViewType === 'person') {
+        //     if (currentView === 'week') {
+        //         await getBookingsForWeek();
+        //         await renderWeekPersonView();
+        //     }
+        // }
         
         updateDateTitle();
     } catch (error) {
