@@ -69,10 +69,10 @@
         opt.textContent = name;
 
         opt.onclick = () => {
-    if (selectedStaff.length >= activeEvent.no_of_staff ) {
-      showToast(`You can select a maximum of ${activeEvent.no_of_staff} staff only`);
-      return;
-    }
+    // if (selectedStaff.length >= activeEvent.no_of_staff ) {
+    //   showToast(`You can select a maximum of ${activeEvent.no_of_staff} staff only`);
+    //   return;
+    // }
 
     selectedStaff.push(name);
     document.getElementById('staffSearchInput').value = '';
@@ -448,8 +448,11 @@
                   <div class="employee-label">
                       <div class="employee-name-row">
                           <span class="employee-name">${runGroup}</span>
-                          <span class="employee-count">${displayHours}</span>
                       </div>
+                      <div class="employee-hours-info">
+            
+            <span class="hours-value" data-tooltip="Actual Hours">${displayHours}</span>
+        </div>
                   </div>
               `;
           }
