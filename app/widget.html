@@ -4709,6 +4709,8 @@ if (existing) {
             }
         }
         function createBookingObject(rec, emp) {
+            // console.log(rec);
+            
             let cur_book = {};
     cur_book.id = Number(rec.ID);
     cur_book.zoho_id = rec.ID;
@@ -5899,7 +5901,6 @@ async function applyDragChanges(
             eventDatabase[currentDateKey].push(updated);
         }
         showLoader();
-        // 4️⃣ Sync Zoho ONCE per zoho_id + throttle
         if (zohoPayload && !syncedZohoIds.has(evt.zoho_id)) {
             syncedZohoIds.add(evt.zoho_id);
 
@@ -5927,10 +5928,10 @@ async function applyDragChanges(
             const slot = e.currentTarget;
             slot.classList.remove('drop-highlight');
             
-            console.log(draggedEventData);
-            
+           
             if (!draggedElement || !draggedEventId || !draggedEventData) return;
-
+            console.log(draggedEventData.status);
+            
             if( draggedEventData.status === "Completed" ){
                 showToast("Completed Task Can't be Changed", "error");
                 return;
@@ -6551,18 +6552,27 @@ formatFilterText = function(filter) {
         const q = query.trim().toLowerCase();
 
         if (q === '') {
-            renderDayView();
+            if (currentViewType === 'employee') {
+                renderDayView();
+            } else if (currentViewType === 'run') {
+                renderRunView();
+            }
             return;
         }
 
-        const visibleEmployees = employees.filter(e =>
-            e.toLowerCase().includes(q)
-        );
-
-        visibleEmployees.unshift('');
-        renderFilteredEmployeeRows(visibleEmployees);
-
-        console.log(q, visibleEmployees);
+        if (currentViewType === 'employee') {
+            const visibleEmployees = employees.filter(e =>
+                e.toLowerCase().includes(q)
+            );
+            visibleEmployees.unshift('');
+            renderFilteredEmployeeRows(visibleEmployees);
+        } else if (currentViewType === 'run') {
+            const visibleRuns = runGroups.filter(r =>
+                r.toLowerCase().includes(q)
+            );
+            visibleRuns.unshift('');
+            renderFilteredRunRows(visibleRuns);
+        }
     }, 1000);
 }
 

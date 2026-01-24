@@ -217,6 +217,10 @@
     
     showLoader();
     clearAllFilters();
+    const employeeSearchInput = document.getElementById('employeeSearchInput');
+    if (employeeSearchInput) {
+        employeeSearchInput.value = '';
+    }
     currentViewType = type;
     
     // Update UI - display text
@@ -1501,4 +1505,117 @@ function clearAllFilters() {
     if (employeeSearchInput) {
         employeeSearchInput.value = '';
     }
+}
+
+async function renderFilteredRunRows(visibleRuns) {
+    const rowsContainer = document.getElementById('calendarRows');
+    rowsContainer.innerHTML = '';
+
+    const dateKey = getCurrentDateKey();
+    const rowHeightsMap = {};
+    const fillHeight = calculateFillHeight();
+
+    visibleRuns.forEach(runGroup => {
+        const rawEvents = getEventsForRunGroup(runGroup, dateKey);
+        const events = detectOverlaps([...rawEvents]);
+
+        const maxConcurrent = events.length ? Math.max(...events.map(e => e.maxConcurrent)) : 1;
+        const dynamicHeight = (maxConcurrent * (EVENT_HEIGHT + EVENT_GAP)) + (ROW_PADDING * 2);
+        const finalRowHeight = Math.max(fillHeight, dynamicHeight);
+        rowHeightsMap[runGroup] = finalRowHeight;
+
+        const runRow = document.createElement('div');
+        runRow.className = 'employee-calendar-row';
+        runRow.dataset.runGroup = runGroup;
+        runRow.style.height = finalRowHeight + 'px';
+
+        const grid = document.createElement('div');
+        grid.className = 'calendar-grid';
+
+        for (let h = 0; h < 24; h++) {
+            const hourCol = document.createElement('div');
+            hourCol.className = 'hour-column';
+            const innerGrid = document.createElement('div');
+            innerGrid.className = 'hour-column-inner';
+            for (let i = 0; i < 4; i++) {
+                const line = document.createElement('div');
+                line.className = 'quarter-line';
+                innerGrid.appendChild(line);
+            }
+            hourCol.appendChild(innerGrid);
+
+            for (let q = 0; q < 4; q++) {
+                const slot = document.createElement('div');
+                slot.className = 'quarter-slot';
+                slot.dataset.hour = h;
+                slot.dataset.quarter = q;
+                slot.dataset.runGroup = runGroup;
+                slot.dataset.viewType = 'run';
+                
+                slot.addEventListener('dragover', handleRunDragOver);
+                slot.addEventListener('drop', handleRunDrop);
+                slot.addEventListener('dragleave', handleDragLeave);
+                
+                hourCol.appendChild(slot);
+            }
+            grid.appendChild(hourCol);
+        }
+        
+        const eventsContainer = document.createElement('div');
+        eventsContainer.className = 'events-container';
+        eventsContainer.dataset.runGroup = runGroup;
+        renderRunEventsForGroup(eventsContainer, events);
+
+        grid.appendChild(eventsContainer);
+        runRow.appendChild(grid);
+        rowsContainer.appendChild(runRow);
+    });
+
+    renderFilteredRunColumn(rowHeightsMap, visibleRuns);
+}
+
+function renderFilteredRunColumn(rowHeightsMap = {}, visibleRuns) {
+    const column = document.getElementById('employeeColumn');
+    column.innerHTML = '';
+
+    const dateKey = getCurrentDateKey();
+    
+    visibleRuns.forEach(runGroup => {
+        const row = document.createElement('div');
+        row.className = 'employee-row';
+
+        if (runGroup === '') {
+            row.innerHTML = `
+                <div class="employee-label">
+                    <div class="employee-name-row">
+                        <span class="employee-name">Unassigned</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            let total_mins = 0;
+            const events = getEventsForRunGroup(runGroup, dateKey);
+            events.forEach(evt => {
+                total_mins += (evt.endMinutes - evt.startMinutes);
+            });
+            
+            const workingHours = total_mins / 60;
+            let displayHours = workingHours > 0 ? workingHours.toFixed(1) : '0.0';
+            
+            row.innerHTML = `
+                <div class="employee-label">
+                    <div class="employee-name-row">
+                        <span class="employee-name">${runGroup}</span>
+                    </div>
+                    <div class="employee-hours-info">
+                        <span class="hours-value" data-tooltip="Actual Hours">${displayHours}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        const height = rowHeightsMap[runGroup] || MIN_ROW_HEIGHT;
+        row.style.height = height + 'px';
+        column.appendChild(row);
+    });
 }
