@@ -216,6 +216,7 @@
     if (currentViewType === type) return;
     
     showLoader();
+    clearAllFilters();
     currentViewType = type;
     
     // Update UI - display text
@@ -1454,4 +1455,50 @@ function hasEmployeeConflict(zohoId, employee, dateKey, draggedEventKey) {
         `${e.zoho_id}-${e.employee || 'unassigned'}-${e.employee_id || 'none'}`
             !== draggedEventKey
     );
+}
+function clearAllFilters() {
+    // Clear applied filters array
+    appliedFilters = [];
+    
+    // Clear all filter tags
+    Object.keys(filterTags).forEach(key => {
+        filterTags[key] = [];
+    });
+    
+    // Uncheck all filter checkboxes
+    document.querySelectorAll('.search-filter input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // Hide all filter input sections
+    document.querySelectorAll('.filter-inputs').forEach(inputs => {
+        inputs.classList.remove('active');
+    });
+    
+    // Reset all filter dropdowns to default (Contains)
+    Object.keys(filterValues).forEach(key => {
+        filterValues[key] = 'contains';
+        const hiddenInput = document.getElementById(`${key}-filter`);
+        if (hiddenInput) {
+            hiddenInput.value = 'contains';
+        }
+        const displayText = document.getElementById(`${key}-filter-text`);
+        if (displayText) {
+            displayText.textContent = 'Contains';
+        }
+    });
+    
+    // Clear all tag displays
+    Object.keys(filterTags).forEach(key => {
+        renderTags(key);
+    });
+    
+    // Hide the applied filters section
+    renderAppliedFilters();
+    
+    // Clear search input in employee header
+    const employeeSearchInput = document.getElementById('employeeSearchInput');
+    if (employeeSearchInput) {
+        employeeSearchInput.value = '';
+    }
 }

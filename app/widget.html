@@ -2846,8 +2846,8 @@ min-width: 100px;
     <input 
         type="text" 
         id="employeeSearchInput" 
-        placeholder="Search staff"
-        oninput="filterEmployees(this.value)"
+        placeholder="Search"
+        oninput="handleDynamicSearch(this.value)"
     />
 </div>
                     <div class="hour-header-container">
@@ -4566,7 +4566,7 @@ if (existing) {
     document.getElementById("employeeSearchInput").value = '';
     showLoader();
     currentView = view;
-    
+    clearAllFilters();
     // Reset to employee view when switching
     currentViewType = 'employee';
     document.getElementById('currentViewType').textContent = 'Staff';
