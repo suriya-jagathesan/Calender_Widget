@@ -4083,6 +4083,7 @@ let resizeDirtyEvent = null;
             
             
             
+            
             let sts = evt.event_status.replace("_"," "); 
             
             
@@ -4256,7 +4257,7 @@ function showTimeChangeConfirmation() {
 // }
 
 // New function to cancel time change
-function cancelTimeChange() {
+async function cancelTimeChange() {
     const modal = document.getElementById('timeChangeConfirmModal');
     modal.classList.add('hidden');
     
@@ -4271,7 +4272,15 @@ function cancelTimeChange() {
     resizeDirtyEvent = null;
     
     // Re-render to show original state
-    currentView === 'day' ? re_renderDayView() : renderWeekView();
+    if (currentView === 'day') {
+            if (currentViewType === 'employee') {
+                await re_renderDayView();
+            } else if (currentViewType === 'run') {
+                await renderRunView();
+            }
+        } else{
+            await renderWeekView
+        }
 }
        
         let appliedFilters = [];
@@ -5517,7 +5526,7 @@ function openEmployeeWeekPDF(employeeName) {
         }
                 el.draggable = true;
                 const compositeKey = `${evt.zoho_id}-${evt.employee || 'unassigned'}-${evt.employee_id || 'none'}`;
-                el.dataset.eventKey = compositeKey
+        el.dataset.eventKey = compositeKey;
                 el.dataset.eventId = evt.id;
                 el.dataset.viewType = 'week';
                 el.dataset.eventDate = dateKey;
@@ -5578,34 +5587,40 @@ function openEmployeeWeekPDF(employeeName) {
     mouseDownY = e.clientY;
 });
 function handleDragStartWeek(e) { 
-            draggedElement = e.currentTarget;
-            draggedEventId = parseInt(e.currentTarget.dataset.eventId);
-            
-            
-            const viewType = e.currentTarget.dataset.viewType;
-            let dateKey = viewType === 'week' ? e.currentTarget.dataset.eventDate : getCurrentDateKey();
-            
-            const events = eventDatabase[dateKey] || [];
-            
-            
-            draggedEventData = events.find(evt => evt.id === draggedEventId);
-            if (draggedEventData) {
-                draggedEventData.originalDateKey = dateKey;
-            }
-            
-            e.currentTarget.classList.add('dragging');
-            document.body.classList.add('dragging-active');
-            e.dataTransfer.effectAllowed = 'move';
-        }
-
+    draggedElement = e.currentTarget;
+    draggedEventId = parseInt(e.currentTarget.dataset.eventId);
+    
+    // ✅ Get composite key instead of just event ID
+    const eventKey = e.currentTarget.dataset.eventKey;
+    
+    const viewType = e.currentTarget.dataset.viewType;
+    let dateKey = viewType === 'week' ? e.currentTarget.dataset.eventDate : getCurrentDateKey();
+    
+    const events = eventDatabase[dateKey] || [];
+    
+    // ✅ Find event by composite key instead of ID
+    draggedEventData = events.find(evt => {
+        const eKey = `${evt.zoho_id}-${evt.employee || 'unassigned'}-${evt.employee_id || 'none'}`;
+        return eKey === eventKey;
+    });
+    
+    if (draggedEventData) {
+        draggedEventData.originalDateKey = dateKey;
+        draggedEventData.eventKey = eventKey; // Store the key
+    }
+    
+    e.currentTarget.classList.add('dragging');
+    document.body.classList.add('dragging-active');
+    e.dataTransfer.effectAllowed = 'move';
+}
         function handleDragEndWeek(e) {
-            e.currentTarget.classList.remove('dragging');
-            document.body.classList.remove('dragging-active');
-            document.querySelectorAll('.drop-highlight').forEach(el => el.classList.remove('drop-highlight'));
-            draggedElement = null;
-            draggedEventId = null;
-            draggedEventData = null;
-        }
+    e.currentTarget.classList.remove('dragging');
+    document.body.classList.remove('dragging-active');
+    document.querySelectorAll('.drop-highlight').forEach(el => el.classList.remove('drop-highlight'));
+    draggedElement = null;
+    draggedEventId = null;
+    draggedEventData = null;
+}
 
 el.addEventListener('mouseup', (e) => {
     // Ignore resize handles (future-safe)
@@ -5923,54 +5938,93 @@ async function applyDragChanges(
 
 
         function handleWeekDrop(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const slot = e.currentTarget;
-            slot.classList.remove('drop-highlight');
-            
-           
-            if (!draggedElement || !draggedEventId || !draggedEventData) return;
-            console.log(draggedEventData.status);
-            
-            if( draggedEventData.status === "Completed" ){
-                showToast("Completed Task Can't be Changed", "error");
-                return;
-            }
-            
-            const newDateKey = slot.dataset.dateKey;
-            const newEmployee = slot.dataset.employee;
-            const originalDateKey = draggedEventData.originalDateKey;
-            const originalEmployee = draggedEventData.employee;
+    e.preventDefault();
+    e.stopPropagation();
+    const slot = e.currentTarget;
+    slot.classList.remove('drop-highlight');
+    
+    if (!draggedElement || !draggedEventId || !draggedEventData) return;
 
-           
-            console.log(originalDateKey,newDateKey);
-            
-            // Prevent drop if it's the same column (same day AND same employee)
-            if (newDateKey === originalDateKey && newEmployee === originalEmployee) {
-                return;
-            }
-            
-            const duration = draggedEventData.endMinutes - draggedEventData.startMinutes;
-            
-            if (eventDatabase[originalDateKey]) {
-                const index = eventDatabase[originalDateKey].findIndex(ev => ev.id === draggedEventId);
-                if (index !== -1) eventDatabase[originalDateKey].splice(index, 1);
-            }
-            
-            if (!eventDatabase[newDateKey]) eventDatabase[newDateKey] = [];
-            eventDatabase[newDateKey].push({
-                ...draggedEventData,
-                employee: newEmployee,
-                date: toYYYYMMDD(newDateKey)
-            });
-            updateEventZoho( {
-                ...draggedEventData,
-                employee: newEmployee,
-                date: toYYYYMMDD(newDateKey)
-            } )
-            
-            renderWeekView();
-        }
+    if (draggedEventData.status === "Completed") {
+        showToast("Completed Task Can't be Changed", "error");
+        return;
+    }
+    
+    const newDateKey = slot.dataset.dateKey;
+    const newEmployee = slot.dataset.employee;
+    const originalDateKey = draggedEventData.originalDateKey;
+    const originalEmployee = draggedEventData.employee;
+    const draggedEventKey = draggedEventData.eventKey;
+
+    // Prevent drop if it's the same column (same day AND same employee)
+    if (newDateKey === originalDateKey && newEmployee === originalEmployee) {
+        return;
+    }
+
+    // ✅ Check for employee conflict using composite key
+    const hasConflict = hasEmployeeConflict(
+        draggedEventData.zoho_id,
+        newEmployee,
+        newDateKey,
+        draggedEventKey
+    );
+
+    if (hasConflict) {
+        showToast(`Employee ${newEmployee} is already assigned to this event`, "error");
+        return;
+    }
+    
+    const duration = draggedEventData.endMinutes - draggedEventData.startMinutes;
+    
+    // ✅ Remove the specific dragged row from original date
+    if (eventDatabase[originalDateKey]) {
+        eventDatabase[originalDateKey] = eventDatabase[originalDateKey].filter(evt => {
+            const eKey = `${evt.zoho_id}-${evt.employee || 'unassigned'}-${evt.employee_id || 'none'}`;
+            return eKey !== draggedEventKey;
+        });
+    }
+    
+    // ✅ Add updated event to new date
+    if (!eventDatabase[newDateKey]) eventDatabase[newDateKey] = [];
+    
+    const [yyyy,MM,dd] = newDateKey.split('-');
+   
+    
+    const newDateStr = `${dd}-${MM}-${yyyy}`;
+    
+    
+    // Get employee_id for new employee
+    let new_employee_id = null;
+    if (newEmployee) {
+        const empDetail = employeeDetails.find(emp => emp.name === newEmployee);
+        new_employee_id = empDetail?.id || null;
+    }
+    
+    eventDatabase[newDateKey].push({
+        ...draggedEventData,
+        employee: newEmployee,
+        employee_id: new_employee_id,
+        date: newDateStr
+    });
+    
+    
+    ensurePlaceholderRow({
+        ...draggedEventData,
+        date: originalDateKey.split('-').reverse().join('-')
+    });
+    
+    // Update Zoho
+    showLoader();
+    updateEventZoho({
+        ...draggedEventData,
+        employee: newEmployee,
+        employee_id: new_employee_id,
+        date: newDateStr
+    });
+    
+    renderWeekView();
+    hideLoader();
+}
 
         // New Function for From/To Date Filter selection
 function selectDateFilterOption(filterName, value, element) {
