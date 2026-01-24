@@ -1728,7 +1728,7 @@ min-width: 100px;
 .employee-hours-info {
     display: flex;
     align-items: center;
-    justify-content: flex-start;  /* LEFT ALIGN */
+    justify-content: space-between;  /* LEFT ALIGN */
     gap: 4px;
     font-size: 11px;
     color: #374151;
@@ -1736,7 +1736,18 @@ min-width: 100px;
     margin-top: 2px;
     width: 100%;
 }
+.employee-hours-left {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
 
+.employee-hours-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto; /* Push to right */
+}
 .employee-hours-row {
     display: flex;
     justify-content: flex-start;
@@ -3044,7 +3055,7 @@ min-width: 100px;
       <!-- Before Travel Section -->
       <div class="travel-section" id="beforeTravelSection" style="display: none;">
         <h4 class="travel-section-title">
-          <i class="fa fa-arrow-right"></i> Travel To Appointment
+          <i class="fa fa-arrow-right"></i> Travel To Visti
         </h4>
         
         <div class="travel-info-grid">
@@ -4734,6 +4745,7 @@ if (existing) {
     cur_book.Time_Critical_Visit = rec["Visit.Time_Critical_Visit"] ?? "";;
     const runName = rec.Care_Group?.Care_Group_Name ?? '';
 const runID   = rec.Care_Group?.ID ?? '';
+cur_book.distance_duration  = rec.Distance_Duration_Details;
     const personName = rec.Care_Service_User.zc_display_value;
     const person_id = rec.Care_Service_User.ID;
 
@@ -4875,6 +4887,14 @@ if (contractedMinutes > 0) {
 
 // ✅ DISPLAY PERCENTAGE (not hours)
 let displayPercentage = `${percentage}%`;
+
+const travelTotals = calculateEmployeeTravelTotals(employee, dateKey);
+            const displayDistance = travelTotals.totalDistance > 0 
+                ? `${travelTotals.totalDistance.toFixed(1)}mi` 
+                : '0.0mi';
+            const displayDuration = travelTotals.totalDuration > 0 
+                ? `${travelTotals.totalDuration.toFixed(0)}m` 
+                : '0m';
             let iconHTML = '';
             const hasDrivingSkill = employeeDetails.some(e =>
     e.name?.trim().toLowerCase() === employee?.trim().toLowerCase() &&
@@ -4896,9 +4916,16 @@ let displayPercentage = `${percentage}%`;
             <span class="employee-count">${displayPercentage}</span>
         </div>
         <div class="employee-hours-info">
-            <span class="hours-value" data-tooltip="Contracted Hours">${contractedHours}</span>
-            <span class="hours-separator">|</span>
-            <span class="hours-value" data-tooltip="Actual Hours">${displayHours}</span>
+            <div class="employee-hours-left">
+                <span class="hours-value" data-tooltip="Contracted Hours">${contractedHours}</span>
+                <span class="hours-separator">|</span>
+                <span class="hours-value" data-tooltip="Actual Hours">${displayHours}</span>
+            </div>
+            <div class="employee-hours-right">
+                <span class="hours-value travel-info" data-tooltip="Travel Distance">${displayDistance}</span>
+                <span class="hours-separator">|</span>
+                <span class="hours-value travel-info" data-tooltip="Travel Duration">${displayDuration}</span>
+            </div>
         </div>
     </div>
 `;
@@ -4953,6 +4980,13 @@ if (contractedMinutes > 0) {
 
 // ✅ DISPLAY PERCENTAGE (not hours)
 let displayPercentage = `${percentage}%`;
+const travelTotals = calculateEmployeeTravelTotals(employee, dateKey);
+            const displayDistance = travelTotals.totalDistance > 0 
+                ? `${travelTotals.totalDistance.toFixed(1)}mi` 
+                : '0.0mi';
+            const displayDuration = travelTotals.totalDuration > 0 
+                ? `${travelTotals.totalDuration.toFixed(0)}m` 
+                : '0m';
             let iconHTML = '';
             const hasDrivingSkill = employeeDetails.some(e =>
     e.name?.trim().toLowerCase() === employee?.trim().toLowerCase() &&
@@ -4975,9 +5009,16 @@ let displayPercentage = `${percentage}%`;
             <span class="employee-count">${displayPercentage}</span>
         </div>
         <div class="employee-hours-info">
-            <span class="hours-value" data-tooltip="Contracted Hours">${contractedHours}</span>
-            <span class="hours-separator">|</span>
-            <span class="hours-value" data-tooltip="Actual Hours">${displayHours}</span>
+            <div class="employee-hours-left">
+                <span class="hours-value" data-tooltip="Contracted Hours">${contractedHours}</span>
+                <span class="hours-separator">|</span>
+                <span class="hours-value" data-tooltip="Actual Hours">${displayHours}</span>
+            </div>
+            <div class="employee-hours-right">
+                <span class="hours-value travel-info" data-tooltip="Travel Distance">${displayDistance}</span>
+                <span class="hours-separator">|</span>
+                <span class="hours-value travel-info" data-tooltip="Travel Duration">${displayDuration}</span>
+            </div>
         </div>
     </div>
 `;

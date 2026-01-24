@@ -1619,3 +1619,52 @@ function renderFilteredRunColumn(rowHeightsMap = {}, visibleRuns) {
         column.appendChild(row);
     });
 }
+
+function calculateEmployeeTravelTotals(employee, dateKey) {
+    if (!employee || employee === '' || employee === '—') {
+        return { totalDistance: 0, totalDuration: 0 };
+    }
+
+    const events = getEventsForEmployee(employee, dateKey);
+    let totalDistanceMiles = 0;
+    let totalDurationMins = 0;
+
+    events.forEach(evt => {
+        if (!evt.distance_duration || !evt.employee_id) return;
+
+        try {
+            const travelData = typeof evt.distance_duration === 'string' 
+                ? JSON.parse(evt.distance_duration) 
+                : evt.distance_duration;
+
+            // Find the travel data for this specific employee
+            const employeeIdStr = String(evt.employee_id);
+            const employeeTravelData = travelData[employeeIdStr];
+
+            if (employeeTravelData) {
+                // Parse BDist (e.g., "77 Miles" -> 77)
+                if (employeeTravelData.BDist && employeeTravelData.BDist !== "N/A") {
+                    const distMatch = employeeTravelData.BDist.match(/(\d+(?:\.\d+)?)/);
+                    if (distMatch) {
+                        totalDistanceMiles += parseFloat(distMatch[1]);
+                    }
+                }
+
+                // Parse BDur (e.g., "85 Mins" -> 85)
+                if (employeeTravelData.BDur && employeeTravelData.BDur !== "N/A") {
+                    const durMatch = employeeTravelData.BDur.match(/(\d+(?:\.\d+)?)/);
+                    if (durMatch) {
+                        totalDurationMins += parseFloat(durMatch[1]);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Error parsing travel data:', err, evt.distance_duration);
+        }
+    });
+
+    return {
+        totalDistance: totalDistanceMiles,
+        totalDuration: totalDurationMins
+    };
+}
