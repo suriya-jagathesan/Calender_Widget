@@ -97,6 +97,7 @@
             font-size: 16px;
             font-weight: 500;
             color: #1f2937;
+            cursor: pointer;
         }
         .header-controls {
             display: flex;
@@ -1797,6 +1798,9 @@ min-width: 100px;
     color: #682987;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
     white-space: nowrap;
     text-align: left;
     flex: 1; /* Take available space */
@@ -2308,7 +2312,7 @@ min-width: 100px;
 
 /* This width MUST match your hour grid width */
 .day-bottom-scroll-inner {
-    width: 2400px;                /* SAME as .hour-header / .calendar-rows */
+    width: 2600px;                /* SAME as .hour-header / .calendar-rows */
     height: 1px;
 }
 
@@ -2745,7 +2749,7 @@ min-width: 100px;
             <!-- Search Filters Display Section -->
         
 
-            <div class="date-title" id="dateTitle"></div>
+            <div class="date-title" id="dateTitle" onclick="openDateReport()" ></div>
             <div class="header-controls">
                 <button class="nav-btn" onclick="navigatePeriod(-1)"><i class="fa fa-angle-left"></i></button>
                 <button class="nav-btn" onclick="navigatePeriod(1)"><i class="fa fa-angle-right"></i></button>
@@ -2772,6 +2776,10 @@ min-width: 100px;
                         <div class="info-stat-row">
                             <span class="info-stat-label">Carers Working Hours:</span>
                             <span class="info-stat-value" id="statCarersHours">0.0h</span>
+                        </div>
+                        <div class="info-stat-row">
+                            <span class="info-stat-label">Spare Capacity:</span>
+                            <span class="info-stat-value" id="spareCapcity">0.0h</span>
                         </div>
                     </div>
                 </div>  
@@ -3055,7 +3063,7 @@ min-width: 100px;
       <!-- Before Travel Section -->
       <div class="travel-section" id="beforeTravelSection" style="display: none;">
         <h4 class="travel-section-title">
-          <i class="fa fa-arrow-right"></i> Travel To Visti
+          <i class="fa fa-arrow-right"></i> Travel To Visit
         </h4>
         
         <div class="travel-info-grid">
@@ -3083,7 +3091,7 @@ min-width: 100px;
       <!-- After Travel Section -->
       <div class="travel-section" id="afterTravelSection" style="display: none;">
         <h4 class="travel-section-title">
-          <i class="fa fa-arrow-left"></i> Travel From Appointment
+          <i class="fa fa-arrow-left"></i> Travel From Visit
         </h4>
         
         <div class="travel-info-grid">
@@ -3159,7 +3167,7 @@ min-width: 100px;
         <span class="tt-label">Time</span>
         <span class="tt-value" id="ttTime"></span>
     </div>
-    <div class="tt-row hidden" id="ttMismatchRow">
+    <div class="tt-row" id="ttMismatchRow">
         <span class="tt-label">Status</span>
         <span class="tt-value tt-warn" id="ttMismatch"></span>
     </div>
@@ -3638,7 +3646,7 @@ function hideLoader() {
         employees_config1 = {
             app_name,
             report_name: "Bookings_Backend",
-            criteria: `Site_Name.ID == ${serviceList} && Care_Providers != null && Date_field1 == '${formatDateDDMMYYYY(currentDate)}'`
+            criteria: `Site_Name.ID == ${serviceList} && Care_Providers != null && Date_field1 == '${formatDateDDMMYYYY(currentDate)}' && Status != "Inactive" `
         }
         }
         else{
@@ -3660,7 +3668,7 @@ function hideLoader() {
         employees_config1 = {
             app_name,
             report_name: "Bookings_Backend",
-            criteria: `Site_Name.ID == ${serviceList} && Care_Providers != null && Date_field1 >= '${zoho_start_date}' && Date_field1 <= '${zoho_end_date}' `
+            criteria: `Site_Name.ID == ${serviceList} && Care_Providers != null && Status != "Inactive" && Date_field1 >= '${zoho_start_date}' && Date_field1 <= '${zoho_end_date}' `
         }
         }
     try {
@@ -3774,7 +3782,7 @@ function hideLoader() {
             let zoho_start_date = formatDateDDMMYYYY( weekStart );
             let zoho_end_date = formatDateDDMMYYYY( weekEnd );
             const serviceList = `[${services.join(",")}]`;
-            const criteria_2 = `Site_Name.ID == ${serviceList} && Date_field1 >= '${zoho_start_date}' && Date_field1 <= '${zoho_end_date}'`;
+            const criteria_2 = `Site_Name.ID == ${serviceList} && Date_field1 >= '${zoho_start_date}' && Date_field1 <= '${zoho_end_date}' && Status != "Inactive"`;
             console.log(criteria_2);
             
             var booking = {
@@ -3879,7 +3887,7 @@ function getEmployeeIconByCondition(employee, events) {
             runGroups.push('');
             const serviceList = `[${services.join(",")}]`;
             let cur_date = formatDateDDMMYYYY( currentDate );
-            const criteria_1 = `Site_Name.ID == ${serviceList} && Date_field1 == '${cur_date}'`;
+            const criteria_1 = `Site_Name.ID == ${serviceList} && Date_field1 == '${cur_date}' && Status != "Inactive"`;
             var booking = {
                 app_name: app_name,
                 report_name: "Bookings_Backend",
@@ -3887,6 +3895,10 @@ function getEmployeeIconByCondition(employee, events) {
             };
             try {
                 booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
+                
+                
+                console.log(JSON.stringify(booking_resp));
+                
             } catch (err) {
                 console.log("Creator error:", err);
                 return; 
@@ -4756,6 +4768,7 @@ cur_book.distance_duration  = rec.Distance_Duration_Details;
 cur_book.run_view = runName;
 cur_book.run_view_id = runID;
 
+cur_book.time_reason = rec["Care_Service_User.Reason_for_Visit_Time_Criticality"] ?? "";
 if (runName && !runGroups.includes(runName)) {
     runGroups.push(runName);
     runGroupDetails[runName] = runID;
@@ -4879,13 +4892,11 @@ if (shiftData) {
     contractedHours = (contractedMinutes / 60).toFixed(1);
 }
 
-// ✅ CALCULATE PERCENTAGE
 let percentage = 0;
 if (contractedMinutes > 0) {
     percentage = Math.round((total_mins / contractedMinutes) * 100);
 }
 
-// ✅ DISPLAY PERCENTAGE (not hours)
 let displayPercentage = `${percentage}%`;
 
 const travelTotals = calculateEmployeeTravelTotals(employee, dateKey);
@@ -4908,10 +4919,17 @@ const travelTotals = calculateEmployeeTravelTotals(employee, dateKey);
             if ( hasDrivingSkill) {
                 iconHTML = `<i class="fa-solid fa-car"></i>`;
             } 
+            const empId = getEmpIdByName(employee);
+            const url = `https://creatorapp.zoho.eu/homegroup/thgtest/#Report:Manual_Rostering?&zc_LoadIn=dialog&Care_Providers.ID=`+empId;
             row.innerHTML = `
     <div class="employee-label">
         <div class="employee-name-row">
-            <span class="employee-name">${employee}</span>
+            <a href="${url}" 
+               target="_blank" 
+               class="employee-name"
+               rel="noopener noreferrer">
+               ${employee}
+            </a>
             ${iconHTML}
             <span class="employee-count">${displayPercentage}</span>
         </div>
@@ -5738,7 +5756,7 @@ el.addEventListener('mouseup', (e) => {
             console.log('Available events:', events);
             return null;
         }
-        console.log('✅ Found event:', evt);
+       
         return evt ? {
             ...evt,
             originalDateKey: dateKey,
@@ -5746,7 +5764,7 @@ el.addEventListener('mouseup', (e) => {
         } : null;
     }).filter(Boolean);
     
-    console.log('Final draggedEventData:', draggedEventData);
+    
     // ✅ Update dragging class using composite key
     selectedEventIds.forEach(eventKey => {
         const el = document.querySelector(`.event[data-event-key="${eventKey}"]`);
@@ -5844,7 +5862,18 @@ document.body.classList.remove('dragging-active');
         const newAnchorStart = newHour * 60 + newQuarter * 15;
         
         if (newAnchorStart !== originalStartMinutes) {
-            showToast("Time Critical Visits cannot be moved to a different time", "error");
+            if( draggedEventData[0].time_reason != "" && draggedEventData[0].time_reason != null ){
+            showToast(
+  `Time Critical Visits cannot be moved to a different time.<br><strong>Reason:</strong> ${draggedEventData[0].time_reason}`,
+  "error"
+);
+        }
+        else{
+             showToast(
+  `Time Critical Visits cannot be moved to a different time.`,
+  "error"
+);
+        }
             clearEventSelection();
             return;
         }
@@ -6415,10 +6444,10 @@ formatFilterText = function(filter) {
         function toggleMiniCalendar() {
             event.stopPropagation();
             const miniCal = document.getElementById('miniCalendar');
-            console.log(miniCal);
+            // console.log(miniCal);
             const wasActive = miniCal.classList.contains('active');
             miniCal.classList.toggle('active');
-            console.log(miniCal);
+            // console.log(miniCal);
             if (!wasActive && miniCal.classList.contains('active')) {
                 renderMiniCalendar();
             }
@@ -6565,7 +6594,9 @@ formatFilterText = function(filter) {
         }
 
         async function selectDate(day, month, year) {
+            showLoader();
             currentDate = new Date(year, month, day);
+            updateDateTitle();
             if (currentViewType === 'employee') {
             // Employee view logic
             await getTodayAllEmployees();
@@ -6589,6 +6620,7 @@ formatFilterText = function(filter) {
             
             renderMiniCalendar();
             toggleMiniCalendar();
+            hideLoader();
         }
 
         function changeMiniMonth(delta) {
@@ -6810,7 +6842,6 @@ function showTooltip(evtEl, mouseEvent) {
     document.getElementById('ttStaff').textContent = evtEl.dataset.staff;
     document.getElementById('ttTime').textContent =
         `${evtEl.dataset.start} – ${evtEl.dataset.end}`;
-
     document.getElementById('ttMismatch').textContent = evtEl.dataset.status;
     // Mismatch
     // if (evtEl.dataset.mismatch) {

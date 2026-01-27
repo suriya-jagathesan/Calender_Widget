@@ -560,3 +560,8 @@
     display: none !important;
     pointer-events: none !important;
 }
+
+.info-stat-value.negative {
+    color: red;
+    font-weight: 600;
+}

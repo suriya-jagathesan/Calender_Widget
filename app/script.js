@@ -668,16 +668,28 @@
       const hasTimeCritical = draggedEventData.some(evt => evt.Time_Critical_Visit === "Yes");
     
     if (hasTimeCritical) {
-        // ✅ ALLOW EMPLOYEE CHANGE BUT NOT TIME CHANGE
         const anchorEvent = draggedEventData[0];
         const originalStartMinutes = anchorEvent.startMinutes;
         const newAnchorStart = newHour * 60 + newQuarter * 15;
         
+       
         if (newAnchorStart !== originalStartMinutes) {
-            showToast("Time Critical Visits cannot be moved to a different time", "error");
+             if( draggedEventData.time_reason != "" && draggedEventData.time_reason != null ){
+            showToast(
+  `Time Critical Visits cannot be moved to a different time.<br><strong>Reason:</strong> ${draggedEventData.time_reason}`,
+  "error"
+);
+        }
+        else{
+             showToast(
+  `Time Critical Visits cannot be moved to a different time.`,
+  "error"
+);
+        }
+        }
             clearEventSelection();
             return;
-        }
+        
     }
 
       const anchorEvent = draggedEventData[0];
@@ -1093,10 +1105,14 @@ function updateDayStats() {
     });
     const carersHours = (totalCarerMinutes / 60).toFixed(1);
     // Update UI
+    const spareCapacityEl = document.getElementById('spareCapcity');
+    const spare = carersHours - requiredHours;
     document.getElementById('statRequiredHours').textContent = `${requiredHours}h`;
     document.getElementById('statCarersWorking').textContent = employees.length - 1;
     document.getElementById('statCarersHours').textContent = `${carersHours}h`;
-}
+    document.getElementById('spareCapcity').textContent = `${(carersHours - requiredHours).toFixed(1)}h`;
+    spareCapacityEl.classList.toggle('negative', spare < 0);
+ }
 
 function updateWeekStats() {
     const weekStart = new Date(currentDate);
@@ -1149,13 +1165,25 @@ function updateWeekStats() {
             totalCarerMinutes += (shift.endMinutes - shift.startMinutes) * daysWorked;
         }
     });
+
+    employees.forEach(employee => {
+        const shift = shiftsMap[employee];
+        if (shift) {
+            totalCarerMinutes += (shift.endMinutes - shift.startMinutes);
+        }
+    });
     
-    const carersHours = (totalCarerMinutes / 60).toFixed(1);
+    
+    const carersHours = (totalCarerMinutes / 60).toFixed(1) * 6 ;
+    const spareCapacityEl = document.getElementById('spareCapcity');
+    const spare = carersHours - requiredHours;
     
     // Update UI
     document.getElementById('statRequiredHours').textContent = `${requiredHours}h`;
     document.getElementById('statCarersWorking').textContent = employees.length - 1;
     document.getElementById('statCarersHours').textContent = `${carersHours}h`;
+    document.getElementById('spareCapcity').textContent = `${(carersHours - requiredHours).toFixed(1)}h`;
+    spareCapacityEl.classList.toggle('negative', spare < 0);
 }
 
 // Helper function to format hours with decimal
@@ -1183,7 +1211,7 @@ function updateViewSwitcherOptions() {
         const runOption = document.createElement('div');
         runOption.className = 'view-switcher-option' + (currentViewType === 'run' ? ' selected' : '');
         runOption.innerHTML = `
-            <span>Run View</span>
+            <span>Run</span>
             ${currentViewType === 'run' ? '<i class="fa fa-check"></i>' : ''}
         `;
         runOption.onclick = () => selectViewType('run');
@@ -1667,4 +1695,27 @@ function calculateEmployeeTravelTotals(employee, dateKey) {
         totalDistance: totalDistanceMiles,
         totalDuration: totalDurationMins
     };
+}
+
+function getEmpIdByName(name) {
+    const emp = employeeDetails.find(e => e.name === name);
+    return emp ? emp.id : null;
+}
+
+
+function openDateReport() {
+    if (!currentDate) return;
+
+    const formattedDate = formatDateDDMMYYYY(currentDate);
+
+    const url = `https://creatorapp.zoho.eu/homegroup/thgtest/#Report:Manual_Rostering?&zc_LoadIn=dialog&Date_field1=${formattedDate}`;
+
+    window.open(url, '_blank', 'noopener');
+}
+
+function formatDateDDMMYYYY(date) {
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
 }
