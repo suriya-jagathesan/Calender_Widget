@@ -234,7 +234,7 @@
     }
     document.getElementById('currentViewType').textContent = displayText;
     
-    // ✅ Update selected state and checkmarks
+    
     document.querySelectorAll('.view-switcher-option').forEach(opt => {
         opt.classList.remove('selected');
         
@@ -275,11 +275,13 @@
                 await renderRunView();
             }
         } else {
-            // Week view
             if (type === 'employee') {
                 await renderWeekView();
             } else if (type === 'person') {
                 await renderWeekPersonView();
+            }
+            else if( type === 'run' ){
+                await renderWeekRunView();
             }
         }
     } catch (error) {
@@ -289,7 +291,7 @@
     hideLoader();
 }
 
-  // Close dropdown when clicking outside
+ 
   document.addEventListener('click', () => {
       const dropdown = document.getElementById('viewSwitcherDropdown');
       if (dropdown) {
@@ -1235,11 +1237,67 @@ function updateViewSwitcherOptions() {
             ${currentViewType === 'person' ? '<i class="fa fa-check"></i>' : ''}
         `;
         personOption.onclick = () => selectViewType('person');
+
+        const runOption = document.createElement('div');
+        runOption.className = 'view-switcher-option' + (currentViewType === 'run' ? ' selected' : '');
+        runOption.innerHTML = `
+            <span>Run</span>
+            ${currentViewType === 'run' ? '<i class="fa fa-check"></i>' : ''}
+        `;
+        runOption.onclick = () => selectViewType('run');
         
         dropdown.appendChild(employeeOption);
         dropdown.appendChild(personOption);
+        dropdown.appendChild(runOption);
     }
 }
+
+function getEventsForWeekRun(runName, dateKey){
+    const allEvents = eventDatabase[dateKey] || [];
+    return allEvents.filter(evt => {
+        if (evt.run_view !== runName) return false;
+        
+        return appliedFilters.every(f => {
+            let search_key = null;
+            if (f.field === "persons") {
+                search_key = 'title';
+            } else if (f.field === 'staff' || f.field === 'employee') {
+                search_key = 'employee';
+            } else if (f.field === 'service') {
+                search_key = 'service';
+            } else {
+                search_key = f.field;
+            }
+            
+            const eventValue = evt[search_key];
+            if (eventValue == null) return false;
+            
+            if (f.filterType === 'contains') {
+                return f.searchValues.some(v =>
+                    String(eventValue)
+                        .toLowerCase()
+                        .includes(String(v).toLowerCase())
+                );
+            } else if (f.filterType === 'is') {
+                return f.searchValues.some(v =>
+                    String(eventValue).trim().toLowerCase() ===
+                    String(v).trim().toLowerCase()
+                );
+            } else if (f.filterType === 'isNot') {
+                return !f.searchValues.some(v =>
+                    String(eventValue) === String(v)
+                );
+            } else if (f.filterType === 'isEmpty') {
+                return isEmptyValue(eventValue);
+            } else if (f.filterType === 'isNotEmpty') {
+                return !isEmptyValue(eventValue);
+            }
+            
+            return true;
+        });
+    });
+}
+
 function getEventsForPerson(personName, dateKey) {
     const allEvents = eventDatabase[dateKey] || [];
     
@@ -1287,7 +1345,13 @@ function getEventsForPerson(personName, dateKey) {
     });
 }
 
-
+async function renderWeekRunView() {
+    console.log(JSON.stringify(eventDatabase) );
+    
+    renderWeekDaysHeaderPerson();
+    renderWeekRunRows();
+    syncWeekScroll();
+}
 async function renderWeekPersonView() {
     renderWeekDaysHeaderPerson();
     renderWeekPersonRows();
@@ -1326,7 +1390,59 @@ function renderWeekDaysHeaderPerson() {
         header.appendChild(dayHeader);
     }
 }
-
+function renderWeekRunRows(){
+    const rowsContainer = document.getElementById('weekCalendarRows');
+    rowsContainer.innerHTML = '';
+    
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    const rowHeightsMap = {};
+    
+    const fillHeight = calculateFillHeight();
+    const displayRuns = runGroups.length > 0 ? [...new Set(runGroups)] : ['—'];
+    displayRuns.forEach(person => {
+        let maxEventsInDay = 1;
+        
+        if (person !== '—') {
+            for (let day = 0; day < 7; day++) {
+                const dayDate = new Date(weekStart);
+                dayDate.setDate(weekStart.getDate() + day);
+                const events = getEventsForWeekRun(person, getDateKey(dayDate));
+                if (events.length > 0) maxEventsInDay = Math.max(maxEventsInDay, events.length);
+            }
+        }
+        
+        const eventNeededHeight = (maxEventsInDay * (EVENT_HEIGHT + EVENT_GAP)) + (ROW_PADDING * 2);
+        const finalRowHeight = Math.max(fillHeight, eventNeededHeight);
+        rowHeightsMap[person] = finalRowHeight;
+        
+        const personRow = document.createElement('div');
+        personRow.className = 'week-employee-calendar-row';
+        personRow.style.height = finalRowHeight + 'px';
+        
+        for (let day = 0; day < 7; day++) {
+            const dayDate = new Date(weekStart);
+            dayDate.setDate(weekStart.getDate() + day);
+            const dateKey = getDateKey(dayDate);
+            
+            const dayColumn = document.createElement('div');
+            dayColumn.className = 'week-day-column';
+            dayColumn.style.flex = "1 1 0";
+            
+            // No drag and drop for person view
+            const eventsContainer = document.createElement('div');
+            eventsContainer.className = 'week-events-container';
+            const events = person === '—' ? [] : getEventsForWeekRun(person, dateKey);
+            renderWeekEventsForPerson(eventsContainer, events, dateKey);
+            
+            dayColumn.appendChild(eventsContainer);
+            personRow.appendChild(dayColumn);
+        }
+        rowsContainer.appendChild(personRow);
+    });
+    
+    renderWeekRunColumn(rowHeightsMap);
+}
 // New function: Render person rows
 function renderWeekPersonRows() {
     const rowsContainer = document.getElementById('weekCalendarRows');
@@ -1410,6 +1526,30 @@ function renderWeekPersonColumn(rowHeightsMap = {}) {
     });
 }
 
+function renderWeekRunColumn(rowHeightsMap = {}) {
+    const column = document.getElementById('weekEmployeeColumn');
+    column.innerHTML = '';
+    
+    const displayPersons = runGroups.length > 0 ? [...new Set(runGroups)] : ['—'];
+    
+    displayPersons.forEach(person => {
+        const row = document.createElement('div');
+        row.className = 'week-employee-row';
+        
+        if (person !== '—') {
+            row.innerHTML = `
+                <div class="employee-label">
+                    <div class="employee-name">${person}</div>
+                </div>
+            `;
+        }
+        
+        const height = rowHeightsMap[person] || MIN_ROW_HEIGHT;
+        row.style.height = height + 'px';
+        column.appendChild(row);
+    });
+}
+
 // New function: Render events for person (no drag & drop)
 function renderWeekEventsForPerson(container, events, dateKey) {
     events.forEach((evt, index) => {
@@ -1455,16 +1595,17 @@ function renderWeekEventsForPerson(container, events, dateKey) {
             mouseDownX = e.clientX;
             mouseDownY = e.clientY;
         });
+        // if (currentViewType !== 'run') {
         
-        el.addEventListener('mouseup', (e) => {
-            const dx = Math.abs(e.clientX - mouseDownX);
-            const dy = Math.abs(e.clientY - mouseDownY);
-            
-            if (dx > CLICK_TOLERANCE || dy > CLICK_TOLERANCE) return;
-            
-            openEventModal(evt);
-        });
-        
+        //     el.addEventListener('mouseup', (e) => {
+        //         const dx = Math.abs(e.clientX - mouseDownX);
+        //         const dy = Math.abs(e.clientY - mouseDownY);
+                
+        //         if (dx > CLICK_TOLERANCE || dy > CLICK_TOLERANCE) return;
+                
+        //         openEventModal(evt);
+        //     });
+        // }
         container.appendChild(el);
     });
 }
