@@ -3661,7 +3661,7 @@ function hideLoader() {
             // const criteria_2 = `Site_Name.ID == ${serviceList} && Date_field1 >= '${zoho_start_date}' && Date_field1 <= '${zoho_end_date}'`;
 
             const weekStart = new Date(currentDate);
-            weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+            weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
             const weekEnd = new Date(weekStart);
             weekEnd.setDate(weekStart.getDate() + 6);
             let zoho_start_date = formatDateDDMMYYYY( weekStart );
@@ -3784,7 +3784,7 @@ function hideLoader() {
 
         async function getBookingsForWeek(cursor = null){
             const weekStart = new Date(currentDate);
-            weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+            weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
             const weekEnd = new Date(weekStart);
             weekEnd.setDate(weekStart.getDate() + 6);
             let zoho_start_date = formatDateDDMMYYYY( weekStart );
@@ -4008,7 +4008,7 @@ function getTotalWeekHours(employee) {
     let totalMinutes = 0;
 
     const weekStart = new Date(currentDate);
-    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
 
     for (let i = 0; i < 7; i++) {
         const d = new Date(weekStart);
@@ -4035,7 +4035,7 @@ function renderWeekSummaryRow() {
     summary.innerHTML = '';
 
     const weekStart = new Date(currentDate);
-    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
 
     for (let i = 0; i < 7; i++) {
         const d = new Date(weekStart);
@@ -4623,8 +4623,11 @@ if (existing) {
 
 
         async function switchView(view) {
+            console.log("Switch View ", currentDate);
+            
     document.getElementById("employeeSearchInput").value = '';
     showLoader();
+    stopWeekBackgroundFetch();
     currentView = view;
     clearAllFilters();
     // Reset to employee view when switching
@@ -4673,7 +4676,7 @@ if (existing) {
 
          async function navigatePeriod(delta) {
     showLoader();
-    
+    stopWeekBackgroundFetch();
     try {
         if (currentView === 'day') {
             currentDate.setDate(currentDate.getDate() + delta);
@@ -4716,9 +4719,10 @@ if (existing) {
 }
 
         async function goToday() {
-            console.log("Today Called");
+           
             
     showLoader();
+    stopWeekBackgroundFetch();
     currentDate = new Date();
     todayDate = new Date();
     
@@ -4763,7 +4767,7 @@ if (existing) {
                 document.getElementById('dateTitle').textContent = currentDate.toLocaleDateString('en-US', options);
             } else {
                 const weekStart = new Date(currentDate);
-                weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+                weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
                 const weekEnd = new Date(weekStart);
                 weekEnd.setDate(weekStart.getDate() + 6);
                 
@@ -5361,9 +5365,9 @@ el.addEventListener('mouseup', (e) => {
     header.innerHTML = '';
     
     const weekStart = new Date(currentDate);
-    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
     
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat','Sun'];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
     for (let i = 0; i < 7; i++) {
@@ -5404,7 +5408,7 @@ function renderWeekEmployeeRows() {
     rowsContainer.innerHTML = '';
 
     const weekStart = new Date(currentDate);
-    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
     const rowHeightsMap = {};
     
     // 1. Calculate the height needed to fill the screen
@@ -5513,7 +5517,7 @@ function renderWeekEmployeeRows() {
             let totalContractedMinutes = 0;
 
             const weekStart = new Date(currentDate);
-            weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+            weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1);
 
             for (let i = 0; i < 7; i++) {
                 const d = new Date(weekStart);
@@ -5574,7 +5578,7 @@ function openEmployeeWeekPDF(employeeName) {
     
     // Calculate week start and end dates
     const weekStart = new Date(currentDate);
-    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay() );
     weekStart.setDate(weekStart.getDate() + 1);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
@@ -6508,7 +6512,7 @@ formatFilterText = function(filter) {
             let currentWeekDates = [];
             if (currentView === 'week') {
                 const weekStart = new Date(currentDate);
-                weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+                weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1);
                 for (let i = 0; i < 7; i++) {
                     const date = new Date(weekStart);
                     date.setDate(weekStart.getDate() + i);
@@ -6605,7 +6609,7 @@ formatFilterText = function(filter) {
             if (currentView !== 'week') return;
             
             const weekStart = new Date(date);
-            weekStart.setDate(date.getDate() - date.getDay());
+            weekStart.setDate(date.getDate() - date.getDay() + 1 );
             
             const weekDates = [];
             for (let i = 0; i < 7; i++) {
@@ -6632,6 +6636,7 @@ formatFilterText = function(filter) {
 
         async function selectDate(day, month, year) {
             showLoader();
+            stopWeekBackgroundFetch();
             currentDate = new Date(year, month, day);
             updateDateTitle();
             if (currentViewType === 'employee') {
