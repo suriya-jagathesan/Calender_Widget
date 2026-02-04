@@ -365,8 +365,8 @@
       
       const fillHeight = calculateFillHeight();
       
-      // Use runGroups for display
-      let displayRunGroups = [...runGroups];
+      
+      let displayRunGroups = getRunFromEvents();
       
       displayRunGroups.forEach(runGroup => {
           const rawEvents = getEventsForRunGroup(runGroup, dateKey);
@@ -433,8 +433,8 @@
       column.innerHTML = '';
 
       const dateKey = getCurrentDateKey();
-      
-      runGroups.forEach(runGroup => {
+      let displayRunGroups = getRunFromEvents();
+      displayRunGroups.forEach(runGroup => {
           const row = document.createElement('div');
           row.className = 'employee-row';
 
@@ -2001,4 +2001,82 @@ function getMinutes(dateTime) {
     if (Number.isNaN(h) || Number.isNaN(m)) return null;
 
     return h * 60 + m;
+}
+
+function getEmployeesFromEvents() {
+    const dateKey = getCurrentDateKey();
+    let filteredEvents = eventDatabase[dateKey];
+
+    const serviceFilter = appliedFilters.find(f => f.field === 'service');
+    const personFilter  = appliedFilters.find(f => f.field === 'persons');
+    const employeeFilter = appliedFilters.find(f => f.field === 'employee' || f.field === 'staff');
+
+    if (serviceFilter) {
+        filteredEvents = filteredEvents.filter(e =>
+            serviceFilter.searchValues.includes(e.service)
+        );
+    }
+
+    if (personFilter) {
+        filteredEvents = filteredEvents.filter(e =>
+            personFilter.searchValues.includes(e.title)
+        );
+    }
+    if( employeeFilter ){
+        filteredEvents = filteredEvents.filter(e =>
+            employeeFilter.searchValues.includes(e.employee)
+        );
+    }
+
+    const employeeSet = new Set();
+    employeeSet.add('');
+    filteredEvents.forEach(e => {
+        if (e.employee !== undefined && e.employee !== null) {
+            employeeSet.add(e.employee);
+        }
+    });
+
+    
+    employeeSet.add('');
+    
+    return Array.from(employeeSet);
+}
+
+function getRunFromEvents() {
+    const dateKey = getCurrentDateKey();
+    let filteredEvents = eventDatabase[dateKey];
+
+    const serviceFilter = appliedFilters.find(f => f.field === 'service');
+    const personFilter  = appliedFilters.find(f => f.field === 'persons');
+    const employeeFilter = appliedFilters.find(f => f.field === 'employee' || f.field === 'staff');
+
+    if (serviceFilter) {
+        filteredEvents = filteredEvents.filter(e =>
+            serviceFilter.searchValues.includes(e.service)
+        );
+    }
+
+    if (personFilter) {
+        filteredEvents = filteredEvents.filter(e =>
+            personFilter.searchValues.includes(e.title)
+        );
+    }
+    if( employeeFilter ){
+        filteredEvents = filteredEvents.filter(e =>
+            employeeFilter.searchValues.includes(e.employee)
+        );
+    }
+
+    const employeeSet = new Set();
+    employeeSet.add('');
+    filteredEvents.forEach(e => {
+        if (e.employee !== undefined && e.employee !== null) {
+            employeeSet.add(e.run_view);
+        }
+    });
+
+    
+    employeeSet.add('');
+    
+    return Array.from(employeeSet);
 }

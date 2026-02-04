@@ -3920,7 +3920,7 @@ function getEmployeeIconByCondition(employee, events) {
                 booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
                 
                 
-                console.log(JSON.stringify(booking_resp));
+                
                 
             } catch (err) {
                 console.log("Creator error:", err);
@@ -4849,7 +4849,7 @@ cur_book.endMinutes   = getMinutes(rec.To_Date_Time);
     cur_book.event_status = rec.Status;
     
     // Determine status
-    if (rec.Overlapped_Booking == "true") {
+    if (rec.Overlapped_Booking == "true" && rec.Status !== "Completed" ) {
         cur_book.status = "Overlapped";
         cur_book.overlap = true;
     } else if (rec.Status === "Missed") {
@@ -4909,16 +4909,26 @@ cur_book.endMinutes   = getMinutes(rec.To_Date_Time);
     column.innerHTML = '';
 
     const displayList = employees.length > 0 ? employees : ['—'];
-    const employeeObj = appliedFilters.find(o => o.field === "staff" || o.field === "employee" );
-    if(employeeObj){
-        employeeValues = returnEmployees(employeeObj.searchValues);
+    // const employeeObj = appliedFilters.find(o => o.field === "staff" || o.field === "employee" );
+    // if(employeeObj){
+    //     employeeValues = returnEmployees(employeeObj.searchValues);
         
+    //     if (!employeeValues.includes('')) {
+    //         employeeValues.unshift('');
+    //     }
+    // }
+    // else{
+    //     employeeValues = employees;
+    // }
+    
+    if( appliedFilters.length > 0 ){
+        employeeValues = getEmployeesFromEvents();
+    }
+    else{
+         employeeValues = [...employees];
         if (!employeeValues.includes('')) {
             employeeValues.unshift('');
         }
-    }
-    else{
-        employeeValues = employees;
     }
     const dateKey = getCurrentDateKey();
     employeeValues.forEach(employee => {
@@ -5142,18 +5152,15 @@ function syncScroll() {
     
     const fillHeight = calculateFillHeight();    
     const displayList = employees.length >= 0 ? employees : ['—'];   
-    const employeeObj = appliedFilters.find(o => o.field === "staff" || o.field === "employee" );
-    if(employeeObj){
-        employeeValues = await returnEmployees(employeeObj.searchValues);
+    if( appliedFilters.length > 0 ){
+        employeeValues = getEmployeesFromEvents();
+    }
+    else{
+         employeeValues = [...employees];
         if (!employeeValues.includes('')) {
             employeeValues.unshift('');
         }
     }
-    else{
-        employeeValues = employees;
-    }
-
-
     employeeValues.forEach(employee => {
         const rawEvents = employee === '—' ? [] : getEventsForEmployee(employee, dateKey);
         const events = detectOverlaps([...rawEvents]);
@@ -5994,7 +6001,7 @@ async function applyDragChanges(
         eventDatabase[currentDateKey] = [];
     }
 
-    const syncedZohoIds = new Set(); // 🔥 prevent duplicate API calls
+    const syncedZohoIds = new Set();
 
     for (const evt of draggedEventData) {
         const offsetFromAnchor = evt.startMinutes - anchorStart;
