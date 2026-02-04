@@ -3218,6 +3218,10 @@ min-width: 100px;
         let inital_load = false;
         const selectedEventIds = new Set();
         let currentViewType = 'employee'; 
+        let weekFetchCursor       = null;  
+let weekFetchHasMore      = true;  
+let weekBackgroundTimer   = null;  
+const WEEK_POLL_INTERVAL  = 5000; 
 let runGroups = []; 
 let runGroupDetails = {}; 
 let persons = [];
@@ -3778,7 +3782,7 @@ function hideLoader() {
     }
 }
 
-        async function getBookingsForWeek(){
+        async function getBookingsForWeek(cursor = null){
             const weekStart = new Date(currentDate);
             weekStart.setDate(currentDate.getDate() - currentDate.getDay());
             const weekEnd = new Date(weekStart);
@@ -3792,12 +3796,19 @@ function hideLoader() {
             var booking = {
                 app_name: app_name,
                 report_name: "Bookings_Backend",
-                criteria: criteria_2
+                criteria: criteria_2,
+                max_records: 1000
             };
+            if (cursor) {
+                booking.record_cursor = cursor;
+            }
            try{
             booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
             
-            eventDatabase = {};
+            
+             if (!cursor) {
+        eventDatabase = {};
+    }
                 booking_resp.data.forEach(function (rec) {
                     let date_booking = [];
                     if( rec.Care_Providers.length === 0 ){
@@ -3816,11 +3827,14 @@ function hideLoader() {
                     }
                     eventDatabase[key].push(...date_booking);  
                 });
+                const nextCursor = booking_resp.record_cursor || null;    
+                return nextCursor;
             }
             catch(e){
                 console.log(e);
-                
+                return null;
             }
+            return null;
         }
 
         function toYYYYMMDD(ddmmyyyy) {
@@ -4412,8 +4426,6 @@ function getOptionsByField(field) {
 
 function populateQuickDropdowns() {
     document.querySelectorAll('.quick-dropdown').forEach(dropdown => {
-        console.log(dropdown);
-        
         const field = dropdown.dataset.field;
         const optionsBox = dropdown.querySelector('.quick-dropdown-options');
         optionsBox.innerHTML = '';
@@ -4448,7 +4460,7 @@ function populateQuickDropdowns() {
 }
 
 
-function applyQuickFilter(field, value) {
+async function applyQuickFilter(field, value) {
     if (isFilterApplied(field, value)) return;
 
     const existing = appliedFilters.find(f => f.field === field);
@@ -4467,11 +4479,23 @@ if (existing) {
     renderAppliedFilters();    
     document.getElementById('quickFilterPopover').classList.remove('active');
     if (currentView === 'week') {
-                
-                renderWeekView();
+                if (currentViewType === 'person') {
+                await renderWeekPersonView();
+            }
+            else if( currentViewType === 'run' ){
+                // await renderWeekRunView();
+            }
+            else{
+            await renderWeekView();
+            }
             } else {
                 
-                renderDayView();
+                if( currentViewType === 'run' ){
+                    renderRunView();
+                }
+                else{
+                    re_renderDayView();
+                }
             }
 }
 /* Create pill */
@@ -4627,12 +4651,16 @@ if (existing) {
         await renderDayView();
     } else {
         await getTodayAllEmployees();
-        await getBookingsForWeek();
+        resetWeekPagination();                             
+        const nextCursor = await getBookingsForWeek(null); 
+        weekFetchCursor  = nextCursor;
+        weekFetchHasMore = !!nextCursor;
         weekViewBtn.classList.add('active');
         dayViewBtn.classList.remove('active');
         weekView.classList.add('active');
         dayView.classList.remove('active');
         await renderWeekView();
+        startWeekBackgroundFetch();   
     }
     updateDateTitle();
     
@@ -4778,14 +4806,8 @@ if (runName && !runGroups.includes(runName)) {
     runGroupDetails[runName] = runID;
 }
 
-    const [, stime] = rec.From_Date_Time.split(" ");
-    const [shours, sminutes] = stime.split(":").map(Number);
-    cur_book.startMinutes = shours * 60 + sminutes;
-    
-    // Parse end time
-    const [, etime] = rec.To_Date_Time.split(" ");
-    const [ehours, eminutes] = etime.split(":").map(Number);
-    cur_book.endMinutes = ehours * 60 + eminutes;
+    cur_book.startMinutes = getMinutes(rec.From_Date_Time);
+cur_book.endMinutes   = getMinutes(rec.To_Date_Time);
     
     // Employee details
     if (emp) {
@@ -6432,10 +6454,21 @@ formatFilterText = function(filter) {
             populateQuickDropdowns();
             if (currentView === 'week') {
                 updateDateTitle();
+                 if (currentViewType === 'employee') {
                 renderWeekView();
+            } else if (currentViewType === 'person') {
+                 renderWeekPersonView();
+            }
+            else if( currentViewType === 'run' ){
+                //  renderWeekRunView();
+            }
             } else {
                 updateDateTitle();
-                renderDayView();
+                if (currentViewType === 'employee') {
+                re_renderDayView();
+            } else if (currentViewType === 'run') {
+                 re_renderRunView();
+            }
             }
         }
         
@@ -6898,7 +6931,9 @@ document.addEventListener('mouseover', e => {
     if (evtEl.classList.contains('dragging')) return;
 
     if (evtEl.classList.contains('selected')) return;
-    showTooltip(evtEl, e);
+    if( currentView !== 'week' && currentViewType !== 'run' ){
+        showTooltip(evtEl, e);
+    }
 });
 
 document.addEventListener('mouseout', e => {

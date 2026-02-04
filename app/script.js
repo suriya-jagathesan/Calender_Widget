@@ -216,7 +216,7 @@
     if (currentViewType === type) return;
     
     showLoader();
-    clearAllFilters();
+    // clearAllFilters();
     const employeeSearchInput = document.getElementById('employeeSearchInput');
     if (employeeSearchInput) {
         employeeSearchInput.value = '';
@@ -266,7 +266,7 @@
     // Close dropdown
     document.getElementById('viewSwitcherDropdown').classList.remove('active');
     
-    // Re-render current view
+    
     try {
         if (currentView === 'day') {
             if (type === 'employee') {
@@ -1253,48 +1253,48 @@ function updateViewSwitcherOptions() {
 }
 
 function getEventsForWeekRun(runName, dateKey){
-    const allEvents = eventDatabase[dateKey] || [];
+    const allEvents = runEventDatabase[dateKey] || [];
     return allEvents.filter(evt => {
-        if (evt.run_view !== runName) return false;
+        if (evt.run_name === runName) return true;
         
-        return appliedFilters.every(f => {
-            let search_key = null;
-            if (f.field === "persons") {
-                search_key = 'title';
-            } else if (f.field === 'staff' || f.field === 'employee') {
-                search_key = 'employee';
-            } else if (f.field === 'service') {
-                search_key = 'service';
-            } else {
-                search_key = f.field;
-            }
+        // return appliedFilters.every(f => {
+        //     let search_key = null;
+        //     if (f.field === "persons") {
+        //         search_key = 'title';
+        //     } else if (f.field === 'staff' || f.field === 'employee') {
+        //         search_key = 'employee';
+        //     } else if (f.field === 'service') {
+        //         search_key = 'service';
+        //     } else {
+        //         search_key = f.field;
+        //     }
             
-            const eventValue = evt[search_key];
-            if (eventValue == null) return false;
+        //     const eventValue = evt[search_key];
+        //     if (eventValue == null) return false;
             
-            if (f.filterType === 'contains') {
-                return f.searchValues.some(v =>
-                    String(eventValue)
-                        .toLowerCase()
-                        .includes(String(v).toLowerCase())
-                );
-            } else if (f.filterType === 'is') {
-                return f.searchValues.some(v =>
-                    String(eventValue).trim().toLowerCase() ===
-                    String(v).trim().toLowerCase()
-                );
-            } else if (f.filterType === 'isNot') {
-                return !f.searchValues.some(v =>
-                    String(eventValue) === String(v)
-                );
-            } else if (f.filterType === 'isEmpty') {
-                return isEmptyValue(eventValue);
-            } else if (f.filterType === 'isNotEmpty') {
-                return !isEmptyValue(eventValue);
-            }
+        //     if (f.filterType === 'contains') {
+        //         return f.searchValues.some(v =>
+        //             String(eventValue)
+        //                 .toLowerCase()
+        //                 .includes(String(v).toLowerCase())
+        //         );
+        //     } else if (f.filterType === 'is') {
+        //         return f.searchValues.some(v =>
+        //             String(eventValue).trim().toLowerCase() ===
+        //             String(v).trim().toLowerCase()
+        //         );
+        //     } else if (f.filterType === 'isNot') {
+        //         return !f.searchValues.some(v =>
+        //             String(eventValue) === String(v)
+        //         );
+        //     } else if (f.filterType === 'isEmpty') {
+        //         return isEmptyValue(eventValue);
+        //     } else if (f.filterType === 'isNotEmpty') {
+        //         return !isEmptyValue(eventValue);
+        //     }
             
-            return true;
-        });
+        //     return true;
+        // });
     });
 }
 
@@ -1344,10 +1344,47 @@ function getEventsForPerson(personName, dateKey) {
         });
     });
 }
+let runEventDatabase = {};
+let runRows = [];
+async function getWeekRunDetails() {
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    let zoho_start_date = formatDateDDMMYYYY( weekStart );
+    let zoho_end_date = formatDateDDMMYYYY( weekEnd );
+    const serviceList = `[${services.join(",")}]`;
+    const criteria_2 = `Site_Name.ID == ${serviceList} && Date_From >= '${zoho_start_date}' && Date_From <= '${zoho_end_date}' && Care_Group != null `;
+    var booking = {
+        app_name: app_name,
+        report_name: "Daily_schedule_for_Staff",
+        criteria: criteria_2,
+        max_records: 1000
+    };
+    booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
+    booking_resp.data.forEach(function (rec) {
+        let runRunBooking = [];
+        let data = {};
+        let run_name = rec?.Care_Group?.Care_Group_Name;
+        data.run_name = rec?.Care_Group?.Care_Group_Name;
+        data.staff = rec.Staff?.zc_display_value;
+        data.start_time = rec?.Start_Time;
+        data.end_time = rec?.End_Time;
+        if( !runRows.includes(run_name) ){
+            runRows.push(run_name);
+        }
+        runRunBooking.push(data);
+        const key = toYYYYMMDD( rec.Date_From );
+        if (!runEventDatabase[key]) {
+            runEventDatabase[key] = [];
+        }
+        runEventDatabase[key].push(...runRunBooking);  
+    });
+    
+}   
 
 async function renderWeekRunView() {
-    console.log(JSON.stringify(eventDatabase) );
-    
+    await getWeekRunDetails();
     renderWeekDaysHeaderPerson();
     renderWeekRunRows();
     syncWeekScroll();
@@ -1399,7 +1436,7 @@ function renderWeekRunRows(){
     const rowHeightsMap = {};
     
     const fillHeight = calculateFillHeight();
-    const displayRuns = runGroups.length > 0 ? [...new Set(runGroups)] : ['—'];
+    const displayRuns = runRows.length > 0 ? [...new Set(runRows)] : ['—'];
     displayRuns.forEach(person => {
         let maxEventsInDay = 1;
         
@@ -1433,7 +1470,7 @@ function renderWeekRunRows(){
             const eventsContainer = document.createElement('div');
             eventsContainer.className = 'week-events-container';
             const events = person === '—' ? [] : getEventsForWeekRun(person, dateKey);
-            renderWeekEventsForPerson(eventsContainer, events, dateKey);
+            renderWeekEventsForRun(eventsContainer, events, dateKey);
             
             dayColumn.appendChild(eventsContainer);
             personRow.appendChild(dayColumn);
@@ -1530,7 +1567,7 @@ function renderWeekRunColumn(rowHeightsMap = {}) {
     const column = document.getElementById('weekEmployeeColumn');
     column.innerHTML = '';
     
-    const displayPersons = runGroups.length > 0 ? [...new Set(runGroups)] : ['—'];
+    const displayPersons = runRows.length > 0 ? [...new Set(runRows)] : ['—'];
     
     displayPersons.forEach(person => {
         const row = document.createElement('div');
@@ -1550,6 +1587,33 @@ function renderWeekRunColumn(rowHeightsMap = {}) {
     });
 }
 
+function renderWeekEventsForRun(container, events, dateKey) {
+    events.forEach((evt, index) => {
+        const el = document.createElement('div');
+        el.className = `event status-Not_Started`;
+        el.draggable = false; 
+        el.dataset.start = evt.start_time;
+        el.dataset.end = evt.end_time;
+        const topPosition = ROW_PADDING + (index * (EVENT_HEIGHT + EVENT_GAP));
+        
+        el.style.top = `${topPosition}px`;
+        el.style.height = `${EVENT_HEIGHT}px`;
+        el.style.left = '2px';
+        el.style.right = '2px';
+        el.style.width = 'auto';
+        
+        const title = document.createElement('div');
+        title.className = 'event-title';
+        title.textContent = evt.staff || 'Unassigned';
+        
+        const time = document.createElement('div');
+        time.className = 'event-time';
+        time.textContent = `${evt.start_time} - ${evt.end_time}`;
+        el.appendChild(title);
+        el.appendChild(time);
+        container.appendChild(el);
+    });
+}
 // New function: Render events for person (no drag & drop)
 function renderWeekEventsForPerson(container, events, dateKey) {
     events.forEach((evt, index) => {
@@ -1859,4 +1923,60 @@ function formatDateDDMMYYYY(date) {
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const yyyy = date.getFullYear();
     return `${dd}-${mm}-${yyyy}`;
+}
+function startWeekBackgroundFetch() {
+    stopWeekBackgroundFetch(); // safety: clear any existing timer first
+
+    if (!weekFetchHasMore) return; // nothing left to fetch
+
+    weekBackgroundTimer = setInterval(async () => {
+        // If user already left week view, self-stop
+        if (currentView !== 'week') {
+            stopWeekBackgroundFetch();
+            return;
+        }
+
+        console.log("Background fetch | using cursor:", weekFetchCursor);
+
+        const nextCursor = await getBookingsForWeek(weekFetchCursor);
+        weekFetchCursor  = nextCursor;
+        weekFetchHasMore = !!nextCursor; // truthy cursor means more pages exist
+
+        // Re-render week view with the freshly merged data
+        await renderWeekView();
+
+        if (!nextCursor) {
+            console.log("Background fetch | all records loaded — stopping.");
+            stopWeekBackgroundFetch();
+        }
+    }, WEEK_POLL_INTERVAL);
+}
+
+/** Stop polling (call when leaving week view or changing dates) */
+function stopWeekBackgroundFetch() {
+    if (weekBackgroundTimer) {
+        clearInterval(weekBackgroundTimer);
+        weekBackgroundTimer = null;
+    }
+}
+
+/** Reset pagination state (call whenever the week itself changes) */
+function resetWeekPagination() {
+    weekFetchCursor  = null;
+    weekFetchHasMore = true;
+    stopWeekBackgroundFetch();
+}
+
+function getMinutes(dateTime) {
+    if (typeof dateTime !== "string") return null;
+
+    const parts = dateTime.split(" ");
+    if (parts.length < 2) return null;
+
+    const time = parts[1];
+    const [h, m] = time.split(":").map(Number);
+
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+
+    return h * 60 + m;
 }
