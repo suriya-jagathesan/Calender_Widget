@@ -349,7 +349,12 @@
               
               return true;
           });
-      });
+      })
+      .sort((a, b) => {
+            if (a.startMinutes == null) return 1;
+            if (b.startMinutes == null) return -1;
+            return a.startMinutes - b.startMinutes;
+        });
   }
   async function renderRunViewRows() {
       const rowsContainer = document.getElementById('calendarRows');
@@ -1118,7 +1123,7 @@ function updateDayStats() {
 
 function updateWeekStats() {
     const weekStart = new Date(currentDate);
-    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
     
     let totalRequiredMinutes = 0;
     const uniqueCarers = new Set();
@@ -1342,13 +1347,20 @@ function getEventsForPerson(personName, dateKey) {
             
             return true;
         });
-    });
+    })
+    .sort((a, b) => {
+            if (a.startMinutes == null) return 1;
+            if (b.startMinutes == null) return -1;
+            return a.startMinutes - b.startMinutes;
+        });
 }
 let runEventDatabase = {};
 let runRows = [];
 async function getWeekRunDetails() {
+    runRows = [];
+    runEventDatabase = {};
     const weekStart = new Date(currentDate);
-    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
     let zoho_start_date = formatDateDDMMYYYY( weekStart );
@@ -1401,9 +1413,9 @@ function renderWeekDaysHeaderPerson() {
     header.innerHTML = '';
     
     const weekStart = new Date(currentDate);
-    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1);
     
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayNames = [ 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat','Sun'];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
     for (let i = 0; i < 7; i++) {
@@ -1425,6 +1437,13 @@ function renderWeekDaysHeaderPerson() {
             <div class="week-day-name">${dName}, ${dNum} ${mName}</div>
         `;
         header.appendChild(dayHeader);
+        document.getElementById('weekDaysSummary').innerHTML = '';
+        if( currentViewType === 'person' ){
+            document.querySelector(".week-employee-header").textContent = "Persons";
+        }
+        else if( currentViewType === 'run' ){
+            document.querySelector(".week-employee-header").textContent = "Runs";
+        }
     }
 }
 function renderWeekRunRows(){
@@ -1432,7 +1451,7 @@ function renderWeekRunRows(){
     rowsContainer.innerHTML = '';
     
     const weekStart = new Date(currentDate);
-    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
     const rowHeightsMap = {};
     
     const fillHeight = calculateFillHeight();
@@ -1486,7 +1505,7 @@ function renderWeekPersonRows() {
     rowsContainer.innerHTML = '';
     
     const weekStart = new Date(currentDate);
-    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
     const rowHeightsMap = {};
     
     const fillHeight = calculateFillHeight();
@@ -1942,9 +1961,12 @@ function startWeekBackgroundFetch() {
         weekFetchCursor  = nextCursor;
         weekFetchHasMore = !!nextCursor; // truthy cursor means more pages exist
 
-        // Re-render week view with the freshly merged data
-        await renderWeekView();
-
+        if( currentViewType === 'person' ){
+            await renderWeekPersonView();
+        }
+        else if( currentViewType !== 'run' ){ 
+            await renderWeekView();
+        }    
         if (!nextCursor) {
             console.log("Background fetch | all records loaded — stopping.");
             stopWeekBackgroundFetch();

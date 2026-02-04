@@ -3783,6 +3783,9 @@ function hideLoader() {
 }
 
         async function getBookingsForWeek(cursor = null){
+            runGroups = [];
+            persons = [];
+            runGroups.push('');
             const weekStart = new Date(currentDate);
             weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
             const weekEnd = new Date(weekStart);
@@ -3805,6 +3808,7 @@ function hideLoader() {
            try{
             booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
             
+            console.log(booking_resp);
             
              if (!cursor) {
         eventDatabase = {};
@@ -3909,7 +3913,8 @@ function getEmployeeIconByCondition(employee, events) {
             var booking = {
                 app_name: app_name,
                 report_name: "Bookings_Backend",
-                criteria: criteria_1
+                criteria: criteria_1,
+                max_records: 1000
             };
             try {
                 booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
@@ -4617,13 +4622,18 @@ if (existing) {
                 return true;
             }
         });
-    });
+    })
+    .sort((a, b) => {
+            if (a.startMinutes == null) return 1;
+            if (b.startMinutes == null) return -1;
+            return a.startMinutes - b.startMinutes;
+        });
 }
 
 
 
         async function switchView(view) {
-            console.log("Switch View ", currentDate);
+            
             
     document.getElementById("employeeSearchInput").value = '';
     showLoader();
@@ -4677,6 +4687,7 @@ if (existing) {
          async function navigatePeriod(delta) {
     showLoader();
     stopWeekBackgroundFetch();
+    await getTodayAllEmployees();
     try {
         if (currentView === 'day') {
             currentDate.setDate(currentDate.getDate() + delta);
@@ -4684,30 +4695,44 @@ if (existing) {
             currentDate.setDate(currentDate.getDate() + (delta * 7));
         }
         
-        if (currentViewType === 'employee') {
-            await getTodayAllEmployees();
-            if (currentView === 'day') {
-                await getBookings();
-                await renderDayView();
-                startAt6();
-            } else {
-                await getBookingsForWeek();
-                await renderWeekView();
-            }
-        } else if (currentViewType === 'run') {
-            if (currentView === 'day') {
-                await getBookings();
-                await renderRunView();
-            } else {
-                await getBookingsForWeek();
-                await renderRunViewWeek();
-            }
-        } else if (currentViewType === 'person') {
-            if (currentView === 'week') {
-                await getBookingsForWeek();
-                await renderWeekPersonView();
-            }
-        }
+        const isDayView = currentView === 'day';
+
+if (isDayView) {
+    await getBookings();
+} else {
+    resetWeekPagination();                             
+    const nextCursor = await getBookingsForWeek(null); 
+    weekFetchCursor  = nextCursor;
+    weekFetchHasMore = !!nextCursor;
+}
+if (currentViewType === 'employee') {
+    await getTodayAllEmployees();
+
+    if (isDayView) {
+        await renderDayView();
+        startAt6();
+    } else {
+        await renderWeekView();
+        startWeekBackgroundFetch(); 
+    }
+}
+
+else if (currentViewType === 'run') {
+    if (isDayView) {
+        await renderRunView();
+    } else {
+        await renderWeekRunView();
+        startWeekBackgroundFetch(); 
+    }
+}
+
+else if (currentViewType === 'person') {
+    if (!isDayView) {
+        await renderWeekPersonView();
+        startWeekBackgroundFetch(); 
+    }
+}
+
         
         updateDateTitle();
         
@@ -5115,7 +5140,6 @@ function syncScroll() {
     const shiftsData = shiftsMap;
     
     
-    // Calculate how much height each row needs to fill the screen
     const fillHeight = calculateFillHeight();    
     const displayList = employees.length >= 0 ? employees : ['—'];   
     const employeeObj = appliedFilters.find(o => o.field === "staff" || o.field === "employee" );
@@ -5123,12 +5147,13 @@ function syncScroll() {
         employeeValues = await returnEmployees(employeeObj.searchValues);
         if (!employeeValues.includes('')) {
             employeeValues.unshift('');
-            console.log(employeeValues);
         }
     }
     else{
         employeeValues = employees;
     }
+
+
     employeeValues.forEach(employee => {
         const rawEvents = employee === '—' ? [] : getEventsForEmployee(employee, dateKey);
         const events = detectOverlaps([...rawEvents]);
@@ -5361,6 +5386,8 @@ el.addEventListener('mouseup', (e) => {
         }
 
         function renderWeekDaysHeader() {
+            console.log(document.getElementById('weekDaysHeader'));
+            
     const header = document.getElementById('weekDaysHeader');
     header.innerHTML = '';
     
@@ -6635,35 +6662,57 @@ formatFilterText = function(filter) {
         }
 
         async function selectDate(day, month, year) {
-            showLoader();
-            stopWeekBackgroundFetch();
-            currentDate = new Date(year, month, day);
-            updateDateTitle();
-            if (currentViewType === 'employee') {
-            // Employee view logic
-            await getTodayAllEmployees();
-            if (currentView === 'week') {
-                await getBookingsForWeek();
-                renderWeekView();
-            } else {
-                await getBookings();
-                renderDayView();
-            }
-        } else if (currentViewType === 'run') {
-            // Run view logic
-            if (currentView === 'week') {
-                await getBookingsForWeek();
-                await renderRunViewWeek();
-            } else {
-                await getBookings();
-                await renderRunView();
-            }
+    showLoader();
+    stopWeekBackgroundFetch();
+
+    currentDate = new Date(year, month, day);
+    updateDateTitle();
+
+    const isWeekView = currentView === 'week';
+
+    
+    if( isWeekView ){
+        resetWeekPagination();                             
+    const nextCursor = await getBookingsForWeek(null); 
+    weekFetchCursor  = nextCursor;
+    weekFetchHasMore = !!nextCursor;
+    }
+    else{
+     await getBookings();   
+    }
+
+    // 🔹 Render based on view type
+    if (currentViewType === 'employee') {
+        await getTodayAllEmployees();
+
+        if (isWeekView) {
+            renderWeekView();
+            startWeekBackgroundFetch();
+        } else {
+            renderDayView();
         }
-            
-            renderMiniCalendar();
-            toggleMiniCalendar();
-            hideLoader();
+    }
+
+    else if (currentViewType === 'run') {
+        if (isWeekView) {
+            await renderRunViewWeek();
+            startWeekBackgroundFetch(); 
+        } else {
+            await renderRunView();
         }
+    }
+    else if (currentViewType === 'person') {
+        if (!isWeekView) {
+            await renderWeekPersonView();
+            startWeekBackgroundFetch(); 
+        }
+    }
+
+    renderMiniCalendar();
+    toggleMiniCalendar();
+    hideLoader();
+}
+
 
         function changeMiniMonth(delta) {
             currentDate.setMonth(currentDate.getMonth() + delta);
