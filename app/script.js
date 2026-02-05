@@ -813,7 +813,6 @@
               "Care_Providers": final_emp,
               "Start_time": `${minutesToHHMM(evt.startMinutes)}`,
               "End_time": `${minutesToHHMM(evt.endMinutes)}`,
-              "Duration": `${minutesToHHMM(duration)}`,
               "From_Date_Time": formatDateStringWithMinutes(evt.date, evt.startMinutes),
               "To_Date_Time": formatDateStringWithMinutes(evt.date, evt.endMinutes),
               "Status": sts,
@@ -1938,6 +1937,8 @@ function openDateReport() {
 }
 
 function formatDateDDMMYYYY(date) {
+    console.log("called");
+    
     const dd = String(date.getDate()).padStart(2, '0');
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const yyyy = date.getFullYear();
@@ -2003,6 +2004,116 @@ function getMinutes(dateTime) {
     return h * 60 + m;
 }
 
+function getDurationtoMintues(duration){
+    const [h, m] = duration.split(":").map(Number);
+
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+
+    return h * 60 + m;
+}
+
+function getDateFromMinutes(dateTime){
+    if (typeof dateTime !== "string") return null;
+
+    const parts = dateTime.split(" ");
+    if (parts.length < 2) return null;
+
+    const date = parts[0];
+    return date;
+}
+// Calculate display start minutes for a given view date
+function calculateDisplayStartMinutes(fromDateTime, viewDateStr) {
+   let cur_date = formatDateDDMMYYYY( currentDate );
+    viewDateStr = cur_date;
+    
+    if (!fromDateTime || !viewDateStr) return 0;
+    
+    const fromDate = getDateFromDateTime(fromDateTime); // DD-MM-YYYY
+    const viewDate = viewDateStr; // DD-MM-YYYY format
+    
+    if (fromDate === viewDate) {
+        
+        return getMinutesFromDateTime(fromDateTime);
+    } else if (isDateBefore(fromDate, viewDate)) {
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+// Calculate display end minutes for a given view date
+function calculateDisplayEndMinutes(toDateTime, viewDateStr, durationMins) {
+    let cur_date = formatDateDDMMYYYY( currentDate );
+    viewDateStr = cur_date;
+    if (!toDateTime || !viewDateStr) return 1440;
+    
+    const toDate = getDateFromDateTime(toDateTime); // DD-MM-YYYY
+    const viewDate = viewDateStr; // DD-MM-YYYY format
+    
+    if (toDate === viewDate) {
+        // Event ends on this day - show actual end time
+        return getMinutesFromDateTime(toDateTime);
+    } else if (isDateAfter(toDate, viewDate)) {
+        // Event continues to next day - show until midnight (1440)
+        return 1440;
+    } else {
+        // Event ended on a previous day - shouldn't show on this view
+        return 0;
+    }
+}
+
+// Helper: Extract DD-MM-YYYY from "DD-MM-YYYY HH:MM" format
+function getDateFromDateTime(dateTimeStr) {
+    if (!dateTimeStr || typeof dateTimeStr !== 'string') return '';
+    const parts = dateTimeStr.split(' ');
+    return parts[0]; // Returns DD-MM-YYYY
+}
+function convertYYYYMMDDtoDDMMYYYY(dateKey) {
+    const [yyyy, MM, dd] = dateKey.split('-');
+    return `${dd}-${MM}-${yyyy}`;
+}
+
+// Helper: Extract minutes from "DD-MM-YYYY HH:MM" format
+function getMinutesFromDateTime(dateTimeStr) {
+    if (!dateTimeStr || typeof dateTimeStr !== 'string') return 0;
+    const parts = dateTimeStr.split(' ');
+    if (parts.length < 2) return 0;
+    
+    const timePart = parts[1]; // HH:MM
+    const [hours, minutes] = timePart.split(':').map(Number);
+    return (hours * 60) + minutes;
+}
+function addDaysToDate(dateStr, days) {
+    const [dd, MM, yyyy] = dateStr.split('-').map(Number);
+    const date = new Date(yyyy, MM - 1, dd);
+    date.setDate(date.getDate() + days);
+    
+    const newDD = String(date.getDate()).padStart(2, '0');
+    const newMM = String(date.getMonth() + 1).padStart(2, '0');
+    const newYYYY = date.getFullYear();
+    
+    return `${newDD}-${newMM}-${newYYYY}`;
+}
+function isDateBefore(date1DDMMYYYY, date2DDMMYYYY) {
+    if (!date1DDMMYYYY || !date2DDMMYYYY) return false;
+    
+    const [d1, m1, y1] = date1DDMMYYYY.split('-').map(Number);
+    const [d2, m2, y2] = date2DDMMYYYY.split('-').map(Number);
+    const dateObj1 = new Date(y1, m1 - 1, d1);
+    const dateObj2 = new Date(y2, m2 - 1, d2);
+    return dateObj1 < dateObj2;
+}
+
+// Helper: Check if date1 is after date2 (both in DD-MM-YYYY format)
+function isDateAfter(date1DDMMYYYY, date2DDMMYYYY) {
+    if (!date1DDMMYYYY || !date2DDMMYYYY) return false;
+    
+    const [d1, m1, y1] = date1DDMMYYYY.split('-').map(Number);
+    const [d2, m2, y2] = date2DDMMYYYY.split('-').map(Number);
+    const dateObj1 = new Date(y1, m1 - 1, d1);
+    const dateObj2 = new Date(y2, m2 - 1, d2);
+    return dateObj1 > dateObj2;
+}
 function getEmployeesFromEvents() {
     const dateKey = getCurrentDateKey();
     let filteredEvents = eventDatabase[dateKey];
