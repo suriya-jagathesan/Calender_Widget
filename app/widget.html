@@ -3909,7 +3909,7 @@ function getEmployeeIconByCondition(employee, events) {
             runGroups.push('');
             const serviceList = `[${services.join(",")}]`;
             let cur_date = formatDateDDMMYYYY( currentDate );
-            const criteria_1 = `Site_Name.ID == ${serviceList} && (From_Date_Time >= '${cur_date} 00:00' && From_Date_Time <= '${cur_date} 23:59') || (To_Date_Time >= '${cur_date} 00:00' && To_Date_Time <= '${cur_date} 23:59')  && Status != "Inactive"`;
+            const criteria_1 = `Site_Name.ID == ${serviceList} && Date_field1 == '${cur_date}' && Status != "Inactive"`;
             console.log(criteria_1);
             
             var booking = {
