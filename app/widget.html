@@ -3702,7 +3702,7 @@ function hideLoader() {
                     report_name: "Employees_Report",
                     id: `${staffId}`
                 };
-                console.log(staffId);
+                // console.log(staffId);
                 const skills_res = await ZOHO.CREATOR.DATA.getRecordById(skills_config);
                 let skills = [];
                 if (skills_res.code === 3000) {
@@ -3745,7 +3745,7 @@ function hideLoader() {
                 report_name: "Employees_Report",
                 id: `${id}`
             };
-            console.log(id);
+            // console.log(id);
             
             const skills_res = await ZOHO.CREATOR.DATA.getRecordById(skills_config);
 
@@ -4068,6 +4068,10 @@ let resizeDirtyEvent = null;
         function startResize(e, evt, direction) {
             if (evt.Time_Critical_Visit === "Yes") {
         showToast("Time Critical Visit - Time cannot be changed", "error");
+        return;
+    }
+    if( evt.isMultiDay ){
+        showToast("Night Shift Visit's - Time cannot be changed", "error");
         return;
     }
             resizeEvent = evt;
@@ -5349,6 +5353,7 @@ function syncScroll() {
                 }
                 el.draggable = true;
                 el.dataset.timeCritical = evt.Time_Critical_Visit || "No";
+                el.dataset.multiDay = evt.isMultiDay ? "Yes" : "No"; 
                 el.dataset.female = evt.Female_Only || "No";
                 const compositeKey = `${evt.zoho_id}-${evt.employee || 'unassigned'}-${evt.employee_id || 'none'}`;
                 el.dataset.eventKey = compositeKey
@@ -6031,23 +6036,28 @@ document.body.classList.remove('dragging-active');
     const newEmployee = slot.dataset.employee;
     const currentDateKey = getCurrentDateKey();
     const hasTimeCritical = draggedEventData.some(evt => evt.Time_Critical_Visit === "Yes");
-    
-    if (hasTimeCritical) {
+    const isMultiDay = draggedEventData.some(evt => evt.isMultiDay === true);
+    if (hasTimeCritical || isMultiDay ) {
         // ✅ ALLOW EMPLOYEE CHANGE BUT NOT TIME CHANGE
         const anchorEvent = draggedEventData[0];
         const originalStartMinutes = anchorEvent.startMinutes;
         const newAnchorStart = newHour * 60 + newQuarter * 15;
-        
+        const message = hasTimeCritical ? `Time Critical Visits cannot be moved to a different time.<br><strong>Reason:</strong> ${draggedEventData[0].time_reason}` : `Night Shifts Visit's time can't be changed`;
+
         if (newAnchorStart !== originalStartMinutes) {
             if( draggedEventData[0].time_reason != "" && draggedEventData[0].time_reason != null ){
+               
+                
+            
             showToast(
-  `Time Critical Visits cannot be moved to a different time.<br><strong>Reason:</strong> ${draggedEventData[0].time_reason}`,
+ `${message} `,
   "error"
 );
         }
         else{
+            
              showToast(
-  `Time Critical Visits cannot be moved to a different time.`,
+  `${message}`,
   "error"
 );
         }
