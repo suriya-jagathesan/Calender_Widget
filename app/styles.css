@@ -565,3 +565,38 @@
     color: red;
     font-weight: 600;
 }
+.week-event-box {
+    display: flex;
+    flex-direction: column;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.week-event-staff-name {
+    background-color: #006666; /* Dark teal color like in image 2 */
+    color: white;
+    padding: 4px 8px;
+    font-weight: 500;
+    font-size: 13px;
+    text-align: center;
+    
+    /* Text truncation */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.week-event-time-range {
+    background-color: white;
+    color: #333;
+    padding: 4px 8px;
+    font-size: 12px;
+    text-align: center;
+    border: 1px solid #006666;
+    border-top: none;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

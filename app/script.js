@@ -1678,29 +1678,30 @@ function renderWeekRunColumn(rowHeightsMap = {}) {
         column.appendChild(row);
     });
 }
-
+const run_event_height = 48;
 function renderWeekEventsForRun(container, events, dateKey) {
     events.forEach((evt, index) => {
         const el = document.createElement('div');
-        el.className = `event status-Not_Started`;
+        el.className = `week-event-box status-Not_Started`;
         el.draggable = false; 
         el.dataset.start = evt.start_time;
         el.dataset.end = evt.end_time;
-        const topPosition = ROW_PADDING + (index * (EVENT_HEIGHT + EVENT_GAP));
+        const topPosition = ROW_PADDING + (index * (run_event_height + EVENT_GAP));
         
         el.style.top = `${topPosition}px`;
-        el.style.height = `${EVENT_HEIGHT}px`;
+        el.style.height = `${run_event_height}px`;
         el.style.left = '2px';
         el.style.right = '2px';
         el.style.width = 'auto';
         
         const title = document.createElement('div');
-        title.className = 'event-title';
+        title.className = 'week-event-staff-name';
         title.textContent = evt.staff || 'Unassigned';
         
         const time = document.createElement('div');
-        time.className = 'event-time';
+        time.className = 'week-event-time-range';
         time.textContent = `${evt.start_time} - ${evt.end_time}`;
+        
         el.appendChild(title);
         el.appendChild(time);
         container.appendChild(el);
