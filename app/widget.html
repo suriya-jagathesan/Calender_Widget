@@ -3586,7 +3586,7 @@ const CLICK_TOLERANCE = 5;
     const overlay = document.getElementById('loadingOverlay');
     if (overlay) overlay.classList.remove('hidden');
 }
-
+let scope;
 function hideLoader() {
     const overlay = document.getElementById('loadingOverlay');
     if (overlay) overlay.classList.add('hidden');
@@ -3596,10 +3596,11 @@ function hideLoader() {
        async function getZohoData() {
     try {
         let initparam = await ZOHO.CREATOR.UTIL.getInitParams();
-
+        
+        
         app_name = initparam.appLinkName;
         loginUser = initparam.loginUser;
-
+        scope = initparam.scope;
         console.log(loginUser);
         
         let get_service = {
@@ -5134,7 +5135,7 @@ const travelTotals = calculateEmployeeTravelTotals(employee, dateKey);
                 iconHTML = `<i class="fa-solid fa-car"></i>`;
             } 
             const empId = getEmpIdByName(employee);
-            const url = `https://creatorapp.zoho.eu/homegroup/thgtest/#Report:Manual_Rostering?&zc_LoadIn=dialog&Care_Providers.ID=`+empId;
+            const url = `https://${scope}.domportal.care/#Report:Manual_Rostering?&zc_LoadIn=dialog&Care_Providers.ID=`+empId;
             row.innerHTML = `
     <div class="employee-label">
         <div class="employee-name-row">
@@ -7276,7 +7277,11 @@ var config = {
     };
     
     
+    console.log(evt.zoho_id);
+    
     ZOHO.CREATOR.DATA.invokeCustomApi(config).then(function (response)  {
+        console.log(response);
+        
         if (response.code === 3000) {
 
     Object.entries(response.result)
