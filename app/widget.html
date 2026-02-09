@@ -5567,16 +5567,14 @@ function renderWeekEmployeeRows() {
     const fillHeight = calculateFillHeight();
 
     const displayList = employees.length >= 0 ? employees : ['—'];
-    const employeeObj = appliedFilters.find(o => o.field === "staff" || o.field === "employee" );
-    if(employeeObj){
-        employeeValues = returnEmployees(employeeObj.searchValues);
-        console.log(employeeValues);
+    if( appliedFilters.length > 0 ){
+        employeeValues = getEmployeesFromEvents();
+    }
+    else{
+         employeeValues = [...employees];
         if (!employeeValues.includes('')) {
             employeeValues.unshift('');
         }
-    }
-    else{
-        employeeValues = employees;
     }
     employeeValues.forEach(employee => {
         let maxEventsInDay = 1;
@@ -5644,18 +5642,15 @@ function renderWeekEmployeeRows() {
     column.innerHTML = '';
 
     const displayList = employees.length > 0 ? employees : ['—'];
-    const employeeObj = appliedFilters.find(o => o.field === "staff" || o.field === "employee");
-    
-    let employeeValues;
-    if (employeeObj) {
-        employeeValues = returnEmployees(employeeObj.searchValues);
+    if( appliedFilters.length > 0 ){
+        employeeValues = getEmployeesFromEvents();
+    }
+    else{
+         employeeValues = [...employees];
         if (!employeeValues.includes('')) {
             employeeValues.unshift('');
         }
-    } else {
-        employeeValues = employees;
     }
-    
     employeeValues.forEach(employee => {
         const row = document.createElement('div');
         row.className = 'week-employee-row';
@@ -5816,6 +5811,10 @@ function openEmployeeWeekPDF(employeeName) {
                 const time = document.createElement('div');
                 time.className = 'event-time';
                 time.textContent = formatTimeRange(evt.startMinutes, evt.endMinutes);
+                if( evt.zoho_id === '235935000011282467' ){
+                    console.log(`${JSON.stringify(evt)} - ${time.textContent}`);
+                    
+                }
 
                 el.appendChild(title);
                 el.appendChild(time);

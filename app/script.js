@@ -2096,6 +2096,7 @@ function calculateDisplayStartMinutes(fromDateTime, viewDateStr) {
     
     const fromDate = getDateFromDateTime(fromDateTime); // DD-MM-YYYY
     const viewDate = viewDateStr; // DD-MM-YYYY format
+    if( currentView === 'day' ){
     
     if (fromDate === viewDate) {
         
@@ -2106,6 +2107,10 @@ function calculateDisplayStartMinutes(fromDateTime, viewDateStr) {
         return -1;
     }
 }
+else{
+    return getMinutesFromDateTime(fromDateTime);
+}
+}
 
 // Calculate display end minutes for a given view date
 function calculateDisplayEndMinutes(toDateTime, viewDateStr, durationMins) {
@@ -2115,7 +2120,7 @@ function calculateDisplayEndMinutes(toDateTime, viewDateStr, durationMins) {
     
     const toDate = getDateFromDateTime(toDateTime); // DD-MM-YYYY
     const viewDate = viewDateStr; // DD-MM-YYYY format
-    
+    if( currentView === 'day' ){
     if (toDate === viewDate) {
         // Event ends on this day - show actual end time
         return getMinutesFromDateTime(toDateTime);
@@ -2126,6 +2131,10 @@ function calculateDisplayEndMinutes(toDateTime, viewDateStr, durationMins) {
         // Event ended on a previous day - shouldn't show on this view
         return 0;
     }
+}
+else{
+    return getMinutesFromDateTime(toDateTime);
+}
 }
 
 // Helper: Extract DD-MM-YYYY from "DD-MM-YYYY HH:MM" format
