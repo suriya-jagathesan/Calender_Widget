@@ -1315,10 +1315,19 @@ function updateViewSwitcherOptions() {
             ${currentViewType === 'run' ? '<i class="fa fa-check"></i>' : ''}
         `;
         runOption.onclick = () => selectViewType('run');
+
+        const staffOption = document.createElement('div');
+        staffOption.className = 'view-switcher-option' + (currentViewType === 'run' ? ' selected' : '');
+        staffOption.innerHTML = `
+            <span>Staff</span>
+            ${currentViewType === 'staff' ? '<i class="fa fa-check"></i>' : ''}
+        `;
+        staffOption.onclick = () => selectViewType('run');
         
         dropdown.appendChild(employeeOption);
         dropdown.appendChild(personOption);
         dropdown.appendChild(runOption);
+        dropdown.appendChild(staffOption);
     }
 }
 
