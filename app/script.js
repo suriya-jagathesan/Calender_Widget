@@ -481,7 +481,7 @@
           const startHour = Math.floor(evt.startMinutes / 60);
           const startMinute = evt.startMinutes % 60;
           const duration = evt.endMinutes - evt.startMinutes;
-
+          
           const el = document.createElement('div');
           el.className = `event status-${evt.status}`;
           el.draggable = true;
@@ -501,7 +501,9 @@
                           minutesToTime(evt.startMinutes).minute.toString().padStart(2,'0');
           el.dataset.end = minutesToTime(evt.endMinutes).hour.toString().padStart(2,'0') + ':' +
                           minutesToTime(evt.endMinutes).minute.toString().padStart(2,'0');
-
+                          
+          
+          
           el.dataset.mismatch = evt.status ? evt.status.replace("_"," ") : "";
           el.dataset.status = evt.event_status;
           el.dataset.travel = evt.travel || '';
@@ -581,7 +583,6 @@
                   openEventModal(evt);
               });
           }
-          
           container.appendChild(el);
       });
   }
@@ -739,59 +740,94 @@
     }
 
     const processedZohoIds = new Set();
+    const currentDateDDMMYYYY = convertYYYYMMDDtoDDMMYYYY(currentDateKey);
+    console.log(draggedEventData);
     
-    draggedEventData.forEach(evt => {
-        if (processedZohoIds.has(evt.zoho_id)) return;
+    for (const evt of draggedEventData) {
+        if (processedZohoIds.has(evt.zoho_id)) continue;
         processedZohoIds.add(evt.zoho_id);
 
         const originalDateKey = evt.originalDateKey;
 
-        // Collect ALL rows for this zoho_id
         const groupEvents =
-            (eventDatabase[originalDateKey] || [])
-                .filter(e => e.zoho_id === evt.zoho_id);
+            eventDatabase[originalDateKey]?.filter(e => e.zoho_id === evt.zoho_id) || [];
 
-        // Remove ALL of them from original date
         eventDatabase[originalDateKey] =
-            (eventDatabase[originalDateKey] || [])
-                .filter(e => e.zoho_id !== evt.zoho_id);
+            eventDatabase[originalDateKey]?.filter(e => e.zoho_id !== evt.zoho_id) || [];
 
-        
-        let timeDelta = 0;
-        if (draggedEventData.length === 1) {
-            const offsetFromAnchor = evt.startMinutes - anchorStart;
-            const duration = evt.endMinutes - evt.startMinutes;
-            const finalStart = newAnchorStart + offsetFromAnchor;
-            timeDelta = finalStart - evt.startMinutes;
+        const offsetFromAnchor = evt.startMinutes - anchorStart;
+        const duration =
+            evt.duration_mins ||
+            (evt.actualEndMinutes - evt.actualStartMinutes);
+
+        const finalStart = newAnchorStart + offsetFromAnchor;
+        const finalEnd = finalStart + duration;
+
+        // 🔥 Multi-day calculation (same as applyDragChanges)
+        let newFromDate = currentDateDDMMYYYY;
+        let newToDate = currentDateDDMMYYYY;
+
+        let newFromMinutes = finalStart;
+        let newToMinutes = finalEnd;
+
+        let startMinutes = finalStart;
+        let endMinutes = finalEnd;
+
+        if (endMinutes >= 1440) {
+            newToDate = addDaysToDate(currentDateDDMMYYYY, 1);
+            newToMinutes = endMinutes - 1440;
+            endMinutes = 1440;
         }
 
-        // Reinsert rows
-        groupEvents.forEach(e => {
+        if (startMinutes < 0) {
+            newFromDate = addDaysToDate(currentDateDDMMYYYY, -1);
+            newFromMinutes = 1440 + startMinutes;
+        }
+
+        let zohoPayload = null;
+        if( evt.zoho_id == "235935000010212880" ){
+        console.log(`${startMinutes} - ${endMinutes}`);
+        }
+        
+        for (const e of groupEvents) {
             const updated = {
                 ...e,
-                startMinutes: e.startMinutes + timeDelta,
-                endMinutes: e.endMinutes + timeDelta,
+                startMinutes,
+                endMinutes,
+                actualStartMinutes: newFromMinutes,
+                actualEndMinutes: newToMinutes,
+                from_date: newFromDate,
+                to_date: newToDate,
+                isMultiDay: newFromDate !== newToDate,
                 run_view: newRunGroup,
                 run_view_id: newRunGroup ? runGroupDetails[newRunGroup] : null
             };
 
+            zohoPayload ??= updated;
             eventDatabase[currentDateKey].push(updated);
-        });
+            
+        }
+        
+        
+        // 🔥 Zoho update once per zoho_id
+        if (zohoPayload) {
+            await updateRunEventZoho({
+                ...zohoPayload,
+                from: minutesToHHMM(zohoPayload.startMinutes),
+                to: minutesToHHMM(zohoPayload.endMinutes),
+                From_Date_Time: formatDateStringWithMinutes(
+                    zohoPayload.from_date,
+                    zohoPayload.actualStartMinutes
+                ),
+                To_Date_Time: formatDateStringWithMinutes(
+                    zohoPayload.to_date,
+                    zohoPayload.actualEndMinutes
+                )
+            });
+        }
+    }
 
-        // 🔥 Zoho update ONCE per zoho_id
-        const zohoEvent = groupEvents[0];
-        updateRunEventZoho({
-            ...zohoEvent,
-            startMinutes: zohoEvent.startMinutes + timeDelta,
-            endMinutes: zohoEvent.endMinutes + timeDelta,
-            from: minutesToHHMM(zohoEvent.startMinutes + timeDelta),
-            to: minutesToHHMM(zohoEvent.endMinutes + timeDelta),
-            run_view: newRunGroup,
-            run_view_id: newRunGroup ? runGroupDetails[newRunGroup] : null
-        });
-    });
-
-    await re_renderRunView(); // must NOT refetch from Zoho
+    await re_renderRunView(); 
     hideLoader();
 }
 
@@ -808,13 +844,18 @@
       let sts = evt.event_status.replace("_", " ");
       let duration = evt.endMinutes - evt.startMinutes;
       
+            const fromDateTime = evt.From_Date_Time || formatDateStringWithMinutes(evt.from_date, evt.actualStartMinutes);
+            const toDateTime = evt.To_Date_Time || formatDateStringWithMinutes(evt.to_date, evt.actualEndMinutes);
+
+      
       const payload = {
           "data": {
               "Care_Providers": final_emp,
-              "Start_time": `${minutesToHHMM(evt.startMinutes)}`,
-              "End_time": `${minutesToHHMM(evt.endMinutes)}`,
-              "From_Date_Time": formatDateStringWithMinutes(evt.date, evt.startMinutes),
-              "To_Date_Time": formatDateStringWithMinutes(evt.date, evt.endMinutes),
+              "Start_time": `${minutesToHHMM(evt.actualStartMinutes || evt.startMinutes)}`,
+                "End_time": `${minutesToHHMM(evt.actualEndMinutes || evt.endMinutes)}`,
+                
+                "From_Date_Time": fromDateTime,
+                "To_Date_Time": toDateTime,
               "Status": sts,
               "Manager_notes": evt.Manager_Notes,
               "Date_field1": evt.date
@@ -837,6 +878,8 @@
       };
       
       try {
+        console.log(JSON.stringify(update_config));
+        
           const res = await ZOHO.CREATOR.DATA.updateRecordById(update_config);
           console.log("Run update successful:", res);
       } catch (err) {
@@ -845,32 +888,55 @@
       }
   }
   function showRunTimeChangeConfirmation() {
-      const modal = document.getElementById('timeChangeConfirmModal');
-      
-      if (pendingTimeChange.type === 'run-drag') {
-          const evt = pendingTimeChange.draggedEventData[0];
-          const duration = evt.endMinutes - evt.startMinutes;
-          const newEnd = pendingTimeChange.newAnchorStart + duration;
-          
-          document.getElementById('confirmOldTime').textContent = 
-              `${minutesToHHMM(evt.startMinutes)} - ${minutesToHHMM(evt.endMinutes)}`;
-          document.getElementById('confirmNewTime').textContent = 
-              `${minutesToHHMM(pendingTimeChange.newAnchorStart)} - ${minutesToHHMM(newEnd)}`;
-          document.getElementById('confirmEventTitle').textContent = evt.title || 'Untitled';
-          
-          if (pendingTimeChange.draggedEventData.length > 1) {
-              document.getElementById('confirmEventStaff').textContent = 
-                  `${pendingTimeChange.draggedEventData.length} events`;
-          } else {
-              const oldRun = evt.run_view || 'Unassigned';
-              const newRun = pendingTimeChange.newRunGroup || 'Unassigned';
-              document.getElementById('confirmEventStaff').textContent = 
-                  `${oldRun} → ${newRun}`;
-          }
-      }
-      
-      modal.classList.remove('hidden');
-  }
+    const modal = document.getElementById('timeChangeConfirmModal');
+
+    if (pendingTimeChange.type === 'run-drag') {
+        const evt = pendingTimeChange.draggedEventData[0];
+
+        const duration =
+            evt.duration_mins ||
+            (evt.actualEndMinutes - evt.actualStartMinutes);
+
+        const newAnchorStart = pendingTimeChange.newAnchorStart;
+        const newActualEnd = newAnchorStart + duration;
+
+        // OLD TIME
+        let oldTimeText = `${minutesToHHMM(evt.actualStartMinutes)} - ${minutesToHHMM(evt.actualEndMinutes)}`;
+
+        // NEW TIME (default same-day)
+        let newTimeText = `${minutesToHHMM(newAnchorStart % 1440)} - ${minutesToHHMM(newActualEnd % 1440)}`;
+
+        // Date handling (same rules as drag)
+        const currentDateKey = pendingTimeChange.currentDateKey;
+        const currentDateDDMMYYYY = convertYYYYMMDDtoDDMMYYYY(currentDateKey);
+
+        if (newActualEnd >= 1440) {
+            const nextDate = addDaysToDate(currentDateDDMMYYYY, 1);
+            newTimeText = `${minutesToHHMM(newAnchorStart % 1440)} - ${minutesToHHMM(newActualEnd - 1440)}`;
+        } 
+        else if (newAnchorStart < 0) {
+            const prevDate = addDaysToDate(currentDateDDMMYYYY, -1);
+            newTimeText = `${minutesToHHMM(1440 + newAnchorStart)} - ${minutesToHHMM(newActualEnd)}`;
+        }
+
+        document.getElementById('confirmOldTime').textContent = oldTimeText;
+        document.getElementById('confirmNewTime').textContent = newTimeText;
+        document.getElementById('confirmEventTitle').textContent = evt.title || 'Untitled';
+
+        if (pendingTimeChange.draggedEventData.length > 1) {
+            document.getElementById('confirmEventStaff').textContent =
+                `${pendingTimeChange.draggedEventData.length} events`;
+        } else {
+            const oldRun = evt.run_view || 'Unassigned';
+            const newRun = pendingTimeChange.newRunGroup || 'Unassigned';
+            document.getElementById('confirmEventStaff').textContent =
+                `${oldRun} → ${newRun}`;
+        }
+    }
+
+    modal.classList.remove('hidden');
+}
+
   async function confirmTimeChange() {
       const modal = document.getElementById('timeChangeConfirmModal');
       modal.classList.add('hidden');

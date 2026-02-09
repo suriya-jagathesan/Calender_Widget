@@ -2981,10 +2981,7 @@ min-width: 100px;
           <input class="modal-input" type="time" id="mFrom">
         </div>
 
-        <div class="modal-form-row">
-          <label>Duration</label>
-          <input class="modal-input" type="text" id="mDuration" disabled>
-        </div>
+        
 
         <div class="modal-form-row">
           <label>To <span>*</span></label>
@@ -3269,7 +3266,6 @@ bottomScroll.addEventListener('scroll', () => {
         let activeEvent = null;
 
 function openEventModal(evt) {
-  
   const status = evt.event_status ? evt.event_status.replace('_', ' ') : 'Not Started';
 
   const statusInput = document.getElementById('mStatus');
@@ -3280,10 +3276,10 @@ function openEventModal(evt) {
     evt.title  || '';
  const [dd, MM, yyyy] = evt.date.split('-');
     document.getElementById('mDate').value = `${yyyy}-${MM}-${dd}`;
-    document.getElementById('mFrom').value = minutesToHHMM(evt.startMinutes || 0);
-    document.getElementById('mTo').value = minutesToHHMM(evt.endMinutes || 0);
+    document.getElementById('mFrom').value = minutesToHHMM(evt.actualStartMinutes || 0);
+    document.getElementById('mTo').value = minutesToHHMM(evt.actualEndMinutes || 0);
     const durationMins = (evt.endMinutes || 0) - (evt.startMinutes || 0);
-    document.getElementById('mDuration').value = minutesToHHMM(durationMins || 0   );
+    // document.getElementById('mDuration').value = minutesToHHMM(durationMins || 0   );
     document.getElementById('mNotes').value = evt.Manager_Notes || '';
     document.getElementById('mService').value = evt.service || '';
     const isTimeCritical = evt.Time_Critical_Visit === "Yes";
@@ -3357,10 +3353,10 @@ async function saveEvent() {
   var temp_start = shours * 60 + sminutes;
   const [ehours, eminutes] = to.split(":").map(Number);
   var temp_end = ehours * 60 + eminutes;
-  if( temp_end < temp_start ){
-    showToast("To Time can't greater than from time");
-    return;
-  }
+//   if( temp_end < temp_start ){
+//     showToast("To Time can't greater than from time");
+//     return;
+//   }
   if ( !document.getElementById("mDate").value || !from || !to  || ! document.getElementById('mStatus').value )   {
      showToast("Date,From,To,Status and Staff are Mandatory", "error");
     return;
@@ -3648,7 +3644,7 @@ function hideLoader() {
             employees_config = {
             app_name,
             report_name: "Daily_Shift_Report",
-            criteria: `Date_From == '${formatDateDDMMYYYY(currentDate)}' && Available_Status == "Available" `
+            criteria: `Site_Name.ID == ${serviceList} && Date_From == '${formatDateDDMMYYYY(currentDate)}' && Available_Status == "Available" `
         };
 
         employees_config1 = {
@@ -3670,7 +3666,7 @@ function hideLoader() {
              employees_config = {
             app_name,
             report_name: "Daily_Shift_Report",
-            criteria: `Date_From >= '${zoho_start_date}' &&  Date_From <= ${zoho_end_date} && Available_Status == "Available"  `
+            criteria: `Site_Name.ID == ${serviceList} && Date_From >= '${zoho_start_date}' &&  Date_From <= ${zoho_end_date} && Available_Status == "Available"  `
         };
 
         employees_config1 = {
@@ -3706,7 +3702,7 @@ function hideLoader() {
                     report_name: "Employees_Report",
                     id: `${staffId}`
                 };
-                
+                console.log(staffId);
                 const skills_res = await ZOHO.CREATOR.DATA.getRecordById(skills_config);
                 let skills = [];
                 if (skills_res.code === 3000) {
@@ -3749,7 +3745,8 @@ function hideLoader() {
                 report_name: "Employees_Report",
                 id: `${id}`
             };
-
+            console.log(id);
+            
             const skills_res = await ZOHO.CREATOR.DATA.getRecordById(skills_config);
 
            if (skills_res.code === 3000) {
@@ -4149,7 +4146,7 @@ let resizeDirtyEvent = null;
                 "Care_Providers": final_emp,
                 "Start_time": `${minutesToHHMM(evt.actualStartMinutes || evt.startMinutes)}`,
                 "End_time": `${minutesToHHMM(evt.actualEndMinutes || evt.endMinutes)}`,
-                "Duration": `${minutesToHHMM(duration)}`,
+                
                 "From_Date_Time": fromDateTime,
                 "To_Date_Time": toDateTime,
                 "Status": sts,
@@ -4160,8 +4157,8 @@ let resizeDirtyEvent = null;
             }
             console.log(JSON.stringify(update_config));
             try{
-            // res = await ZOHO.CREATOR.DATA.updateRecordById(update_config);
-            // console.log( JSON.stringify(res));
+            res = await ZOHO.CREATOR.DATA.updateRecordById(update_config);
+            console.log( JSON.stringify(res));
             }
             catch(err){
                 console.log(err);
@@ -4309,7 +4306,7 @@ function showTimeChangeConfirmation() {
     } else if (pendingTimeChange.type === 'drag') {
         const evt = pendingTimeChange.draggedEventData[0];
         
-        // Use actual duration (not display duration which might be capped at midnight)
+        
         const duration = evt.duration_mins || (evt.actualEndMinutes - evt.actualStartMinutes);
         
         // Calculate new actual start minutes (accounting for multi-day)
