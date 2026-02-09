@@ -226,7 +226,7 @@
     // Update UI - display text
     let displayText = '';
     if (type === 'employee') {
-        displayText = 'Staff';
+        displayText = 'Visit';
     } else if (type === 'run') {
         displayText = 'Run';
     } else if (type === 'person') {
@@ -1295,7 +1295,7 @@ function updateViewSwitcherOptions() {
         const employeeOption = document.createElement('div');
         employeeOption.className = 'view-switcher-option' + (currentViewType === 'employee' ? ' selected' : '');
         employeeOption.innerHTML = `
-            <span>Staff</span>
+            <span>Visit</span>
             ${currentViewType === 'employee' ? '<i class="fa fa-check"></i>' : ''}
         `;
         employeeOption.onclick = () => selectViewType('employee');
@@ -1632,11 +1632,19 @@ function renderWeekPersonColumn(rowHeightsMap = {}) {
     displayPersons.forEach(person => {
         const row = document.createElement('div');
         row.className = 'week-employee-row';
-        
+        const displayHours = getTotalWeekHoursPerson(person);
         if (person !== '—') {
             row.innerHTML = `
                 <div class="employee-label">
                     <div class="employee-name">${person}</div>
+                    <div class="week-employee-hours-row">
+                        <div class="week-employee-hours-info">
+                            <span class="week-employee-hours-value">${displayHours}h</span>
+                        </div>
+                        <div class="week-employee-pdf-icon" onclick="openEmployeeWeekPDF('123123')" title="Download Week Schedule">
+                            <i class="fa fa-file-pdf"></i>
+                        </div>
+                    </div>
                 </div>
             `;
         }

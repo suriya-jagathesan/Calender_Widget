@@ -2607,7 +2607,7 @@ min-width: 100px;
         </div>
     </div>
     <div class="search-filter">
-        <label><input type="checkbox" name="staff" onchange="toggleFilterInputs('staff')"> Staff</label>
+        <label><input type="checkbox" name="staff" onchange="toggleFilterInputs('staff')"> Visit</label>
         <div class="filter-inputs" id="staff-inputs">
             <div class="filter-input-group">
                 <div class="filter-select-wrapper">
@@ -4004,6 +4004,37 @@ function removeFilterByFieldValue(field, value) {
     const fillHeight = availableHeight / count;
     
     return Math.max(MIN_ROW_HEIGHT, fillHeight);
+}
+function getTotalWeekHoursPerson(employee){
+    if (!employee || employee === '' || employee === '—') {
+        return "0.0";
+    }
+    let totalMinutes = 0;
+
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
+
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        const key = getDateKey(d);
+        
+        
+        const events = getEventsForPerson(employee, key);
+        if( employee === 'Rachel Walker' ){
+            console.log(`Person Hours  ${employee} ${JSON.stringify(events)}  `  );
+        }
+        events.forEach(evt => {
+            const duration = evt.duration_mins;
+            if (duration > 0) {
+                totalMinutes += duration;
+            }
+        });
+    }
+
+    // Return formatted hours
+    const hours = totalMinutes / 60;
+    return hours > 0 ? hours.toFixed(1) : "0.0";
 }
 function getTotalWeekHours(employee) {
     if (!employee || employee === '' || employee === '—') {
