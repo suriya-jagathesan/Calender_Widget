@@ -4767,7 +4767,7 @@ if (existing) {
     clearAllFilters();
     // Reset to employee view when switching
     currentViewType = 'employee';
-    document.getElementById('currentViewType').textContent = 'Staff';
+   
     
     const dayViewBtn = document.getElementById('dayViewBtn');
     const weekViewBtn = document.getElementById('weekViewBtn');
@@ -4778,6 +4778,7 @@ if (existing) {
     updateViewSwitcherOptions();
     
     if (view === 'day') {
+         document.getElementById('currentViewType').textContent = 'Staff';
         if (!inital_load) {
             await getTodayAllEmployees();
         }
@@ -4788,6 +4789,7 @@ if (existing) {
         weekView.classList.remove('active');
         await renderDayView();
     } else {
+         document.getElementById('currentViewType').textContent = 'Visit';
         await getTodayAllEmployees();
         resetWeekPagination();                             
         const nextCursor = await getBookingsForWeek(null); 
@@ -6968,7 +6970,7 @@ formatFilterText = function(filter) {
 
         if (q === '') {
             if (currentViewType === 'employee') {
-                renderDayView();
+                re_renderDayView();
             } else if (currentViewType === 'run') {
                 renderRunView();
             }
