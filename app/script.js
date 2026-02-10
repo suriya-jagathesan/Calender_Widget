@@ -1481,6 +1481,10 @@ async function getWeekStaffRunDetails(){
     booking_resp.data.forEach(function (rec) {
         let runRunBooking = [];
         let data = {};
+        const isActualRun =
+  rec?.Care_Group &&
+  Object.keys(rec.Care_Group).length > 0 &&
+  rec.Care_Group.Care_Group_Name;
         const run_name =
   rec?.Care_Group &&
   Object.keys(rec.Care_Group).length > 0 &&
@@ -1488,6 +1492,7 @@ async function getWeekStaffRunDetails(){
     ? rec.Care_Group.Care_Group_Name
     : rec?.Available_Status;
     data.run_name = run_name;
+    data.service = rec?.Site_Name?.zc_display_value;
         data.staff = rec.Staff?.zc_display_value;
         if( !runStaffList.includes(rec.Staff?.zc_display_value) && rec.Staff?.zc_display_value !== undefined && rec.Staff?.zc_display_value != '' ){
             runStaffList.push(rec.Staff?.zc_display_value);   
@@ -1503,7 +1508,39 @@ async function getWeekStaffRunDetails(){
         if (!staffRunEventDatabase[key]) {
             staffRunEventDatabase[key] = [];
         }
-        staffRunEventDatabase[key].push(...runRunBooking);  
+        const staffName = rec.Staff?.zc_display_value;
+
+if (!staffRunEventDatabase[key]) {
+    staffRunEventDatabase[key] = [];
+}
+
+const existingForStaff = staffRunEventDatabase[key].filter(
+    e => e.staff === staffName
+);
+
+// If this is an Available/Off record
+if (!isActualRun) {
+    const hasActualRunAlready = existingForStaff.some(
+        e => e.run_name !== 'Available' && e.run_name !== 'Off'
+    );
+
+    // ❌ Skip Available if real run already exists
+    if (hasActualRunAlready) {
+        return;
+    }
+}
+
+// ✅ If this is a real run, remove any existing Available/Off
+if (isActualRun && existingForStaff.length > 0) {
+    staffRunEventDatabase[key] = staffRunEventDatabase[key].filter(
+        e =>
+            !(e.staff === staffName &&
+              (e.run_name === 'Available' || e.run_name === 'Off'))
+    );
+}
+
+// Finally push
+staffRunEventDatabase[key].push(data);  
     }); 
     runStaffList.sort();
 }
@@ -1534,7 +1571,7 @@ async function getWeekRunDetails() {
         data.staff = rec.Staff?.zc_display_value;
         data.start_time = rec?.Start_Time;
         data.end_time = rec?.End_Time;
-        
+        data.service = rec?.Site_Name?.zc_display_value;
         if( !runRows.includes(run_name) ){
             runRows.push(run_name);
         }
@@ -1555,12 +1592,24 @@ async function renderWeekRunView() {
     syncWeekScroll();
 }
 
+async function re_renderWeekRunView() {
+    renderWeekDaysHeaderPerson();
+    renderWeekRunRows();
+    syncWeekScroll();
+}
+
 async function renderWeekStaffView(){
     await getWeekStaffRunDetails();
     renderWeekDaysHeaderPerson();
     renderWeekStaffRunRows();
     syncWeekScroll();
 }
+async function re_renderWeekStaffView(){
+    renderWeekDaysHeaderPerson();
+    renderWeekStaffRunRows();
+    syncWeekScroll();
+}
+
 async function renderWeekPersonView() {
     renderWeekDaysHeaderPerson();
     renderWeekPersonRows();
@@ -1618,6 +1667,12 @@ function renderWeekStaffRunRows(){
     const rowHeightsMap = {};
     
     const fillHeight = calculateFillHeight();
+    if( appliedFilters.length > 0 ){
+        employeeValues = getEmployeesFromEventsWeek();
+    }
+    else{
+         employeeValues = [...runStaffList];
+    }
     // if( appliedFilters.length > 0 ){
     //     employeeValues = getEmployeesFromEvents();
     // }
@@ -1625,7 +1680,7 @@ function renderWeekStaffRunRows(){
     //      employeeValues = [...employees];
     // }
     // employeeValues = employeeValues.filter(v => v !== '');
-    runStaffList.forEach(person => {
+    employeeValues.forEach(person => {
         let maxEventsInDay = 1;
         
         if (person !== '—') {
@@ -1678,7 +1733,15 @@ function renderWeekRunRows(){
     const rowHeightsMap = {};
     
     const fillHeight = calculateFillHeight();
-    const displayRuns = runRows.length > 0 ? [...new Set(runRows)] : ['—'];
+
+    if( appliedFilters.length > 0 ){
+        displayRuns = getRunsFromEventsWeek();
+    }
+    else{
+         displayRuns = runRows.length > 0 ? [...new Set(runRows)] : ['—'];
+    }
+
+    // const displayRuns = runRows.length > 0 ? [...new Set(runRows)] : ['—'];
     displayRuns.forEach(person => {
         let maxEventsInDay = 1;
         
@@ -1734,9 +1797,15 @@ function renderWeekPersonRows() {
     const fillHeight = calculateFillHeight();
     
     // Get unique persons from the persons array
-    const displayPersons = persons.length > 0 ? [...new Set(persons)] : ['—'];
+    if( appliedFilters.length > 0 ){
+        personValues = getPersonFromEventsWeek();
+    }
+    else{
+         personValues = persons.length > 0 ? [...new Set(persons)] : ['—'];
+    }
+    // const displayPersons = persons.length > 0 ? [...new Set(persons)] : ['—'];
     
-    displayPersons.forEach(person => {
+    personValues.forEach(person => {
         let maxEventsInDay = 1;
         
         if (person !== '—') {
@@ -1783,9 +1852,14 @@ function renderWeekPersonRows() {
 function renderWeekStaffRunColumn(rowHeightsMap = {}){
     const column = document.getElementById('weekEmployeeColumn');
     column.innerHTML = '';
+    if( appliedFilters.length > 0 ){
+        employeeValues = getEmployeesFromEventsWeek();
+    }
+    else{
+         employeeValues = [...runStaffList];
+    }
     
-    
-    runStaffList.forEach(person => {
+    employeeValues.forEach(person => {
         const row = document.createElement('div');
         row.className = 'week-employee-row';
         const displayHours = getTotalWeekHoursPerson(person);
@@ -1808,9 +1882,14 @@ function renderWeekPersonColumn(rowHeightsMap = {}) {
     const column = document.getElementById('weekEmployeeColumn');
     column.innerHTML = '';
     
-    const displayPersons = persons.length > 0 ? [...new Set(persons)] : ['—'];
+    if( appliedFilters.length > 0 ){
+        personValues = getPersonFromEventsWeek();
+    }
+    else{
+         personValues = persons.length > 0 ? [...new Set(persons)] : ['—'];
+    }
     
-    displayPersons.forEach(person => {
+    personValues.forEach(person => {
         const row = document.createElement('div');
         row.className = 'week-employee-row';
         const displayHours = getTotalWeekHoursPerson(person);
@@ -1840,9 +1919,14 @@ function renderWeekRunColumn(rowHeightsMap = {}) {
     const column = document.getElementById('weekEmployeeColumn');
     column.innerHTML = '';
     
-    const displayPersons = runRows.length > 0 ? [...new Set(runRows)] : ['—'];
+     if( appliedFilters.length > 0 ){
+        displayRuns = getRunsFromEventsWeek();
+    }
+    else{
+         displayRuns = runRows.length > 0 ? [...new Set(runRows)] : ['—'];
+    }
     
-    displayPersons.forEach(person => {
+    displayRuns.forEach(person => {
         const row = document.createElement('div');
         row.className = 'week-employee-row';
         
@@ -1920,7 +2004,7 @@ function renderWeekStaffRunEvents( container, events, dateKey ){
         else {
             title.className = 'week-event-staff-name';
         }
-        console.log(`${title.className} -${evt.run_name} `);
+       
         
         title.textContent = evt.run_name || 'Unassigned';
         
@@ -2424,6 +2508,109 @@ function isDateAfter(date1DDMMYYYY, date2DDMMYYYY) {
     const dateObj1 = new Date(y1, m1 - 1, d1);
     const dateObj2 = new Date(y2, m2 - 1, d2);
     return dateObj1 > dateObj2;
+}
+function getRunsFromEventsWeek(){
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
+    const employeeSet = new Set();
+    for (let day = 0; day < 7; day++) {
+                const dayDate = new Date(weekStart);
+                dayDate.setDate(weekStart.getDate() + day);
+                const dateKey = getDateKey(dayDate);
+                let filteredEvents = runEventDatabase[dateKey];
+                const serviceFilter = appliedFilters.find(f => f.field === 'service');
+                const employeeFilter = appliedFilters.find(f => f.field === 'employee' || f.field === 'staff');
+                if (serviceFilter) {
+                    filteredEvents = filteredEvents.filter(e =>
+                        serviceFilter.searchValues.includes(e.service)
+                    );
+                }
+                if( employeeFilter ){
+                    filteredEvents = filteredEvents.filter(e =>
+                        employeeFilter.searchValues.includes(e.staff)
+                    );
+                }
+                 filteredEvents.forEach(e => {
+        if (e.run_name !== undefined && e.run_name !== null) {
+            employeeSet.add(e.run_name);
+        }
+    });
+            }
+    
+        return Array.from(employeeSet).sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: 'base' })
+    );
+}
+function getPersonFromEventsWeek(){
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
+    const employeeSet = new Set();
+    for (let day = 0; day < 7; day++) {
+                const dayDate = new Date(weekStart);
+                dayDate.setDate(weekStart.getDate() + day);
+                const dateKey = getDateKey(dayDate);
+                let filteredEvents = eventDatabase[dateKey];
+                const personFilter  = appliedFilters.find(f => f.field === 'persons');
+                const serviceFilter = appliedFilters.find(f => f.field === 'service');
+                const employeeFilter = appliedFilters.find(f => f.field === 'employee' || f.field === 'staff');
+                if (serviceFilter) {
+                    filteredEvents = filteredEvents.filter(e =>
+                        serviceFilter.searchValues.includes(e.service)
+                    );
+                }
+                if (personFilter) {
+                    filteredEvents = filteredEvents.filter(e =>
+                        personFilter.searchValues.includes(e.title)
+                    );
+                }
+                if( employeeFilter ){
+                    filteredEvents = filteredEvents.filter(e =>
+                        employeeFilter.searchValues.includes(e.employee)
+                    );
+                }
+                 filteredEvents.forEach(e => {
+        if (e.title !== undefined && e.title !== null) {
+            employeeSet.add(e.title);
+        }
+    });
+            }
+    
+        return Array.from(employeeSet).sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: 'base' })
+    );
+}
+
+function getEmployeesFromEventsWeek(){
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
+    const employeeSet = new Set();
+    for (let day = 0; day < 7; day++) {
+                const dayDate = new Date(weekStart);
+                dayDate.setDate(weekStart.getDate() + day);
+                const dateKey = getDateKey(dayDate);
+                let filteredEvents = staffRunEventDatabase[dateKey];
+                const serviceFilter = appliedFilters.find(f => f.field === 'service');
+                const employeeFilter = appliedFilters.find(f => f.field === 'employee' || f.field === 'staff');
+                if (serviceFilter) {
+                    filteredEvents = filteredEvents.filter(e =>
+                        serviceFilter.searchValues.includes(e.service)
+                    );
+                }
+                if( employeeFilter ){
+                    filteredEvents = filteredEvents.filter(e =>
+                        employeeFilter.searchValues.includes(e.staff)
+                    );
+                }
+                 filteredEvents.forEach(e => {
+        if (e.staff !== undefined && e.staff !== null) {
+            employeeSet.add(e.staff);
+        }
+    });
+            }
+    
+        return Array.from(employeeSet).sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: 'base' })
+    );
 }
 function getEmployeesFromEvents() {
     const dateKey = getCurrentDateKey();

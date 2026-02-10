@@ -4614,7 +4614,10 @@ if (existing) {
                 await renderWeekPersonView();
             }
             else if( currentViewType === 'run' ){
-                // await renderWeekRunView();
+                await re_renderWeekRunView();
+            }
+            else if( currentViewType === 'staff' ){
+                await renderWeekStaffView();
             }
             else{
             await renderWeekView();
@@ -6691,7 +6694,10 @@ formatFilterText = function(filter) {
                  renderWeekPersonView();
             }
             else if( currentViewType === 'run' ){
-                //  renderWeekRunView();
+                re_renderWeekRunView();
+            }
+            else if( currentViewType === 'staff'){
+                re_renderWeekStaffView();
             }
             } else {
                 updateDateTitle();
