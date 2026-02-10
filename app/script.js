@@ -238,9 +238,9 @@
         displayText = 'Person';
     }
     else if( type === 'staff' ){
-        if( currentView === 'week' ){
+       
             displayText = 'Staff';
-        }
+       
     }
     document.getElementById('currentViewType').textContent = displayText;
     
@@ -257,21 +257,28 @@
     
     // ✅ Add checkmark to the selected option based on type
     const selectedOption = Array.from(document.querySelectorAll('.view-switcher-option')).find(opt => {
+        
+        
         const spanText = opt.querySelector('span').textContent.toLowerCase();
+        console.log(`${type} - ${spanText}`);
+        
+        
         if (type === 'employee' && spanText === 'employee') return true;
-        if (type === 'run' && spanText === 'run view') return true;
+        if (type === 'run' && spanText === 'run') return true;
         if (type === 'person' && spanText === 'person') return true;
         if (type === 'staff' && spanText === 'staff') return true;
         return false;
     });
-    
     if (selectedOption) {
         selectedOption.classList.add('selected');
-        
         // Create and append checkmark icon
-        const checkIcon = document.createElement('i');
-        checkIcon.className = 'fa fa-check';
-        selectedOption.appendChild(checkIcon);
+        const existingCheck = selectedOption.querySelector('.fa-check');
+        if (!existingCheck) {
+            // Create and append checkmark icon
+            const checkIcon = document.createElement('i');
+            checkIcon.className = 'fa fa-check';
+            selectedOption.appendChild(checkIcon);
+        }
     }
     
     // Close dropdown
@@ -1331,7 +1338,7 @@ function updateViewSwitcherOptions() {
         runOption.onclick = () => selectViewType('run');
 
         const staffOption = document.createElement('div');
-        staffOption.className = 'view-switcher-option' + (currentViewType === 'run' ? ' selected' : '');
+        staffOption.className = 'view-switcher-option' + (currentViewType === 'staff' ? ' selected' : '');
         staffOption.innerHTML = `
             <span>Staff</span>
             ${currentViewType === 'staff' ? '<i class="fa fa-check"></i>' : ''}
@@ -1345,7 +1352,7 @@ function updateViewSwitcherOptions() {
     }
 }
 function getEventsForStaffRun(staffName,dateKey ){
-    console.log(`${staffName} - ${dateKey} - ${JSON.stringify(staffRunEventDatabase[dateKey])} `);
+    // console.log(`${staffName} - ${dateKey} - ${JSON.stringify(staffRunEventDatabase[dateKey])} `);
     
     const allEvents = staffRunEventDatabase[dateKey] || [];
      return allEvents.filter(evt => {
