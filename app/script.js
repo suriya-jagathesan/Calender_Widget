@@ -1496,7 +1496,6 @@ async function getWeekStaffRunDetails(){
     };
     booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
     booking_resp.data.forEach(function (rec) {
-        console.log(rec);
         
         let runRunBooking = [];
         let data = {};
@@ -1513,6 +1512,7 @@ async function getWeekStaffRunDetails(){
         ? rec?.leave_Type
         : rec?.Available_Status;
     data.off = rec?.Available_Status === 'Off' ? "true" : "false";
+    data.zoho_id = rec.ID;
     data.run_name = run_name;
     data.service = rec?.Site_Name?.zc_display_value;
         data.staff = rec.Staff?.zc_display_value;
@@ -1566,7 +1566,7 @@ if (isActualRun && existingForStaff.length > 0) {
 // Finally push
 staffRunEventDatabase[key].push(data);  
     }); 
-    runStaffList.sort();
+    runStaffList.sort();    
 }
 
 async function getWeekRunDetails() {
