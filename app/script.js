@@ -1911,7 +1911,17 @@ function renderWeekStaffRunEvents( container, events, dateKey ){
         el.style.width = 'auto';
         
         const title = document.createElement('div');
-        title.className = 'week-event-staff-name';
+        if( evt.run_name === 'Available' ){
+        title.className = 'week-event-staff-name-avl';
+        }
+        else if( evt.run_name === 'Off' ){
+            title.className = 'week-event-staff-name-off';
+        }
+        else {
+            title.className = 'week-event-staff-name';
+        }
+        console.log(`${title.className} -${evt.run_name} `);
+        
         title.textContent = evt.run_name || 'Unassigned';
         
         const time = document.createElement('div');

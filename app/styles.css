@@ -574,7 +574,7 @@
 }
 
 .week-event-staff-name {
-    background-color: #006666; /* Dark teal color like in image 2 */
+    background-color: #00677F; /* Dark teal color like in image 2 */
     color: white;
     padding: 4px 8px;
     font-weight: 500;
@@ -587,6 +587,32 @@
     text-overflow: ellipsis;
 }
 
+.week-event-staff-name-avl {
+    background-color: #00A550; /* Dark teal color like in image 2 */
+    color: white;
+    padding: 4px 8px;
+    font-weight: 500;
+    font-size: 13px;
+    text-align: center;
+    
+    /* Text truncation */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.week-event-staff-name-off {
+    background-color: #B24B52; /* Dark teal color like in image 2 */
+    color: white;
+    padding: 4px 8px;
+    font-weight: 500;
+    font-size: 13px;
+    text-align: center;
+    
+    /* Text truncation */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 .week-event-time-range {
     background-color: white;
     color: #333;
