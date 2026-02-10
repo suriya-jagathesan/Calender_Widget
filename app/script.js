@@ -1459,8 +1459,10 @@ function getEventsForPerson(personName, dateKey) {
 let runEventDatabase = {};
 let runRows = [];
 let staffRunEventDatabase = {}; 
+let runStaffList = [];
 async function getWeekStaffRunDetails(){
     staffRunEventDatabase = {};
+    runStaffList = [];
     const weekStart = new Date(currentDate);
     weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1 );
     const weekEnd = new Date(weekStart);
@@ -1487,6 +1489,9 @@ async function getWeekStaffRunDetails(){
     : rec?.Available_Status;
     data.run_name = run_name;
         data.staff = rec.Staff?.zc_display_value;
+        if( !runStaffList.includes(rec.Staff?.zc_display_value) && rec.Staff?.zc_display_value !== undefined && rec.Staff?.zc_display_value != '' ){
+            runStaffList.push(rec.Staff?.zc_display_value);   
+        }
         data.start_time = rec?.Start_Time;
         data.end_time = rec?.End_Time;
         
@@ -1499,7 +1504,8 @@ async function getWeekStaffRunDetails(){
             staffRunEventDatabase[key] = [];
         }
         staffRunEventDatabase[key].push(...runRunBooking);  
-    });
+    }); 
+    runStaffList.sort();
 }
 
 async function getWeekRunDetails() {
@@ -1612,14 +1618,14 @@ function renderWeekStaffRunRows(){
     const rowHeightsMap = {};
     
     const fillHeight = calculateFillHeight();
-    if( appliedFilters.length > 0 ){
-        employeeValues = getEmployeesFromEvents();
-    }
-    else{
-         employeeValues = [...employees];
-    }
-    employeeValues = employeeValues.filter(v => v !== '');
-    employeeValues.forEach(person => {
+    // if( appliedFilters.length > 0 ){
+    //     employeeValues = getEmployeesFromEvents();
+    // }
+    // else{
+    //      employeeValues = [...employees];
+    // }
+    // employeeValues = employeeValues.filter(v => v !== '');
+    runStaffList.forEach(person => {
         let maxEventsInDay = 1;
         
         if (person !== '—') {
@@ -1778,14 +1784,8 @@ function renderWeekStaffRunColumn(rowHeightsMap = {}){
     const column = document.getElementById('weekEmployeeColumn');
     column.innerHTML = '';
     
-    if( appliedFilters.length > 0 ){
-        employeeValues = getEmployeesFromEvents();
-    }
-    else{
-         employeeValues = [...employees];
-    }
-    employeeValues = employeeValues.filter(v => v !== '');
-    employeeValues.forEach(person => {
+    
+    runStaffList.forEach(person => {
         const row = document.createElement('div');
         row.className = 'week-employee-row';
         const displayHours = getTotalWeekHoursPerson(person);
