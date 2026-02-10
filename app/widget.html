@@ -4863,6 +4863,12 @@ else if (currentViewType === 'person') {
         startWeekBackgroundFetch(); 
     }
 }
+else if(  currentViewType === 'staff'){
+    if (!isDayView) {
+        await renderWeekStaffView();
+        startWeekBackgroundFetch(); 
+    }
+}
 
         
         updateDateTitle();
@@ -6913,7 +6919,12 @@ formatFilterText = function(filter) {
             startWeekBackgroundFetch(); 
         }
     }
-
+    else if( currentViewType === 'staff' ){
+        if( isWeekView ){
+            await renderWeekStaffView();
+            startWeekBackgroundFetch(); 
+        }
+    }
     renderMiniCalendar();
     toggleMiniCalendar();
     hideLoader();

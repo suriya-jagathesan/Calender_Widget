@@ -1496,6 +1496,8 @@ async function getWeekStaffRunDetails(){
     };
     booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
     booking_resp.data.forEach(function (rec) {
+        console.log(rec);
+        
         let runRunBooking = [];
         let data = {};
         const isActualRun =
@@ -1519,7 +1521,9 @@ async function getWeekStaffRunDetails(){
         }
         data.start_time = rec?.Start_Time;
         data.end_time = rec?.End_Time;
-        
+        data.from_date = rec.Date_From;
+        data.to_date = rec.Date_To;
+        data.break = rec.Break;
         if( !runRows.includes(run_name) ){
             runRows.push(run_name);
         }
