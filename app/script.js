@@ -2267,7 +2267,7 @@ function startWeekBackgroundFetch() {
         if( currentViewType === 'person' ){
             await renderWeekPersonView();
         }
-        else if( currentViewType !== 'run' ){ 
+        else if( currentViewType !== 'run' && currentViewType !== 'staff' ){ 
             await renderWeekView();
         }    
         if (!nextCursor) {
