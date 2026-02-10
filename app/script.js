@@ -1507,7 +1507,10 @@ async function getWeekStaffRunDetails(){
   Object.keys(rec.Care_Group).length > 0 &&
   rec.Care_Group.Care_Group_Name
     ? rec.Care_Group.Care_Group_Name
-    : rec?.Available_Status;
+    : rec?.Available_Status === 'Off'
+        ? rec?.leave_Type
+        : rec?.Available_Status;
+    data.off = rec?.Available_Status === 'Off' ? "true" : "false";
     data.run_name = run_name;
     data.service = rec?.Site_Name?.zc_display_value;
         data.staff = rec.Staff?.zc_display_value;
@@ -2015,7 +2018,7 @@ function renderWeekStaffRunEvents( container, events, dateKey ){
         if( evt.run_name === 'Available' ){
         title.className = 'week-event-staff-name-avl';
         }
-        else if( evt.run_name === 'Off' ){
+        else if( evt.off === 'true' ){
             title.className = 'week-event-staff-name-off';
         }
         else {
