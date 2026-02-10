@@ -1359,51 +1359,68 @@ function getEventsForStaffRun(staffName,dateKey ){
         if (evt.staff === staffName) return true;
      });
 }
-function getEventsForWeekRun(runName, dateKey){
+function getEventsForWeekRun(runName, dateKey) {
     const allEvents = runEventDatabase[dateKey] || [];
+
     return allEvents.filter(evt => {
-        if (evt.run_name === runName) return true;
-        
-        // return appliedFilters.every(f => {
-        //     let search_key = null;
-        //     if (f.field === "persons") {
-        //         search_key = 'title';
-        //     } else if (f.field === 'staff' || f.field === 'employee') {
-        //         search_key = 'employee';
-        //     } else if (f.field === 'service') {
-        //         search_key = 'service';
-        //     } else {
-        //         search_key = f.field;
-        //     }
-            
-        //     const eventValue = evt[search_key];
-        //     if (eventValue == null) return false;
-            
-        //     if (f.filterType === 'contains') {
-        //         return f.searchValues.some(v =>
-        //             String(eventValue)
-        //                 .toLowerCase()
-        //                 .includes(String(v).toLowerCase())
-        //         );
-        //     } else if (f.filterType === 'is') {
-        //         return f.searchValues.some(v =>
-        //             String(eventValue).trim().toLowerCase() ===
-        //             String(v).trim().toLowerCase()
-        //         );
-        //     } else if (f.filterType === 'isNot') {
-        //         return !f.searchValues.some(v =>
-        //             String(eventValue) === String(v)
-        //         );
-        //     } else if (f.filterType === 'isEmpty') {
-        //         return isEmptyValue(eventValue);
-        //     } else if (f.filterType === 'isNotEmpty') {
-        //         return !isEmptyValue(eventValue);
-        //     }
-            
-        //     return true;
-        // });
+
+        // ✅ No filters → STRICT run match only
+        if (appliedFilters.length === 0) {
+            return evt.run_name === runName;
+        }
+
+        // With filters, still require run match
+        if (evt.run_name !== runName) return false;
+
+        return appliedFilters.every(f => {
+            let search_key;
+
+            if (f.field === "persons") {
+                search_key = 'title';
+            } else if (f.field === 'staff' || f.field === 'employee') {
+                search_key = 'staff';
+            } else if (f.field === 'service') {
+                search_key = 'service';
+            } else {
+                search_key = f.field;
+            }
+
+            const eventValue = evt[search_key];
+            if (eventValue == null) return false;
+
+            if (f.filterType === 'contains') {
+                return f.searchValues.some(v =>
+                    String(eventValue).toLowerCase()
+                        .includes(String(v).toLowerCase())
+                );
+            }
+
+            if (f.filterType === 'is') {
+                return f.searchValues.some(v =>
+                    String(eventValue).trim().toLowerCase() ===
+                    String(v).trim().toLowerCase()
+                );
+            }
+
+            if (f.filterType === 'isNot') {
+                return !f.searchValues.some(v =>
+                    String(eventValue) === String(v)
+                );
+            }
+
+            if (f.filterType === 'isEmpty') {
+                return isEmptyValue(eventValue);
+            }
+
+            if (f.filterType === 'isNotEmpty') {
+                return !isEmptyValue(eventValue);
+            }
+
+            return true;
+        });
     });
 }
+
 
 function getEventsForPerson(personName, dateKey) {
     const allEvents = eventDatabase[dateKey] || [];
