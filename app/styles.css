@@ -646,7 +646,7 @@
     border-radius: 8px;
     padding: 24px;
     width: 90%;
-    max-width: 500px;
+    max-width: 600px; /* Increased width for side-by-side layout */
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -686,17 +686,22 @@
     color: #000;
 }
 
-/* Form Groups */
+/* Form Groups - Side by Side Layout */
 .form-group {
     margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: 140px 1fr; /* Label takes 140px, input takes remaining space */
+    gap: 16px;
+    align-items: center;
 }
 
 .form-group label {
-    display: block;
-    margin-bottom: 6px;
+    margin: 0;
     font-weight: 500;
     font-size: 14px;
     color: #333;
+    text-align: left;
+    white-space: nowrap;
 }
 
 .form-control {
@@ -884,6 +889,7 @@ select.form-control {
     margin-top: 24px;
     padding-top: 16px;
     border-top: 1px solid #e0e0e0;
+    grid-column: 1 / -1; /* Span full width */
 }
 
 .btn-cancel,
@@ -921,6 +927,70 @@ select.form-control {
     background: #004085;
 }
 
+/* Scrollbar Styling for Popup */
+.schedule-popup::-webkit-scrollbar {
+    width: 8px;
+}
+
+.schedule-popup::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.schedule-popup::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.schedule-popup::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .schedule-popup {
+        width: 95%;
+        padding: 20px;
+        max-height: 85vh;
+    }
+    
+    .popup-header h2 {
+        font-size: 18px;
+    }
+    
+    /* Stack labels on top of inputs on mobile */
+    .form-group {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+    
+    .form-group label {
+        text-align: left;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn-cancel,
+    .btn-save {
+        width: 100%;
+    }
+}
+
+.week-event-box {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    position: relative;
+    z-index: 1;
+}
+
+.week-event-staff-name,
+.week-event-staff-name-avl,
+.week-event-staff-name-off,
+.week-event-time-range {
+    pointer-events: none !important;
+}
 /* Scrollbar Styling for Popup */
 .schedule-popup::-webkit-scrollbar {
     width: 8px;

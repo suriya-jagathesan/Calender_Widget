@@ -2192,7 +2192,6 @@ function openStaffSchedulePopup(eventData) {
     popup.querySelector('#startTime').value = eventData.start_time || '';
     popup.querySelector('#endTime').value = eventData.end_time || '';
     popup.querySelector('#break').value = eventData.break || '00:00';
-    popup.querySelector('#toTimeLine').value = formatDateTimeForInput(eventData.from_date, eventData.end_time);
     popup.querySelector('#totalHours').value = calculateTotalHours(eventData.start_time, eventData.end_time, eventData.break);
     
     // Set availability status
