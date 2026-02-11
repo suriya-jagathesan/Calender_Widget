@@ -3211,6 +3211,109 @@ min-width: 100px;
                 <span class="status-legend-label">Overlapped</span>
             </div>
         </div>
+       <!-- Add this modal structure at the end of your body tag, just before closing </body> -->
+<div id="schedulePopupTemplate" style="display: none;">
+    <div class="schedule-popup-overlay">
+        <div class="schedule-popup">
+            <div class="popup-header">
+                <h2>Daily Staff Schedule</h2>
+                <button class="close-popup-btn" type="button">&times;</button>
+            </div>
+            
+            <form id="staffScheduleForm">
+                <div class="form-group">
+                    <label>Site Name *</label>
+                    <input type="text" id="siteName" class="form-control" readonly>
+                </div>
+                
+                <!-- Custom Staff Dropdown -->
+                <div class="form-group">
+                    <label>Staff *</label>
+                    <div class="custom-dropdown">
+                        <div class="dropdown-selected" id="staffDropdown">
+                            <span class="dropdown-text">Select Staff</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </div>
+                        <div class="dropdown-menu" id="staffDropdownMenu">
+                            <input type="text" class="dropdown-search" id="staffSearch" placeholder="Search staff...">
+                            <div class="dropdown-options" id="staffOptions">
+                                <!-- Options will be populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="staff" name="staff">
+                </div>
+                
+                <div class="form-group">
+                    <label>Availability Status *</label>
+                    <select id="availabilityStatus" class="form-control">
+                        <option value="Available">Available</option>
+                        <option value="Off">Off</option>
+                        <option value="Assigned">Assigned</option>
+                    </select>
+                </div>
+                
+                <!-- Custom Run Dropdown -->
+                <div class="form-group">
+                    <label>Run</label>
+                    <div class="custom-dropdown">
+                        <div class="dropdown-selected" id="runDropdown">
+                            <span class="dropdown-text">Select Run</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </div>
+                        <div class="dropdown-menu" id="runDropdownMenu">
+                            <input type="text" class="dropdown-search" id="runSearch" placeholder="Search run...">
+                            <div class="dropdown-options" id="runOptions">
+                                <!-- Options will be populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="run" name="run">
+                </div>
+                
+                <div class="form-group">
+                    <label>To Time Line</label>
+                    <input type="datetime-local" id="toTimeLine" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label>From date *</label>
+                    <input type="date" id="fromDate" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label>To date *</label>
+                    <input type="date" id="toDate" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label>Start Time *</label>
+                    <input type="time" id="startTime" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label>End Time *</label>
+                    <input type="time" id="endTime" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label>Break</label>
+                    <input type="time" id="break" class="form-control" value="00:00">
+                </div>
+                
+                <div class="form-group">
+                    <label>Total Hours</label>
+                    <input type="text" id="totalHours" class="form-control" readonly>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel">Cancel</button>
+                    <button type="submit" class="btn-save">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
     <script>
         let inital_load = false;
         const selectedEventIds = new Set();

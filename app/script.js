@@ -1548,7 +1548,6 @@ if (!isActualRun) {
         e => e.run_name !== 'Available' && e.run_name !== 'Off'
     );
 
-    // ❌ Skip Available if real run already exists
     if (hasActualRunAlready) {
         return;
     }
@@ -2005,13 +2004,12 @@ function renderWeekStaffRunEvents( container, events, dateKey ){
     events.forEach((evt, index) => {
         const el = document.createElement('div');
         el.className = `week-event-box status-Not_Started`;
-        el.dataset.eventId = evt.id;
+        el.dataset.eventId = evt.zoho_id;
          el.draggable = false; 
         el.dataset.viewType = 'week-person';
         el.dataset.start = evt.start_time;
         el.dataset.end = evt.end_time;
-        const topPosition = ROW_PADDING + (index * (run_event_height + EVENT_GAP));
-        
+        const topPosition = ROW_PADDING + (index * (EVENT_GAP));
         el.style.top = `${topPosition}px`;
         el.style.height = `${run_event_height}px`;
         el.style.left = '2px';
@@ -2038,9 +2036,263 @@ function renderWeekStaffRunEvents( container, events, dateKey ){
         
         el.appendChild(title);
         el.appendChild(time);
+       
+        // el.removeEventListener('click', handleEventClick(evt) );
+    el.addEventListener('click', () => handleEventClick(evt) );  
+      
         container.appendChild(el);
+        
+    
+    
     });
 
+
+
+}
+function handleEventClick(e) {
+    console.log(e);
+    
+                openStaffSchedulePopup(e);
+        
+    }
+function openStaffSchedulePopup(eventData) {
+    console.log('Opening popup with data:', eventData);
+    
+    const template = document.getElementById('schedulePopupTemplate');
+    
+    if (!template) {
+        console.error('Template not found!');
+        alert('Error: Popup template not found.');
+        return;
+    }
+    
+    const clone = template.cloneNode(true);
+    clone.id = '';
+    clone.style.display = 'block';
+    
+    const popup = clone.querySelector('.schedule-popup');
+    const overlay = clone.querySelector('.schedule-popup-overlay');
+    
+    // Populate form fields
+    popup.querySelector('#siteName').value = eventData.service || '';
+    popup.querySelector('#fromDate').value = eventData.from_date || '';
+    popup.querySelector('#toDate').value = eventData.to_date || '';
+    popup.querySelector('#startTime').value = eventData.start_time || '';
+    popup.querySelector('#endTime').value = eventData.end_time || '';
+    popup.querySelector('#break').value = eventData.break || '00:00';
+    popup.querySelector('#toTimeLine').value = formatDateTimeForInput(eventData.from_date, eventData.end_time);
+    popup.querySelector('#totalHours').value = calculateTotalHours(eventData.start_time, eventData.end_time, eventData.break);
+    
+    // Set availability status
+    const statusSelect = popup.querySelector('#availabilityStatus');
+    if (eventData.run_name === 'Available') {
+        statusSelect.value = 'Available';
+    } else if (eventData.off === 'true') {
+        statusSelect.value = 'Off';
+    } else {
+        statusSelect.value = 'Assigned';
+    }
+    
+    // Initialize custom dropdowns
+    initializeCustomDropdown(popup, 'staff', runStaffList, eventData.staff);
+    initializeCustomDropdown(popup, 'run', runRows,eventData.off !== 'true' ? eventData.run_name : '' );
+    
+    document.body.appendChild(clone);
+    
+    const closePopup = () => {
+        document.body.removeChild(clone);
+    };
+    
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closePopup();
+    });
+    
+    popup.querySelector('.close-popup-btn').addEventListener('click', closePopup);
+    popup.querySelector('.btn-cancel').addEventListener('click', closePopup);
+    
+    // Auto-calculate total hours
+    const startTimeInput = popup.querySelector('#startTime');
+    const endTimeInput = popup.querySelector('#endTime');
+    const breakInput = popup.querySelector('#break');
+    const totalHoursInput = popup.querySelector('#totalHours');
+    
+    const updateTotalHours = () => {
+        totalHoursInput.value = calculateTotalHours(
+            startTimeInput.value, 
+            endTimeInput.value, 
+            breakInput.value
+        );
+    };
+    
+    startTimeInput.addEventListener('change', updateTotalHours);
+    endTimeInput.addEventListener('change', updateTotalHours);
+    breakInput.addEventListener('change', updateTotalHours);
+    
+    // Form submission
+    popup.querySelector('#staffScheduleForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await saveStaffScheduleChanges(eventData.zoho_id, popup);
+        closePopup();
+    });
+}
+
+function initializeCustomDropdown(container, fieldName, options, selectedValue) {
+    const dropdownBtn = container.querySelector(`#${fieldName}Dropdown`);
+    const dropdownMenu = container.querySelector(`#${fieldName}DropdownMenu`);
+    const dropdownText = dropdownBtn.querySelector('.dropdown-text');
+    const searchInput = container.querySelector(`#${fieldName}Search`);
+    const optionsContainer = container.querySelector(`#${fieldName}Options`);
+    const hiddenInput = container.querySelector(`#${fieldName}`);
+    
+    // Populate options
+    renderDropdownOptions(optionsContainer, options, selectedValue, dropdownText, hiddenInput, dropdownMenu);
+    
+    // Set initial value
+    if (selectedValue) {
+        dropdownText.textContent = selectedValue;
+        dropdownText.classList.remove('placeholder');
+        hiddenInput.value = selectedValue;
+    }
+    
+    // Toggle dropdown
+    dropdownBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = dropdownMenu.classList.contains('show');
+        
+        // Close all other dropdowns
+        document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+            menu.classList.remove('show');
+            menu.previousElementSibling.classList.remove('active');
+        });
+        
+        if (!isOpen) {
+            dropdownMenu.classList.add('show');
+            dropdownBtn.classList.add('active');
+            searchInput.focus();
+        }
+    });
+    
+    // Search functionality
+    searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const filteredOptions = options.filter(opt => 
+            opt.toLowerCase().includes(searchTerm)
+        );
+        renderDropdownOptions(optionsContainer, filteredOptions, selectedValue, dropdownText, hiddenInput, dropdownMenu);
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!dropdownBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+            dropdownMenu.classList.remove('show');
+            dropdownBtn.classList.remove('active');
+        }
+    });
+}
+
+function renderDropdownOptions(container, options, selectedValue, dropdownText, hiddenInput, dropdownMenu) {
+    container.innerHTML = '';
+    
+    if (options.length === 0) {
+        const noResults = document.createElement('div');
+        noResults.className = 'dropdown-option no-results';
+        noResults.textContent = 'No results found';
+        container.appendChild(noResults);
+        return;
+    }
+    
+    options.forEach(option => {
+        const optionEl = document.createElement('div');
+        optionEl.className = 'dropdown-option';
+        optionEl.textContent = option;
+        
+        if (option === selectedValue) {
+            optionEl.classList.add('selected');
+        }
+        
+        optionEl.addEventListener('click', () => {
+            dropdownText.textContent = option;
+            dropdownText.classList.remove('placeholder');
+            hiddenInput.value = option;
+            
+            // Update selected state
+            container.querySelectorAll('.dropdown-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            optionEl.classList.add('selected');
+            
+            // Close dropdown
+            dropdownMenu.classList.remove('show');
+            dropdownMenu.previousElementSibling.classList.remove('active');
+        });
+        
+        container.appendChild(optionEl);
+    });
+}
+
+// Helper functions
+function formatDateTimeForInput(date, time) {
+    if (!date || !time) return '';
+    const parts = date.split('-');
+    let formattedDate;
+    if (parts[0].length === 4) {
+        formattedDate = date;
+    } else {
+        formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return `${formattedDate}T${time}`;
+}
+
+function calculateTotalHours(startTime, endTime, breakTime) {
+    if (!startTime || !endTime) return '0.00';
+    
+    const start = timeToMinutes(startTime);
+    const end = timeToMinutes(endTime);
+    const breakMinutes = breakTime ? timeToMinutes(breakTime) : 0;
+    
+    let totalMinutes = end - start - breakMinutes;
+    if (totalMinutes < 0) totalMinutes += 24 * 60;
+    
+    const hours = (totalMinutes / 60).toFixed(2);
+    return hours;
+}
+
+function timeToMinutes(timeStr) {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+}
+
+async function saveStaffScheduleChanges(zohoId, popup) {
+    const formData = {
+        Staff: popup.querySelector('#staff').value,
+        Run: popup.querySelector('#run').value,
+        Available_Status: popup.querySelector('#availabilityStatus').value,
+        Date_From: popup.querySelector('#fromDate').value,
+        Date_To: popup.querySelector('#toDate').value,
+        Start_Time: popup.querySelector('#startTime').value,
+        End_Time: popup.querySelector('#endTime').value,
+        Break: popup.querySelector('#break').value,
+        Total_Hours: popup.querySelector('#totalHours').value
+    };
+    
+    try {
+        const config = {
+            appName: app_name,
+            reportName: "Daily_schedule_for_Staff",
+            id: zohoId,
+            data: formData
+        };
+        
+        await ZOHO.CREATOR.API.updateRecord(config);
+        
+        await getWeekStaffRunDetails();
+        renderWeekStaffRunRows();
+        
+        alert('Schedule updated successfully!');
+    } catch (error) {
+        console.error('Error updating schedule:', error);
+        alert('Failed to update schedule. Please try again.');
+    }
 }
 // New function: Render events for person (no drag & drop)
 function renderWeekEventsForPerson(container, events, dateKey) {
