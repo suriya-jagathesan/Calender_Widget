@@ -3249,6 +3249,7 @@ min-width: 100px;
                     <select id="availabilityStatus" class="form-control">
                         <option value="Available">Available</option>
                         <option value="Off">Off</option>
+
                     </select>
                 </div>
                 
@@ -3270,11 +3271,11 @@ min-width: 100px;
                     <input type="hidden" id="run" name="run">
                 </div>
                 
-                
+               
                 
                 <div class="form-group">
                     <label>From date *</label>
-                    <input type="date" id="fromDate" class="form-control">
+                    <input type="date" id="fromDate" lang="en-GB" class="form-control">
                 </div>
                 
                 <div class="form-group">
@@ -3297,10 +3298,7 @@ min-width: 100px;
                     <input type="time" id="break" class="form-control" value="00:00">
                 </div>
                 
-                <div class="form-group">
-                    <label>Total Hours</label>
-                    <input type="text" id="totalHours" class="form-control" readonly>
-                </div>
+                
                 
                 <div class="form-actions">
                     <button type="button" class="btn-cancel">Cancel</button>
@@ -3766,7 +3764,7 @@ function hideLoader() {
              employees_config = {
             app_name,
             report_name: "Daily_Shift_Report",
-            criteria: `Site_Name.ID == ${serviceList} && Date_From >= '${zoho_start_date}' &&  Date_From <= ${zoho_end_date} && Available_Status == "Available"  `
+            criteria: `Site_Name.ID == ${serviceList} && Date_From >= '${zoho_start_date}' &&  Date_From <= '${zoho_end_date}' && Available_Status == "Available"  `
         };
 
         employees_config1 = {
@@ -3788,10 +3786,17 @@ function hideLoader() {
         //     criteria: `Site_Name.ID == ${serviceList} && Care_Providers != null && Date_field1 == '${formatDateDDMMYYYY(currentDate)}'`
         // }
         const employee_res = await ZOHO.CREATOR.DATA.getRecords(employees_config);
+        console.log(employee_res);
         
         if (employee_res.code === 3000 && employee_res.data?.length) {
 
             for (const rec of employee_res.data) {
+                // console.log(rec);
+                const emp_service =  rec["Staff.Sites"];
+                const serviceList = emp_service.map(site => ({
+                    id: site.ID,
+                    zc_display: site.zc_display_value
+                }));
                 const name = rec.Staff?.zc_display_value;
                 const staffId = rec.Staff?.ID;
 
@@ -3815,7 +3820,8 @@ function hideLoader() {
                 employeeDetails.push({
                     name,
                     id: staffId,
-                    skills
+                    skills,
+                    service: serviceList
                 });
             }
         }    
@@ -3830,6 +3836,12 @@ function hideLoader() {
             : rec.Care_Providers
                 ? [rec.Care_Providers]
                 : [];
+
+                const emp_service =  rec["Care_Providers.Sites"];
+                const serviceList = emp_service.map(site => ({
+                    id: site.ID,
+                    zc_display: site.zc_display_value
+                }));
         
         for (const staff of staffList) {
             
@@ -3859,7 +3871,8 @@ function hideLoader() {
             employeeDetails.push({
                 name,
                 id,
-                skills
+                skills,
+                service: serviceList
             });
         }
     }
@@ -3877,6 +3890,8 @@ function hideLoader() {
         }
         console.error("getTodayAllEmployees failed:", err);
     }
+    console.log( JSON.stringify(employeeDetails));
+    
 }
 
         async function getBookingsForWeek(cursor = null){
@@ -3891,7 +3906,7 @@ function hideLoader() {
             let zoho_end_date = formatDateDDMMYYYY( weekEnd );
             const serviceList = `[${services.join(",")}]`;
             const criteria_2 = `Site_Name.ID == ${serviceList} && Date_field1 >= '${zoho_start_date}' && Date_field1 <= '${zoho_end_date}' && Status != "Inactive"`;
-            console.log(criteria_2);
+            // console.log(criteria_2);
             
             var booking = {
                 app_name: app_name,

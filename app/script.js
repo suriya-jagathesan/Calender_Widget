@@ -1524,7 +1524,7 @@ async function getWeekStaffRunDetails(){
         data.from_date = rec.Date_From;
         data.to_date = rec.Date_To;
         data.break = rec.Break;
-        if( !runRows.includes(run_name) ){
+        if( !runRows.includes(run_name) && run_name !== 'Available' && rec?.Available_Status !== 'Off' ){
             runRows.push(run_name);
         }
         runRunBooking.push(data);
@@ -1755,7 +1755,7 @@ function renderWeekStaffRunRows(){
                 const staffName = dayColumn.dataset.staffName;
                 const dateKey = dayColumn.dataset.dateKey;
                 
-                handleEmptySpaceClick(staffName, dateKey, e);
+                handleEmptySpaceClick(person, dateKey, e);
             });
             personRow.appendChild(dayColumn);
         }
@@ -2114,7 +2114,7 @@ function handleEventClick(eventData, dateKey) {
     console.log('Event clicked:', eventData);
     openStaffSchedulePopup(eventData, dateKey);
 }
-function handleEmptySpaceClick(container, dateKey, event) {
+function handleEmptySpaceClick(person, dateKey, event) {
     console.log('Empty space clicked, opening new schedule form');
     
     // Find the parent row to get staff index
@@ -2140,7 +2140,7 @@ function handleEmptySpaceClick(container, dateKey, event) {
     const emptyEventData = {
         zoho_id: null, // null indicates new record
         service: '', // Default to first service if available
-        staff: staffName,
+        staff: person,
         run_name: '',
         from_date: dateFromKey,
         to_date: dateFromKey,
@@ -2166,6 +2166,26 @@ function parseDateKey(dateKey) {
         return `${parts[2]}-${parts[1]}-${parts[0]}`;
     }
 }
+function formatDateForInput(dateStr) {
+    if (!dateStr) return '';
+    
+    // Check if date is already in YYYY-MM-DD format
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return dateStr;
+    }
+    
+    // Handle DD-MM-YYYY format
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+        const day = parts[0];
+        const month = parts[1];
+        const year = parts[2];
+        return `${year}-${month}-${day}`; // Convert to YYYY-MM-DD
+    }
+    
+    return dateStr;
+}
+
 
 function openStaffSchedulePopup(eventData) {
     console.log('Opening popup with data:', eventData);
@@ -2181,28 +2201,29 @@ function openStaffSchedulePopup(eventData) {
     const clone = template.cloneNode(true);
     clone.id = '';
     clone.style.display = 'block';
+    console.log(eventData.from_date);
     
     const popup = clone.querySelector('.schedule-popup');
     const overlay = clone.querySelector('.schedule-popup-overlay');
-    
+    if( eventData.zoho_id === null ){
+        popup.querySelector('#fromDate').disabled = true;
+        popup.querySelector('#toDate').disabled = true;
+    }
     // Populate form fields
     popup.querySelector('#siteName').value = eventData.service || '';
-    popup.querySelector('#fromDate').value = eventData.from_date || '';
-    popup.querySelector('#toDate').value = eventData.to_date || '';
+    popup.querySelector('#fromDate').value = formatDateForInput(eventData.from_date) || '';
+    popup.querySelector('#toDate').value = formatDateForInput(eventData.to_date) || '';
     popup.querySelector('#startTime').value = eventData.start_time || '';
     popup.querySelector('#endTime').value = eventData.end_time || '';
     popup.querySelector('#break').value = eventData.break || '00:00';
-    popup.querySelector('#totalHours').value = calculateTotalHours(eventData.start_time, eventData.end_time, eventData.break);
     
     // Set availability status
     const statusSelect = popup.querySelector('#availabilityStatus');
-    if (eventData.run_name === 'Available') {
+    if (eventData.off === 'false') {
         statusSelect.value = 'Available';
-    } else if (eventData.off === 'true') {
-        statusSelect.value = 'Off';
     } else {
-        statusSelect.value = 'Assigned';
-    }
+        statusSelect.value = 'Off';
+    }   
     
     // Initialize custom dropdowns
     initializeCustomDropdown(popup, 'staff', runStaffList, eventData.staff);
@@ -2222,23 +2243,8 @@ function openStaffSchedulePopup(eventData) {
     popup.querySelector('.btn-cancel').addEventListener('click', closePopup);
     
     // Auto-calculate total hours
-    const startTimeInput = popup.querySelector('#startTime');
-    const endTimeInput = popup.querySelector('#endTime');
-    const breakInput = popup.querySelector('#break');
-    const totalHoursInput = popup.querySelector('#totalHours');
     
-    const updateTotalHours = () => {
-        totalHoursInput.value = calculateTotalHours(
-            startTimeInput.value, 
-            endTimeInput.value, 
-            breakInput.value
-        );
-    };
-    
-    startTimeInput.addEventListener('change', updateTotalHours);
-    endTimeInput.addEventListener('change', updateTotalHours);
-    breakInput.addEventListener('change', updateTotalHours);
-    
+   
     // Form submission
     popup.querySelector('#staffScheduleForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -2354,19 +2360,6 @@ function formatDateTimeForInput(date, time) {
     return `${formattedDate}T${time}`;
 }
 
-function calculateTotalHours(startTime, endTime, breakTime) {
-    if (!startTime || !endTime) return '0.00';
-    
-    const start = timeToMinutes(startTime);
-    const end = timeToMinutes(endTime);
-    const breakMinutes = breakTime ? timeToMinutes(breakTime) : 0;
-    
-    let totalMinutes = end - start - breakMinutes;
-    if (totalMinutes < 0) totalMinutes += 24 * 60;
-    
-    const hours = (totalMinutes / 60).toFixed(2);
-    return hours;
-}
 
 function timeToMinutes(timeStr) {
     const [hours, minutes] = timeStr.split(':').map(Number);
@@ -2382,8 +2375,7 @@ async function saveStaffScheduleChanges(zohoId, popup) {
         Date_To: popup.querySelector('#toDate').value,
         Start_Time: popup.querySelector('#startTime').value,
         End_Time: popup.querySelector('#endTime').value,
-        Break: popup.querySelector('#break').value,
-        Total_Hours: popup.querySelector('#totalHours').value
+        Break: popup.querySelector('#break').value,  
     };
     
     try {
@@ -2394,10 +2386,10 @@ async function saveStaffScheduleChanges(zohoId, popup) {
             data: formData
         };
         
-        await ZOHO.CREATOR.API.updateRecord(config);
+        // await ZOHO.CREATOR.API.updateRecord(config);
         
-        await getWeekStaffRunDetails();
-        renderWeekStaffRunRows();
+        // await getWeekStaffRunDetails();
+        // renderWeekStaffRunRows();
         
         alert('Schedule updated successfully!');
     } catch (error) {
