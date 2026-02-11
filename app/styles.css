@@ -975,3 +975,15 @@ select.form-control {
 .week-event-time-range {
     pointer-events: none !important;
 }
+
+.week-events-container {
+    position: relative;
+    min-height: 100px;
+    cursor: pointer;
+    background: transparent;
+}
+
+.week-day-column {
+    position: relative;
+    cursor: pointer;
+}

@@ -1739,6 +1739,24 @@ function renderWeekStaffRunRows(){
             renderWeekStaffRunEvents(eventsContainer, events, dateKey);
             
             dayColumn.appendChild(eventsContainer);
+             dayColumn.addEventListener('click', function(e) {
+                console.log('Day column clicked!', e.target);
+                
+                // Check if we clicked on an event box
+                const eventBox = e.target.closest('.week-event-box');
+                
+                if (eventBox) {
+                    console.log('Clicked on event, ignoring column click');
+                    return; // Let the event's own handler deal with it
+                }
+                
+                // We clicked on empty space
+                console.log('Empty space clicked!');
+                const staffName = dayColumn.dataset.staffName;
+                const dateKey = dayColumn.dataset.dateKey;
+                
+                handleEmptySpaceClick(staffName, dateKey, e);
+            });
             personRow.appendChild(dayColumn);
         }
         rowsContainer.appendChild(personRow);
@@ -2000,61 +2018,155 @@ function renderWeekEventsForRun(container, events, dateKey) {
         container.appendChild(el);
     });
 }
-function renderWeekStaffRunEvents( container, events, dateKey ){
+function renderWeekStaffRunEvents(container, events, dateKey) {
+    // Clear the container first
+    container.innerHTML = '';
+    
+    // Store dateKey on container for later use
+    container.dataset.dateKey = dateKey;
+    
+    // Make sure container is clickable
+    container.style.position = 'relative';
+    container.style.minHeight = '100%';
+    container.style.cursor = 'pointer';
+    
+    // Remove any existing click handlers
+   
+    
     events.forEach((evt, index) => {
         const el = document.createElement('div');
         el.className = `week-event-box status-Not_Started`;
         el.dataset.eventId = evt.zoho_id;
-         el.draggable = false; 
+        el.draggable = false; 
         el.dataset.viewType = 'week-person';
         el.dataset.start = evt.start_time;
         el.dataset.end = evt.end_time;
-        const topPosition = ROW_PADDING + (index * (EVENT_GAP));
+        
+        const topPosition = ROW_PADDING + (index * (run_event_height + EVENT_GAP));
         el.style.top = `${topPosition}px`;
         el.style.height = `${run_event_height}px`;
         el.style.left = '2px';
         el.style.right = '2px';
         el.style.width = 'auto';
+        el.style.cursor = 'pointer';
+        el.style.pointerEvents = 'auto';
+        el.style.position = 'absolute';
+        el.style.zIndex = '10'; // Events above background
         
         const title = document.createElement('div');
-        if( evt.run_name === 'Available' ){
-        title.className = 'week-event-staff-name-avl';
+        if(evt.run_name === 'Available') {
+            title.className = 'week-event-staff-name-avl';
         }
-        else if( evt.off === 'true' ){
+        else if(evt.off === 'true') {
             title.className = 'week-event-staff-name-off';
         }
         else {
             title.className = 'week-event-staff-name';
         }
-       
         
         title.textContent = evt.run_name || 'Unassigned';
+        title.style.pointerEvents = 'none';
         
         const time = document.createElement('div');
         time.className = 'week-event-time-range';
         time.textContent = `${evt.start_time} - ${evt.end_time}`;
+        time.style.pointerEvents = 'none';
         
         el.appendChild(title);
         el.appendChild(time);
-       
-        // el.removeEventListener('click', handleEventClick(evt) );
-    el.addEventListener('click', () => handleEventClick(evt) );  
-      
+        
+        // Click handler for existing events
+        el.addEventListener('click', (e) => {
+            console.log('Event box clicked:', evt);
+            e.stopPropagation();
+            handleEventClick(evt, dateKey);
+        });
+        
         container.appendChild(el);
-        
-    
-    
     });
-
-
-
-}
-function handleEventClick(e) {
-    console.log(e);
     
-                openStaffSchedulePopup(e);
+    // // Add click handler to the container for empty space
+    // const containerClickHandler = (e) => {
+    //     console.log('Container clicked, target:', e.target);
+    //     console.log('Container element:', container);
+    //     console.log('Target classList:', e.target.classList);
         
+    //     // Check if click was directly on the container (empty space)
+    //     // Accept clicks on the container itself OR elements with week-events-container class
+    //     if (e.target === container || 
+    //         e.target.classList.contains('week-events-container') ||
+    //         e.target.classList.contains('week-day-column')) {
+            
+    //         console.log('Empty space clicked!');
+    //         e.stopPropagation();
+    //         handleEmptySpaceClick(container, dateKey, e);
+    //     }
+    // };
+    
+    // // Store the handler reference
+    // container._clickHandler = containerClickHandler;
+    // container.addEventListener('click', containerClickHandler);
+    
+    // console.log('Container setup complete for dateKey:', dateKey, 'with', events.length, 'events');
+}
+
+function handleEventClick(eventData, dateKey) {
+    console.log('Event clicked:', eventData);
+    openStaffSchedulePopup(eventData, dateKey);
+}
+function handleEmptySpaceClick(container, dateKey, event) {
+    console.log('Empty space clicked, opening new schedule form');
+    
+    // Find the parent row to get staff index
+    
+    
+    const staffName = '';
+    
+    // Get the date from dateKey
+    const dateFromKey = parseDateKey(dateKey);
+    
+    // Calculate default times based on click position (optional)
+    let defaultStartTime = '09:00';
+    let defaultEndTime = '17:00';
+    
+    // You can calculate time based on Y position if you want:
+    // const rect = container.getBoundingClientRect();
+    // const clickY = event.clientY - rect.top;
+    // const totalHeight = rect.height;
+    // const clickPercentage = clickY / totalHeight;
+    // ... calculate time from percentage
+    
+    // Create empty event data structure
+    const emptyEventData = {
+        zoho_id: null, // null indicates new record
+        service: '', // Default to first service if available
+        staff: staffName,
+        run_name: '',
+        from_date: dateFromKey,
+        to_date: dateFromKey,
+        start_time: defaultStartTime,
+        end_time: defaultEndTime,
+        break: '00:00',
+        off: 'false'
+    };
+    
+    openStaffSchedulePopup(emptyEventData, dateKey, true); // Pass true to indicate new record
+}
+
+function parseDateKey(dateKey) {
+    // Convert dateKey format to YYYY-MM-DD
+    if (!dateKey) return '';
+    
+    const parts = dateKey.split('-');
+    if (parts[0].length === 4) {
+        // Already in YYYY-MM-DD format
+        return dateKey;
+    } else {
+        // Convert DD-MM-YYYY to YYYY-MM-DD
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
     }
+}
+
 function openStaffSchedulePopup(eventData) {
     console.log('Opening popup with data:', eventData);
     
@@ -2593,7 +2705,7 @@ function openDateReport() {
 
     const formattedDate = formatDateDDMMYYYY(currentDate);
 
-    const url = `https://creatorapp.zoho.eu/homegroup/thgtest/#Report:Manual_Rostering?&zc_LoadIn=dialog&Date_field1=${formattedDate}`;
+    const url = `https://${scope}.domportal.care/#Report:Manual_Rostering?&zc_LoadIn=dialog&Date_field1=${formattedDate}`;
 
     window.open(url, '_blank', 'noopener');
 }
