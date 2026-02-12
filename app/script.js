@@ -1534,6 +1534,8 @@ async function getWeekStaffRunDetails(){
     data.zoho_id = rec.ID;
     data.run_name = run_name;
     data.service = rec?.Site_Name?.zc_display_value;
+    data.leave_Type = rec?.leave_Type;
+    data.reason_for_leave = rec?.Reason_for_Leave;
         data.staff = rec.Staff?.zc_display_value;
         if( !runStaffList.includes(rec.Staff?.zc_display_value) && rec.Staff?.zc_display_value !== undefined && rec.Staff?.zc_display_value != '' ){
             runStaffList.push(rec.Staff?.zc_display_value);   
@@ -1622,6 +1624,8 @@ async function getWeekRunDetails() {
         data.zoho_id = rec.ID;
         data.from_date = rec.Date_From;
         data.to_date = rec.Date_To;
+        data.leave_Type = rec?.leave_Type;
+        data.reason_for_leave = rec?.Reason_for_Leave;
         data.break = rec.Break;
         data.service = rec?.Site_Name?.zc_display_value;
         if( !runRows.includes(run_name) ){
@@ -2246,65 +2250,88 @@ function formatDateForInput(dateStr) {
 
 function openStaffSchedulePopup(eventData, dateKey, isNewRecord = false) {
     console.log('Opening popup with data:', eventData, 'Is new:', isNewRecord);
-    
     const template = document.getElementById('schedulePopupTemplate');
-    
     if (!template) {
         console.error('Template not found!');
         alert('Error: Popup template not found.');
         return;
     }
-    
+
     const clone = template.cloneNode(true);
     clone.id = '';
     clone.style.display = 'block';
-    
     const popup = clone.querySelector('.schedule-popup');
     const overlay = clone.querySelector('.schedule-popup-overlay');
-    
+
     // Update header title
     if (isNewRecord) {
         popup.querySelector('.popup-header h2').textContent = 'New Staff Schedule';
         popup.querySelector('#fromDate').disabled = false;
         popup.querySelector('#toDate').disabled = false;
-    }
-     else {
+    } else {
         popup.querySelector('.popup-header h2').textContent = 'Edit Staff Schedule';
         popup.querySelector('#fromDate').disabled = true;
         popup.querySelector('#toDate').disabled = true;
     }
-    
+
     // Convert dates to proper format for input fields
     const formattedFromDate = formatDateForInput(eventData.from_date);
     const formattedToDate = formatDateForInput(eventData.to_date);
-    
+
     // Populate form fields
     popup.querySelector('#fromDate').value = formattedFromDate;
     popup.querySelector('#toDate').value = formattedToDate;
     popup.querySelector('#startTime').value = eventData.start_time || '';
     popup.querySelector('#endTime').value = eventData.end_time || '';
     popup.querySelector('#break').value = eventData.break || '00:00';
-    
+    popup.querySelector('#leaveType').value = eventData.leave_Type || '';
+    popup.querySelector('#leaveReason').value = eventData.reason_for_leave || '';
+
     // Set availability status
     const statusSelect = popup.querySelector('#availabilityStatus');
     if (eventData.off !== 'true') {
         statusSelect.value = 'Available';
     } else {
         statusSelect.value = 'Off';
-    } 
+    }
     toggleAvailabilityFields(popup);
 
-// Listen for changes
-statusSelect.addEventListener('change', () => {
-    toggleAvailabilityFields(popup);
-});
-    // Handle Site Name based on context
-    setupSiteNameField(popup, eventData, isNewRecord);
-    
+    // Listen for changes
+    statusSelect.addEventListener('change', () => {
+        toggleAvailabilityFields(popup);
+    });
+
     // Initialize custom dropdowns
     initializeCustomDropdown(popup, 'staff', runStaffList, eventData.staff);
-    initializeCustomDropdown(popup, 'run', runRows,eventData.off !== 'true' && eventData.run_name !== 'Available' ? eventData.run_name : '' );
+
+    // Handle Site Name based on context
+    // This will populate the site field
+    setupSiteNameField(popup, eventData, isNewRecord);
+
+    // NOW get the site value AFTER setupSiteNameField has run
+    let currentSite = '';
+    if (!isNewRecord) {
+        currentSite = eventData.service || '';
+    } else {
+        // For new records, get the site that was set by setupSiteNameField
+        const siteNameInput = popup.querySelector('#siteName');
+        const siteNameHidden = popup.querySelector('#siteNameHidden');
+        
+        if (siteNameInput && siteNameInput.value) {
+            currentSite = siteNameInput.value;
+        } else if (siteNameHidden && siteNameHidden.value) {
+            currentSite = siteNameHidden.value;
+        }
+    }
+
+    // Get runs based on the current site value
+    const initialRuns = currentSite ? site_run_details[currentSite] : [];
     
+    // Initialize run dropdown with filtered runs
+    initializeCustomDropdown(popup, 'run', initialRuns, 
+        eventData.off !== 'true' && eventData.run_name !== 'Available' ? eventData.run_name : ''
+    );
+
     // Add event listener to staff dropdown to update site name options
     const staffDropdown = popup.querySelector('#staffDropdown');
     staffDropdown.addEventListener('click', () => {
@@ -2316,57 +2343,73 @@ statusSelect.addEventListener('change', () => {
             }
         }
     });
+
+    // Add event listener to site name dropdown/input to update run options
+    const siteNameHidden = popup.querySelector('#siteNameHidden');
+    const siteNameInput = popup.querySelector('#siteName');
     
+    if (siteNameHidden) {
+        // For dropdown-based site selection
+        const siteNameOptions = popup.querySelector('#siteNameOptions');
+        if (siteNameOptions) {
+            siteNameOptions.addEventListener('click', (e) => {
+                if (e.target.classList.contains('dropdown-option')) {
+                    setTimeout(() => {
+                        const selectedSite = siteNameHidden.value;
+                        updateRunDropdownForSite(popup, selectedSite);
+                    }, 100);
+                }
+            });
+        }
+    }
+
     document.body.appendChild(clone);
+
     flatpickr(popup.querySelector('#break'), {
-    enableTime: true,
-    noCalendar: true,
-    dateFormat: "H:i",
-    time_24hr: true
-});
-    
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "H:i",
+        time_24hr: true
+    });
+
     const closePopup = () => {
         document.body.removeChild(clone);
     };
-    
+
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay) closePopup();
     });
-    
+
     popup.querySelector('.close-popup-btn').addEventListener('click', closePopup);
     popup.querySelector('.btn-cancel').addEventListener('click', closePopup);
-    
-    // Auto-calculate total hours
+
     // Form submission
     popup.querySelector('#staffScheduleForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-         const status = popup.querySelector('#availabilityStatus').value;
+        const status = popup.querySelector('#availabilityStatus').value;
         const run = popup.querySelector('#run').value;
         const leaveType = popup.querySelector('#leaveType')?.value;
         const staff = popup.querySelector('#staff').value;
 
         // Basic validations
         if (!staff) {
-            showToast('Staff is required.',"error");
+            showToast('Staff is required.', "error");
             return;
         }
-
         if (status === 'Available' && !run) {
-            showToast('Run is required when status is Available.',"error");
+            showToast('Run is required when status is Available.', "error");
+            return;
+        }
+        if (status === 'Off' && !leaveType) {
+            showToast('Leave type is required when status is Off.', "error");
             return;
         }
 
-        if (status === 'Off' && !leaveType) {
-            showToast('Leave type is required when status is Off.',"error");
-            return;
-        }
-        
         if (isNewRecord) {
             await createNewStaffSchedule(popup, dateKey);
         } else {
             await saveStaffScheduleChanges(eventData.zoho_id, popup);
         }
-        // closePopup();
     });
 }
 function toggleAvailabilityFields(popup) {
@@ -2391,7 +2434,30 @@ function toggleAvailabilityFields(popup) {
     }
 }
 
+function updateRunDropdownForSite(popup, siteName) {
+    const runOptions = site_run_details[siteName];
+    const runDropdownMenu = popup.querySelector('#runDropdownMenu');
+    const runOptionsContainer = popup.querySelector('#runOptions');
+    const runDropdownText = popup.querySelector('#runDropdown .dropdown-text');
+    const runHiddenInput = popup.querySelector('#run');
+    const runSearchInput = popup.querySelector('#runSearch');
 
+    // Clear existing options
+    runOptionsContainer.innerHTML = '';
+    
+    // Clear current selection
+    runHiddenInput.value = '';
+    runDropdownText.textContent = 'Select Run';
+    runDropdownText.classList.add('placeholder');
+
+    // Render new options
+    renderDropdownOptions(runOptionsContainer, runOptions, null, runDropdownText, runHiddenInput, runDropdownMenu, 'run');
+
+    // Reset search input
+    if (runSearchInput) {
+        runSearchInput.value = '';
+    }
+}
 function setupSiteNameField(popup, eventData, isNewRecord) {
     const siteNameInputContainer = popup.querySelector('#siteNameInputContainer');
     const siteNameDropdownContainer = popup.querySelector('#siteNameDropdownContainer');
@@ -2440,10 +2506,14 @@ function updateSiteNameForStaff(popup, staffName) {
         siteNameInputContainer.style.display = 'block';
         siteNameDropdownContainer.style.display = 'none';
         siteNameInput.value = '';
+        // Clear runs when no site
+        updateRunDropdownForSite(popup, '');
     } else if (staffServices.length === 1) {
         siteNameInputContainer.style.display = 'block';
         siteNameDropdownContainer.style.display = 'none';
         siteNameInput.value = staffServices[0].zc_display;
+        // Update runs for the single site
+        updateRunDropdownForSite(popup, staffServices[0].zc_display);
     } else {
         siteNameInputContainer.style.display = 'none';
         siteNameDropdownContainer.style.display = 'block';
@@ -2454,37 +2524,42 @@ function updateSiteNameForStaff(popup, staffName) {
         const optionsContainer = popup.querySelector('#siteNameOptions');
         const dropdownText = popup.querySelector('#siteNameDropdown .dropdown-text');
         const hiddenInput = popup.querySelector('#siteNameHidden');
-        
+
         // Clear existing options
         optionsContainer.innerHTML = '';
-        
+
         // Render new options
         renderDropdownOptions(optionsContainer, siteOptions, null, dropdownText, hiddenInput, dropdownMenu);
-        
+
+        // Set first site as default and update runs
+        const firstSite = siteOptions[0];
+        dropdownText.textContent = firstSite;
+        dropdownText.classList.remove('placeholder');
+        hiddenInput.value = firstSite;
+        updateRunDropdownForSite(popup, firstSite);
+
         // Re-initialize the dropdown functionality
         const dropdownBtn = popup.querySelector('#siteNameDropdown');
         const searchInput = popup.querySelector('#siteNameSearch');
-        
+
         // Remove old listeners and add new ones
         const newDropdownBtn = dropdownBtn.cloneNode(true);
         dropdownBtn.parentNode.replaceChild(newDropdownBtn, dropdownBtn);
-        
+
         newDropdownBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             const isOpen = dropdownMenu.classList.contains('show');
-            
             document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
                 menu.classList.remove('show');
                 menu.previousElementSibling.classList.remove('active');
             });
-            
             if (!isOpen) {
                 dropdownMenu.classList.add('show');
                 newDropdownBtn.classList.add('active');
                 searchInput.focus();
             }
         });
-        
+
         searchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
             const filteredOptions = siteOptions.filter(opt => 
@@ -2715,6 +2790,8 @@ const run_id = runRowDetails[popup.querySelector('#run').value];
         Start_Time: popup.querySelector('#startTime').value,
         End_Time: popup.querySelector('#endTime').value,
         Break: popup.querySelector('#break').value,
+        Reason_for_Leave: popup.querySelector('#leaveReason').value,
+        leave_Type: popup.querySelector('#leaveType').value,    
     };
     
     console.log('Creating new schedule with data:', formData);
@@ -2752,7 +2829,10 @@ const run_id = runRowDetails[popup.querySelector('#run').value];
         Start_Time: popup.querySelector('#startTime').value,
         End_Time: popup.querySelector('#endTime').value,
         Break: popup.querySelector('#break').value,  
+        Reason_for_Leave: popup.querySelector('#leaveReason').value,
+        leave_Type: popup.querySelector('#leaveType').value, 
     };
+    console.log(formData);
     
     try {
         const config = {
@@ -2763,40 +2843,42 @@ const run_id = runRowDetails[popup.querySelector('#run').value];
         };
         
         // await ZOHO.CREATOR.API.updateRecord(config);
-        const dateKey = toYYYYMMDD(popup.querySelector('#fromDate').value);
+        const dateKey = popup.querySelector('#fromDate').value;
         console.log(dateKey);
+        console.log(staffRunEventDatabase);
         
-//         if (staffRunEventDatabase[dateKey]) {
+        if (staffRunEventDatabase[dateKey]) {
 
-//     const record = staffRunEventDatabase[dateKey].find(
-//         e => e.zoho_id === zohoId
-//     );
+    const record = staffRunEventDatabase[dateKey].find(
+        e => e.zoho_id === zohoId
+    );
 
-//     if (record) {
+    if (record) {
 
-//         // Update only required fields
-//         record.start_time = popup.querySelector('#startTime').value;
-//         record.end_time   = popup.querySelector('#endTime').value;
-//         record.break      = popup.querySelector('#break').value;
+        // Update only required fields
+        record.start_time = popup.querySelector('#startTime').value;
+        record.end_time   = popup.querySelector('#endTime').value;
+        record.break      = popup.querySelector('#break').value;
+        record.leave_Type = popup.querySelector('#leaveType').value;
+        record.reason_for_leave = popup.querySelector('#leaveReason').value;
+        record.off = popup.querySelector('#availabilityStatus').value === 'Off' ? "true" : "false";
 
-//         record.off = popup.querySelector('#availabilityStatus').value === 'Off' ? "true" : "false";
+        // Update run name if Care_Group changed
+        if (popup.querySelector('#run').value) {
+            record.run_name = popup.querySelector('#run').value;
+        }
 
-//         // Update run name if Care_Group changed
-//         if (popup.querySelector('#run').value) {
-//             record.run_name = popup.querySelector('#run').value;
-//         }
-
-//         // Update staff ONLY if changed
-//         const newStaff = popup.querySelector('#staff').value;
-//         if (record.staff !== newStaff) {
-//             record.staff = newStaff;
-//         }
-//     }
-// }
+        // Update staff ONLY if changed
+        const newStaff = popup.querySelector('#staff').value;
+        if (record.staff !== newStaff) {
+            record.staff = newStaff;
+        }
+    }
+}
  
         
         // await getWeekStaffRunDetails();
-        // renderWeekStaffRunRows();
+        renderWeekStaffRunRows();
         
         alert('Schedule updated successfully!');
     } catch (error) {
