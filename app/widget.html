@@ -3221,9 +3221,26 @@ min-width: 100px;
             </div>
             
             <form id="staffScheduleForm">
-                <div class="form-group">
+                <div class="form-group" id="siteNameGroup">
                     <label>Site Name *</label>
-                    <input type="text" id="siteName" class="form-control" readonly>
+                    <div id="siteNameInputContainer">
+                        <input type="text" id="siteName" class="form-control" readonly>
+                    </div>
+                    <div id="siteNameDropdownContainer" style="display: none;">
+                        <div class="custom-dropdown">
+                            <div class="dropdown-selected" id="siteNameDropdown">
+                                <span class="dropdown-text placeholder">Select Site</span>
+                                <span class="dropdown-arrow">▼</span>
+                            </div>
+                            <div class="dropdown-menu" id="siteNameDropdownMenu">
+                                <input type="text" class="dropdown-search" id="siteNameSearch" placeholder="Search site...">
+                                <div class="dropdown-options" id="siteNameOptions">
+                                    <!-- Options will be populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="siteNameHidden" name="siteName">
+                    </div>
                 </div>
                 
                 <!-- Custom Staff Dropdown -->
@@ -3764,13 +3781,15 @@ function hideLoader() {
              employees_config = {
             app_name,
             report_name: "Daily_Shift_Report",
-            criteria: `Site_Name.ID == ${serviceList} && Date_From >= '${zoho_start_date}' &&  Date_From <= '${zoho_end_date}' && Available_Status == "Available"  `
+            criteria: `Site_Name.ID == ${serviceList} && Date_From >= '${zoho_start_date}' &&  Date_From <= '${zoho_end_date}' && Available_Status == "Available"  `,
+            max_records: 1000
         };
 
         employees_config1 = {
             app_name,
             report_name: "Bookings_Backend",
-            criteria: `Site_Name.ID == ${serviceList} && Care_Providers != null && Status != "Inactive" && Date_field1 >= '${zoho_start_date}' && Date_field1 <= '${zoho_end_date}' `
+            criteria: `Site_Name.ID == ${serviceList} && Care_Providers != null && Status != "Inactive" && Date_field1 >= '${zoho_start_date}' && Date_field1 <= '${zoho_end_date}' `,
+            max_records: 1000
         }
         }
     try {
@@ -3890,7 +3909,7 @@ function hideLoader() {
         }
         console.error("getTodayAllEmployees failed:", err);
     }
-    console.log( JSON.stringify(employeeDetails));
+    
     
 }
 
@@ -4945,8 +4964,14 @@ if (existing) {
 if (isDayView) {
     await getBookings();
 } else {
-    resetWeekPagination();                             
-    const nextCursor = await getBookingsForWeek(null); 
+    resetWeekPagination();   
+    let nextCursor;
+    if( currentViewType !== 'run' || currentViewType !== 'staff' ){                         
+        nextCursor = await getBookingsForWeek(null); 
+    }
+    else{
+        nextCursor = getBookingsForWeek(null); 
+    }
     weekFetchCursor  = nextCursor;
     weekFetchHasMore = !!nextCursor;
 }
@@ -5613,7 +5638,7 @@ el.addEventListener('mouseup', (e) => {
     const dy = Math.abs(e.clientY - mouseDownY);
 
     // If mouse moved → it was a drag, not a click
-    if (dx > CLICK_TOLERANCE || dy > CLICK_TOLERANCE) return;
+    if (dx > CLICK_TOLERANCE || dy > CLICK_TOLERANCE || evt.status === 'Completed' ) return;
       openEventModal(evt);
 
 
@@ -6029,7 +6054,7 @@ el.addEventListener('mouseup', (e) => {
     const dx = Math.abs(e.clientX - mouseDownX);
     const dy = Math.abs(e.clientY - mouseDownY);
 
-    if (dx > CLICK_TOLERANCE || dy > CLICK_TOLERANCE) return;
+    if (dx > CLICK_TOLERANCE || dy > CLICK_TOLERANCE || evt.status === 'Completed' ) return;
 
     openEventModal(evt);
 
