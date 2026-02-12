@@ -2738,7 +2738,7 @@ min-width: 100px;
         <div class="view-switcher">
             <button class="view-switcher-btn" onclick="toggleViewSwitcher(event)">
                 
-                <span id="currentViewType">Visit</span>
+                <span id="currentViewType"></span>
                 <i class="fa fa-chevron-down" style="font-size: 10px;"></i>
             </button>
             <div class="view-switcher-dropdown" id="viewSwitcherDropdown">
@@ -4903,7 +4903,12 @@ if (existing) {
     currentView = view;
     clearAllFilters();
     // Reset to employee view when switching
+    if( view === 'day' ){
     currentViewType = 'employee';
+    }
+    else{
+     currentViewType = 'staff';   
+    }
    
     
     const dayViewBtn = document.getElementById('dayViewBtn');
@@ -4926,7 +4931,7 @@ if (existing) {
         weekView.classList.remove('active');
         await renderDayView();
     } else {
-         document.getElementById('currentViewType').textContent = 'Visit';
+         document.getElementById('currentViewType').textContent = 'Staff';
         await getTodayAllEmployees();
         resetWeekPagination();                             
         const nextCursor = await getBookingsForWeek(null); 
@@ -4936,7 +4941,7 @@ if (existing) {
         dayViewBtn.classList.remove('active');
         weekView.classList.add('active');
         dayView.classList.remove('active');
-        await renderWeekView();
+        await renderWeekStaffView();
         startWeekBackgroundFetch();   
     }
     updateDateTitle();

@@ -1314,6 +1314,15 @@ function updateViewSwitcherOptions() {
     } else {
         // Week view options: Employee and Person
         const employeeOption = document.createElement('div');
+
+         const staffOption = document.createElement('div');
+        staffOption.className = 'view-switcher-option' + (currentViewType === 'staff' ? ' selected' : '');
+        staffOption.innerHTML = `
+            <span>Staff</span>
+            ${currentViewType === 'staff' ? '<i class="fa fa-check"></i>' : ''}
+        `;
+        staffOption.onclick = () => selectViewType('staff');
+
         employeeOption.className = 'view-switcher-option' + (currentViewType === 'employee' ? ' selected' : '');
         employeeOption.innerHTML = `
             <span>Visit</span>
@@ -1337,18 +1346,12 @@ function updateViewSwitcherOptions() {
         `;
         runOption.onclick = () => selectViewType('run');
 
-        const staffOption = document.createElement('div');
-        staffOption.className = 'view-switcher-option' + (currentViewType === 'staff' ? ' selected' : '');
-        staffOption.innerHTML = `
-            <span>Staff</span>
-            ${currentViewType === 'staff' ? '<i class="fa fa-check"></i>' : ''}
-        `;
-        staffOption.onclick = () => selectViewType('staff');
-        
+        dropdown.appendChild(staffOption);
+         dropdown.appendChild(runOption);
         dropdown.appendChild(employeeOption);
         dropdown.appendChild(personOption);
-        dropdown.appendChild(runOption);
-        dropdown.appendChild(staffOption);
+       
+        
     }
 }
 function getEventsForStaffRun(staffName,dateKey ){
@@ -1744,8 +1747,14 @@ function renderWeekStaffRunRows(){
             eventsContainer.className = 'week-events-container';
             const events = person === '—' ? [] : getEventsForStaffRun(person, dateKey);
             renderWeekStaffRunEvents(eventsContainer, events, dateKey);
+            const date1 = new Date(dateKey);
+            const date2 = new Date(currentDate);
+            date1.setHours(0,0,0,0);
+            date2.setHours(0,0,0,0);
+            
             
             dayColumn.appendChild(eventsContainer);
+            if( date1 >= date2 ){
              dayColumn.addEventListener('click', function(e) {
                 console.log('Day column clicked!', e.target);
                 
@@ -1762,6 +1771,7 @@ function renderWeekStaffRunRows(){
                 const staffName = dayColumn.dataset.staffName;                
                 handleEmptySpaceClick(person, dateKey, e);
             });
+        }
             personRow.appendChild(dayColumn);
         }
         rowsContainer.appendChild(personRow);
@@ -2079,8 +2089,12 @@ function renderWeekStaffRunEvents(container, events, dateKey) {
         
         el.appendChild(title);
         el.appendChild(time);
-        
+        const date1 = new Date(dateKey);
+        const date2 = new Date(currentDate);
+        date1.setHours(0,0,0,0);
+        date2.setHours(0,0,0,0);
         // Click handler for existing events
+        if( date1 >= date2 ){
         el.addEventListener('click', (e) => {
             console.log(dateKey);
             
@@ -2088,7 +2102,7 @@ function renderWeekStaffRunEvents(container, events, dateKey) {
             e.stopPropagation();
             handleEventClick(evt, dateKey);
         });
-        
+        }
         container.appendChild(el);
     });
     
