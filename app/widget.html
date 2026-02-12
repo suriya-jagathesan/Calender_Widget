@@ -7,6 +7,8 @@
     <script src="script.js"></script>
     <script src="https://cdn.jsdelivr.net"></script>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <title>Day & Week Calendar View - With Employees</title>
     <link
   rel="stylesheet"
@@ -3327,7 +3329,7 @@ min-width: 100px;
                 
                 <div class="form-group">
                     <label>Break</label>
-                    <input type="time" id="break" class="form-control" value="00:00">
+                   <input type="text" id="break" class="form-control">
                 </div>
                 
                 
@@ -3756,7 +3758,7 @@ function hideLoader() {
         console.log(services_details);
         // await getTodayAllEmployees();
         await getBookings();
-
+        getRunGroups();
     } catch (err) {
         console.log("getZohoData failed:", err);
     }

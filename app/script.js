@@ -1017,7 +1017,9 @@
       syncScroll();
       hideLoader();
   }
+  let site_run_details = {};
   async function getRunGroups() {
+      site_run_details = {};
       runGroups = [];
       runGroups.push(''); // Empty group first
       
@@ -1026,14 +1028,24 @@
       try {
           const run_config = {
               app_name: app_name,
-              report_name: "Care_Group_Report", // Adjust to your actual report name
-              criteria: `Site_Name.ID == ${serviceList}`
+              report_name: "Care_Groups_Report", // Adjust to your actual report name
+              criteria: `Site_Name.ID == ${serviceList} && Status == "Active"`
           };
           
           const run_resp = await ZOHO.CREATOR.DATA.getRecords(run_config);
           
           if (run_resp.code === 3000 && Array.isArray(run_resp.data)) {
               run_resp.data.forEach(rec => {
+                  const site = rec.Site_Name?.zc_display_value?.trim();
+                    const careGroup = rec.Care_Group_Name?.trim();
+
+                    if (!site || !careGroup) return;
+
+                    if (!site_run_details[site]) {
+                        site_run_details[site] = [];
+                    }
+
+                    site_run_details[site].push(careGroup);
                   const runName = rec.Care_Group_Name; // Adjust field name
                   const runId = rec.ID;
                   
@@ -1045,6 +1057,8 @@
           }
           
           runGroups.sort();
+          console.log( JSON.stringify(site_run_details));
+          
       } catch (err) {
           console.error("Error fetching run groups:", err);
       }
@@ -1604,6 +1618,11 @@ async function getWeekRunDetails() {
         data.staff = rec.Staff?.zc_display_value;
         data.start_time = rec?.Start_Time;
         data.end_time = rec?.End_Time;
+        data.off = rec?.Available_Status === 'Off' ? "true" : "false";
+        data.zoho_id = rec.ID;
+        data.from_date = rec.Date_From;
+        data.to_date = rec.Date_To;
+        data.break = rec.Break;
         data.service = rec?.Site_Name?.zc_display_value;
         if( !runRows.includes(run_name) ){
             runRows.push(run_name);
@@ -1832,8 +1851,12 @@ function renderWeekRunRows(){
             eventsContainer.className = 'week-events-container';
             const events = person === '—' ? [] : getEventsForWeekRun(person, dateKey);
             renderWeekEventsForRun(eventsContainer, events, dateKey);
-            
+            const date1 = new Date(dateKey);
+            const date2 = new Date(currentDate);
+            date1.setHours(0,0,0,0);
+            date2.setHours(0,0,0,0);
             dayColumn.appendChild(eventsContainer);
+            
             personRow.appendChild(dayColumn);
         }
         rowsContainer.appendChild(personRow);
@@ -2030,6 +2053,19 @@ function renderWeekEventsForRun(container, events, dateKey) {
         
         el.appendChild(title);
         el.appendChild(time);
+        const date1 = new Date(dateKey);
+        const date2 = new Date(currentDate);
+        date1.setHours(0,0,0,0);
+        date2.setHours(0,0,0,0);
+        if( date1 >= date2 ){
+        el.addEventListener('click', (e) => {
+            console.log(dateKey);
+            
+            console.log('Event box clicked:', evt);
+            e.stopPropagation();
+            handleEventClick(evt, dateKey);
+        });
+        }
         container.appendChild(el);
     });
 }
@@ -2247,7 +2283,7 @@ function openStaffSchedulePopup(eventData, dateKey, isNewRecord = false) {
     popup.querySelector('#toDate').value = formattedToDate;
     popup.querySelector('#startTime').value = eventData.start_time || '';
     popup.querySelector('#endTime').value = eventData.end_time || '';
-    popup.querySelector('#break').value = eventData.break || '--:--';
+    popup.querySelector('#break').value = eventData.break || '00:00';
     
     // Set availability status
     const statusSelect = popup.querySelector('#availabilityStatus');
@@ -2282,6 +2318,12 @@ statusSelect.addEventListener('change', () => {
     });
     
     document.body.appendChild(clone);
+    flatpickr(popup.querySelector('#break'), {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: "H:i",
+    time_24hr: true
+});
     
     const closePopup = () => {
         document.body.removeChild(clone);
@@ -2319,11 +2361,11 @@ statusSelect.addEventListener('change', () => {
             return;
         }
         
-        // if (isNewRecord) {
-        //     await createNewStaffSchedule(popup, dateKey);
-        // } else {
-        //     await saveStaffScheduleChanges(eventData.zoho_id, popup);
-        // }
+        if (isNewRecord) {
+            await createNewStaffSchedule(popup, dateKey);
+        } else {
+            await saveStaffScheduleChanges(eventData.zoho_id, popup);
+        }
         // closePopup();
     });
 }
@@ -2528,7 +2570,7 @@ function initializeCustomDropdown(container, fieldName, options, selectedValue) 
     const hiddenInput = container.querySelector(`#${fieldName}`);
     
     // Populate options
-    renderDropdownOptions(optionsContainer, options, selectedValue, dropdownText, hiddenInput, dropdownMenu);
+    renderDropdownOptions(optionsContainer, options, selectedValue, dropdownText, hiddenInput, dropdownMenu,fieldName);
     
     // Set initial value
     if (selectedValue) {
@@ -2560,7 +2602,7 @@ function initializeCustomDropdown(container, fieldName, options, selectedValue) 
         const filteredOptions = options.filter(opt => 
             opt.toLowerCase().includes(searchTerm)
         );
-        renderDropdownOptions(optionsContainer, filteredOptions, selectedValue, dropdownText, hiddenInput, dropdownMenu);
+        renderDropdownOptions(optionsContainer, filteredOptions, selectedValue, dropdownText, hiddenInput, dropdownMenu,fieldName);
     });
     
     // Close dropdown when clicking outside
@@ -2573,7 +2615,7 @@ function initializeCustomDropdown(container, fieldName, options, selectedValue) 
 }
 
 
-function renderDropdownOptions(container, options, selectedValue, dropdownText, hiddenInput, dropdownMenu) {
+function renderDropdownOptions(container, options, selectedValue, dropdownText, hiddenInput, dropdownMenu,fieldName) {
     container.innerHTML = '';
     
     if (options.length === 0) {
@@ -3433,3 +3475,4 @@ function getRunFromEvents() {
     
     return Array.from(employeeSet);
 }
+
