@@ -765,6 +765,10 @@ select.form-control {
 .dropdown-selected:hover {
     border-color: #999;
 }
+.hidden {
+    display: none !important;
+}
+
 
 .dropdown-selected.active {
     border-color: #007bff;

@@ -2256,6 +2256,12 @@ function openStaffSchedulePopup(eventData, dateKey, isNewRecord = false) {
     } else {
         statusSelect.value = 'Off';
     } 
+    toggleAvailabilityFields(popup);
+
+// Listen for changes
+statusSelect.addEventListener('change', () => {
+    toggleAvailabilityFields(popup);
+});
     // Handle Site Name based on context
     setupSiteNameField(popup, eventData, isNewRecord);
     
@@ -2292,14 +2298,57 @@ function openStaffSchedulePopup(eventData, dateKey, isNewRecord = false) {
     // Form submission
     popup.querySelector('#staffScheduleForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (isNewRecord) {
-            await createNewStaffSchedule(popup, dateKey);
-        } else {
-            await saveStaffScheduleChanges(eventData.zoho_id, popup);
+         const status = popup.querySelector('#availabilityStatus').value;
+        const run = popup.querySelector('#run').value;
+        const leaveType = popup.querySelector('#leaveType')?.value;
+        const staff = popup.querySelector('#staff').value;
+
+        // Basic validations
+        if (!staff) {
+            showToast('Staff is required.',"error");
+            return;
         }
+
+        if (status === 'Available' && !run) {
+            showToast('Run is required when status is Available.',"error");
+            return;
+        }
+
+        if (status === 'Off' && !leaveType) {
+            showToast('Leave type is required when status is Off.',"error");
+            return;
+        }
+        
+        // if (isNewRecord) {
+        //     await createNewStaffSchedule(popup, dateKey);
+        // } else {
+        //     await saveStaffScheduleChanges(eventData.zoho_id, popup);
+        // }
         // closePopup();
     });
 }
+function toggleAvailabilityFields(popup) {
+    const status = popup.querySelector('#availabilityStatus').value;
+
+    const runGroup = popup.querySelector('#runDropdown').closest('.form-group');
+    const leaveTypeGroup = popup.querySelector('#leaveTypeGroup');
+    const leaveReasonGroup = popup.querySelector('#leaveReasonGroup');
+    const runHiddenInput = popup.querySelector('#run');
+
+    if (status === 'Off') {
+        runGroup.classList.add('hidden');
+        runHiddenInput.value = '';
+
+        leaveTypeGroup.classList.remove('hidden');
+        leaveReasonGroup.classList.remove('hidden');
+    } else {
+        runGroup.classList.remove('hidden');
+
+        leaveTypeGroup.classList.add('hidden');
+        leaveReasonGroup.classList.add('hidden');
+    }
+}
+
 
 function setupSiteNameField(popup, eventData, isNewRecord) {
     const siteNameInputContainer = popup.querySelector('#siteNameInputContainer');
