@@ -4068,7 +4068,7 @@ function getEmployeeIconByCondition(employee, events) {
             };
             try {
                 booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
-                console.log(JSON.stringify(booking_resp) );
+                
                 
                 
                 
@@ -5268,15 +5268,15 @@ const workingHours = total_mins / 60;
 let displayHours = workingHours > 0 ? workingHours.toFixed(1) : '0.0';
 
 // Get contracted hours from shift data
-const shiftData = shiftsMap[employee];
-let contractedHours = '0.0';
+const shiftData = shiftsMap[employee] || [];
 let contractedMinutes = 0;
 
-if (shiftData) {
-    contractedMinutes = shiftData.endMinutes - shiftData.startMinutes;
-    contractedHours = (contractedMinutes / 60).toFixed(1);
-}
+shiftData.forEach(s => {
+    contractedMinutes += (s.endMinutes - s.startMinutes);
+});
+console.log(`${employee} - ${contractedMinutes} - ${JSON.stringify(shiftData)} `);
 
+let contractedHours = (contractedMinutes / 60).toFixed(1);
 let percentage = 0;
 if (contractedMinutes > 0) {
     percentage = Math.round((total_mins / contractedMinutes) * 100);
@@ -5366,14 +5366,14 @@ const workingHours = total_mins / 60;
 let displayHours = workingHours > 0 ? workingHours.toFixed(1) : '0.0';
 
 // Get contracted hours from shift data
-const shiftData = shiftsMap[employee];
-let contractedHours = '0.0';
+const shiftData = shiftsMap[employee] || [];
 let contractedMinutes = 0;
 
-if (shiftData) {
-    contractedMinutes = shiftData.endMinutes - shiftData.startMinutes;
-    contractedHours = (contractedMinutes / 60).toFixed(1);
-}
+shiftData.forEach(s => {
+    contractedMinutes += (s.endMinutes - s.startMinutes);
+});
+
+let contractedHours = (contractedMinutes / 60).toFixed(1);
 
 // ✅ CALCULATE PERCENTAGE
 let percentage = 0;
@@ -7376,27 +7376,32 @@ document.addEventListener('mouseout', e => {
 document.addEventListener('scroll', hideTooltip, true);
 document.addEventListener('mousedown', hideTooltip);
 function renderEmployeeWorkingHours(container, employee, shiftsData) {
-    if (!shiftsData[employee]) return;
-    
-    const shift = shiftsData[employee];
-    const hourWidth = 100; // PIXELS_PER_HOUR
-    
-    const startHour = Math.floor(shift.startMinutes / 60);
-    const startMinute = shift.startMinutes % 60;
-    const duration = shift.endMinutes - shift.startMinutes;
-    
-    const left = (startHour * hourWidth) + ((startMinute / 60) * hourWidth);
-    const width = (duration / 60) * hourWidth;
-    
-    const indicator = document.createElement('div');
-    indicator.className = 'employee-working-hours';
-    indicator.style.left = left + 'px';
-    indicator.style.width = width + 'px';
-    indicator.title = `Working hours: ${minutesToHHMM(shift.startMinutes)} - ${minutesToHHMM(shift.endMinutes)}`;
-    
-    container.appendChild(indicator);
+    const shifts = shiftsData[employee];
+    if (!Array.isArray(shifts) || shifts.length === 0) return;
+
+    const hourWidth = 100;
+
+    shifts.forEach(shift => {
+        const startHour = Math.floor(shift.startMinutes / 60);
+        const startMinute = shift.startMinutes % 60;
+        const duration = shift.endMinutes - shift.startMinutes;
+
+        const left = (startHour * hourWidth) + ((startMinute / 60) * hourWidth);
+        const width = (duration / 60) * hourWidth;
+
+        const indicator = document.createElement('div');
+        indicator.className = 'employee-working-hours';
+        indicator.style.left = left + 'px';
+        indicator.style.width = width + 'px';
+        indicator.title =
+            `Working hours: ${minutesToHHMM(shift.startMinutes)} - ${minutesToHHMM(shift.endMinutes)}`;
+
+        container.appendChild(indicator);
+    });
 }
+
 let shiftsMap = {};
+
 async function getEmployeeShifts(date) {
     const dateStr = formatDateDDMMYYYY(date);
     const serviceList = `[${services.join(",")}]`;
@@ -7418,23 +7423,37 @@ async function getEmployeeShifts(date) {
                 const staffName = rec.Staff.zc_display_value;
                 const startTime = rec.Start_Time; 
                 const endTime = rec.End_Time;     
-                
-                if (startTime && endTime) {
-                    const [startHour, startMin] = startTime.split(':').map(Number);
-                    const [endHour, endMin] = endTime.split(':').map(Number);
-                    
-                    shiftsMap[staffName] = {
-                        startMinutes: startHour * 60 + startMin,
-                        endMinutes: endHour * 60 + endMin
-                    };
+
+                if (!startTime || !endTime) return;
+
+                const [startHour, startMin] = startTime.split(':').map(Number);
+                const [endHour, endMin] = endTime.split(':').map(Number);
+
+                const startMinutes = startHour * 60 + startMin;
+                const endMinutes = endHour * 60 + endMin;
+
+                if (!shiftsMap[staffName]) {
+                    shiftsMap[staffName] = [];
+                }
+
+                // Ignore duplicate shifts with same start & end
+                const exists = shiftsMap[staffName].some(
+                    s => s.startMinutes === startMinutes && s.endMinutes === endMinutes
+                );
+
+                if (!exists) {
+                    shiftsMap[staffName].push({ startMinutes, endMinutes });
                 }
             });
         }
+        console.log(shiftsMap);
+        
     } catch (err) {
         console.log("Error fetching employee shifts:", err);
         return {};
     }
 }
+
 async function populateInsightsTable(evt) {
   const tbody = document.getElementById('insightsTableBody');
   tbody.innerHTML = '';
