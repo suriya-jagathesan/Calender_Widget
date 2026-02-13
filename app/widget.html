@@ -2267,7 +2267,7 @@ min-width: 100px;
     top: 0;
     bottom: 0;
     border: 0px;
-    /* pointer-events: auto; */
+    pointer-events: none;
     z-index: 5;
 }
 .employee-working-hours::after {
@@ -4247,6 +4247,8 @@ function renderWeekSummaryRow() {
 let resizeDebounceTimer = null;
 let resizeDirtyEvent = null;
         function startResize(e, evt, direction) {
+            console.log("Resize Called");
+            
             if (evt.Time_Critical_Visit === "Yes") {
         showToast("Time Critical Visit - Time cannot be changed", "error");
         return;
@@ -4304,6 +4306,7 @@ let resizeDirtyEvent = null;
 
         async function updateEventZoho(evt){
             
+            console.log(`Updating Data with db  ${JSON.stringify(evt) }`);
             
             const key = toYYYYMMDD( evt.date );            
             if (!eventDatabase[key]) {
@@ -4319,8 +4322,8 @@ let resizeDirtyEvent = null;
             
             
             let duration = evt.endMinutes - evt.startMinutes; 
-            const fromDateTime = evt.From_Date_Time || formatDateStringWithMinutes(evt.from_date, evt.actualStartMinutes);
-            const toDateTime = evt.To_Date_Time || formatDateStringWithMinutes(evt.to_date, evt.actualEndMinutes);
+            const fromDateTime = evt.From_Date_Time || formatDateStringWithMinutes(evt.from_date, evt.startMinutes);
+            const toDateTime = evt.To_Date_Time || formatDateStringWithMinutes(evt.to_date, evt.endMinutes);
 
             var update_config = {
                 app_name: app_name,    
@@ -4329,8 +4332,8 @@ let resizeDirtyEvent = null;
                 payload: {
                     "data": {
                 "Care_Providers": final_emp,
-                "Start_time": `${minutesToHHMM(evt.actualStartMinutes || evt.startMinutes)}`,
-                "End_time": `${minutesToHHMM(evt.actualEndMinutes || evt.endMinutes)}`,
+                "Start_time": `${minutesToHHMM( evt.startMinutes)}`,
+                "End_time": `${minutesToHHMM( evt.endMinutes)}`,
                 
                 "From_Date_Time": fromDateTime,
                 "To_Date_Time": toDateTime,
@@ -4443,6 +4446,7 @@ function showTimeChangeConfirmation() {
     
     if (pendingTimeChange.type === 'resize') {
         const evt = pendingTimeChange.event;
+        console.log(evt);
         
         
         const oldStartActual = pendingTimeChange.oldStart;
@@ -5608,7 +5612,7 @@ function syncScroll() {
                     lockIcon.title = 'Time Critical Visit - Time cannot be changed';
                     el.appendChild(lockIcon);
                 }
-                if( evt.status === "Completed"  ){
+                if( evt.status === "Completed" || evt.isMultiDay  ){
                     el.appendChild(title);
                 }
                 else{
@@ -6218,6 +6222,9 @@ document.body.classList.remove('dragging-active');
         }
 
         function handleDragLeave(e) {
+            console.log(!e.currentTarget.contains(e.relatedTarget));
+            
+            
             if (!e.currentTarget.contains(e.relatedTarget)) {
                 e.currentTarget.classList.remove('drop-highlight');
             }
@@ -6229,6 +6236,8 @@ document.body.classList.remove('dragging-active');
 
     const slot = e.currentTarget;
     slot.classList.remove('drop-highlight');   
+    console.log(`Drop Place ${e} ${!Array.isArray(draggedEventData) || draggedEventData.length === 0    }  ` );
+    
     if (!Array.isArray(draggedEventData) || draggedEventData.length === 0) {
         return;
     }
@@ -7378,7 +7387,7 @@ function renderEmployeeWorkingHours(container, employee, shiftsData) {
     const date1 = new Date();          // current date
     const date2 = new Date(currentDate);   // date from key
     
-    console.log(`${employee} - ${shiftsData} `);
+    // console.log(`${employee} - ${shiftsData} `);
     
 
     date1.setHours(0, 0, 0, 0);
@@ -7389,7 +7398,7 @@ function renderEmployeeWorkingHours(container, employee, shiftsData) {
     const hourWidth = 100;
 
     shifts.forEach(shift => {
-        console.log(shift);
+        // console.log(shift);
         
         const startHour = Math.floor(shift.startMinutes / 60);
         const startMinute = shift.startMinutes % 60;

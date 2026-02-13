@@ -559,24 +559,24 @@
           if (evt.status === "Completed") {
               el.appendChild(title);
           } else {
-              const leftHandle = document.createElement('div');
-              leftHandle.className = 'resize-handle left';
-              leftHandle.addEventListener('mousedown', e => {
-                  e.preventDefault();   
-                  e.stopPropagation();
-                //   startResize(e, evt, 'left');
-              });
+            //   const leftHandle = document.createElement('div');
+            //   leftHandle.className = 'resize-handle left';
+            //   leftHandle.addEventListener('mousedown', e => {
+            //       e.preventDefault();   
+            //       e.stopPropagation();
+            //     //   startResize(e, evt, 'left');
+            //   });
 
-              const rightHandle = document.createElement('div');
-              rightHandle.className = 'resize-handle right';
-              rightHandle.addEventListener('mousedown', e => {
-                  e.preventDefault();    
-                  e.stopPropagation();
-                //   startResize(e, evt, 'right');
-              });
+            //   const rightHandle = document.createElement('div');
+            //   rightHandle.className = 'resize-handle right';
+            //   rightHandle.addEventListener('mousedown', e => {
+            //       e.preventDefault();    
+            //       e.stopPropagation();
+            //     //   startResize(e, evt, 'right');
+            //   });
 
-              el.appendChild(leftHandle);
-              el.appendChild(rightHandle);
+            //   el.appendChild(leftHandle);
+            //   el.appendChild(rightHandle);
               el.appendChild(title);
 
               el.addEventListener('dragstart', handleRunDragStart);
@@ -1867,7 +1867,24 @@ function renderWeekRunRows(){
             date1.setHours(0,0,0,0);
             date2.setHours(0,0,0,0);
             dayColumn.appendChild(eventsContainer);
-            
+            if( date1 >= date2 ){
+             dayColumn.addEventListener('click', function(e) {
+                console.log('Day column clicked!', e.target);
+                
+                // Check if we clicked on an event box
+                const eventBox = e.target.closest('.week-event-box');
+                
+                if (eventBox) {
+                    console.log('Clicked on event, ignoring column click');
+                    return; // Let the event's own handler deal with it
+                }
+                
+                // We clicked on empty space
+                console.log('Empty space clicked!');
+                const staffName = dayColumn.dataset.staffName;                
+                handleEmptySpaceClick(person, dateKey, e);
+            });
+        }
             personRow.appendChild(dayColumn);
         }
         rowsContainer.appendChild(personRow);
@@ -2204,9 +2221,10 @@ function handleEmptySpaceClick(person, dateKey, event) {
     // const totalHeight = rect.height;
     // const clickPercentage = clickY / totalHeight;
     // ... calculate time from percentage
-    
+    let emptyEventData;
     // Create empty event data structure
-    const emptyEventData = {
+    if( currentViewType === 'staff' ){
+     emptyEventData = {
         zoho_id: null, // null indicates new record
         service: '', // Default to first service if available
         staff: person,
@@ -2217,7 +2235,19 @@ function handleEmptySpaceClick(person, dateKey, event) {
         end_time: defaultEndTime,
         off: 'false'
     };
-    
+    }else if( currentViewType === 'run' ){
+ emptyEventData = {
+        zoho_id: null, // null indicates new record
+        service: '', // Default to first service if available
+        staff: '',
+        run_name: person,
+        from_date: dateFromKey,
+        to_date: dateFromKey,
+        start_time: defaultStartTime,
+        end_time: defaultEndTime,
+        off: 'false'
+    };
+    }
     openStaffSchedulePopup(emptyEventData, dateKey, true); // Pass true to indicate new record
 }
 
