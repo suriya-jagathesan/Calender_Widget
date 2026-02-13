@@ -2267,7 +2267,7 @@ min-width: 100px;
     top: 0;
     bottom: 0;
     border: 0px;
-    pointer-events: none;
+    /* pointer-events: auto; */
     z-index: 5;
 }
 .employee-working-hours::after {
@@ -3827,8 +3827,7 @@ function hideLoader() {
         if (employee_res.code === 3000 && employee_res.data?.length) {
 
             for (const rec of employee_res.data) {
-                // console.log(rec);
-                const emp_service =  rec["Staff.Sites"];
+                const emp_service =  rec["Staff.Sites"]  ?? [] ;
                 const serviceList = emp_service.map(site => ({
                     id: site.ID,
                     zc_display: site.zc_display_value
@@ -3873,7 +3872,7 @@ function hideLoader() {
                 ? [rec.Care_Providers]
                 : [];
 
-                const emp_service =  rec["Care_Providers.Sites"];
+                const emp_service =  rec["Care_Providers.Sites"]  ;
                 const serviceList = emp_service.map(site => ({
                     id: site.ID,
                     zc_display: site.zc_display_value
@@ -5274,7 +5273,7 @@ let contractedMinutes = 0;
 shiftData.forEach(s => {
     contractedMinutes += (s.endMinutes - s.startMinutes);
 });
-console.log(`${employee} - ${contractedMinutes} - ${JSON.stringify(shiftData)} `);
+
 
 let contractedHours = (contractedMinutes / 60).toFixed(1);
 let percentage = 0;
@@ -7376,12 +7375,19 @@ document.addEventListener('mouseout', e => {
 document.addEventListener('scroll', hideTooltip, true);
 document.addEventListener('mousedown', hideTooltip);
 function renderEmployeeWorkingHours(container, employee, shiftsData) {
+    const date1 = new Date();          // current date
+    const date2 = new Date(currentDate);   // date from key
+
+    date1.setHours(0, 0, 0, 0);
+    date2.setHours(0, 0, 0, 0);    
     const shifts = shiftsData[employee];
     if (!Array.isArray(shifts) || shifts.length === 0) return;
 
     const hourWidth = 100;
 
     shifts.forEach(shift => {
+        console.log(shift);
+        
         const startHour = Math.floor(shift.startMinutes / 60);
         const startMinute = shift.startMinutes % 60;
         const duration = shift.endMinutes - shift.startMinutes;
@@ -7395,7 +7401,16 @@ function renderEmployeeWorkingHours(container, employee, shiftsData) {
         indicator.style.width = width + 'px';
         indicator.title =
             `Working hours: ${minutesToHHMM(shift.startMinutes)} - ${minutesToHHMM(shift.endMinutes)}`;
-
+           
+            
+            if( date1 <= date2 ){
+                indicator.style.cursor ='pointer';
+        indicator.addEventListener('click', (e) => {
+            console.log('Event box clicked:', shift);
+            e.stopPropagation();
+            handleEventClick(shift, currentDate);
+        });
+    }
         container.appendChild(indicator);
     });
 }
@@ -7440,13 +7455,32 @@ async function getEmployeeShifts(date) {
                 const exists = shiftsMap[staffName].some(
                     s => s.startMinutes === startMinutes && s.endMinutes === endMinutes
                 );
+                if( rec?.Care_Group?.Care_Group_Name != null && rec?.Care_Group?.Care_Group_Name != undefined && Object.keys(rec.Care_Group).length > 0 ){
+                    runRowDetails[rec?.Care_Group?.Care_Group_Name] = rec?.Care_Group?.ID;
+                }
 
                 if (!exists) {
-                    shiftsMap[staffName].push({ startMinutes, endMinutes });
+                    shiftsMap[staffName].push({
+    startMinutes: startMinutes ?? '',
+    endMinutes: endMinutes ?? '',
+    start_time: rec?.Start_Time ?? '',
+    end_time: rec?.End_Time ?? '',
+    off: rec?.Available_Status === 'Off' ? "true" : "false",
+    zoho_id: rec?.ID ?? '',
+    from_date: rec?.Date_From ?? '',
+    to_date: rec?.Date_To ?? '',
+    run_name: rec?.Care_Group?.Care_Group_Name ?? '',
+    staff: rec?.Staff?.zc_display_value ?? '',
+    leave_Type: rec?.leave_Type ?? '',
+    reason_for_leave: rec?.Reason_for_Leave ?? '',
+    break: rec?.Break ?? '',
+    service: rec?.Site_Name?.zc_display_value ?? ''
+});
+
                 }
             });
         }
-        console.log(shiftsMap);
+        console.log(JSON.stringify(shiftsMap));
         
     } catch (err) {
         console.log("Error fetching employee shifts:", err);

@@ -1044,7 +1044,12 @@
                     if (!site_run_details[site]) {
                         site_run_details[site] = [];
                     }
-
+                    console.log(`${rec?.Care_Group_Name} - ${rec?.ID}`);
+                    if( rec?.Care_Group_Name != null && rec?.Care_Group?.Care_Group_Name != 'undefined' ){
+                        console.log(`${rec?.Care_Group_Name} - ${rec?.ID}`);
+                        
+                        runRowDetails[rec?.Care_Group_Name] = rec?.ID;
+                    }
                     site_run_details[site].push(careGroup);
                   const runName = rec.Care_Group_Name; // Adjust field name
                   const runId = rec.ID;
@@ -1057,7 +1062,7 @@
           }
           
           runGroups.sort();
-          console.log( JSON.stringify(site_run_details));
+          console.log( JSON.stringify(runRowDetails));
           
       } catch (err) {
           console.error("Error fetching run groups:", err);
@@ -1496,6 +1501,8 @@ let runRowDetails = {};
 let staffRunEventDatabase = {}; 
 let runStaffList = [];
 async function getWeekStaffRunDetails(){
+    console.log(runRowDetails);
+    
     runRows = [];
     staffRunEventDatabase = {};
     runStaffList = [];
@@ -2410,6 +2417,7 @@ function openStaffSchedulePopup(eventData, dateKey, isNewRecord = false) {
         } else {
             await saveStaffScheduleChanges(eventData.zoho_id, popup);
         }
+        closePopup();
     });
 }
 function toggleAvailabilityFields(popup) {
@@ -2419,7 +2427,8 @@ function toggleAvailabilityFields(popup) {
     const leaveTypeGroup = popup.querySelector('#leaveTypeGroup');
     const leaveReasonGroup = popup.querySelector('#leaveReasonGroup');
     const runHiddenInput = popup.querySelector('#run');
-
+    console.log(runHiddenInput.value);
+    
     if (status === 'Off') {
         runGroup.classList.add('hidden');
         runHiddenInput.value = '';
@@ -2428,10 +2437,16 @@ function toggleAvailabilityFields(popup) {
         leaveReasonGroup.classList.remove('hidden');
     } else {
         runGroup.classList.remove('hidden');
-
+        console.log(popup.querySelector('#leaveReason').value);
+        console.log(popup.querySelector('#leaveType').value);
+        popup.querySelector('#leaveReason').value = null;
+        popup.querySelector('#leaveType').value = null;
+        console.log(popup.querySelector('#leaveReason').value);
+        console.log(popup.querySelector('#leaveType').value);
         leaveTypeGroup.classList.add('hidden');
         leaveReasonGroup.classList.add('hidden');
     }
+     console.log(runHiddenInput.value);
 }
 
 function updateRunDropdownForSite(popup, siteName) {
@@ -2798,14 +2813,18 @@ const run_id = runRowDetails[popup.querySelector('#run').value];
     
     try {
         const config = {
-            appName: app_name,
-            formName: "Daily_schedule_for_Staff",
-            data: formData
+            app_name: app_name,
+            form_name: "Daily_Staff_schedule",
+            payload: 
+            {
+                "data": formData
+            }
         };
         
-        // await ZOHO.CREATOR.API.addRecord(config);
-        // await getWeekStaffRunDetails();
-        // renderWeekStaffRunRows();
+        const add_res = await ZOHO.CREATOR.DATA.addRecords(config);
+        console.log(`${currentView} - ${currentViewType} - ${add_res} `);
+        await getWeekStaffRunDetails();
+        renderWeekStaffRunRows();
         // alert('New schedule created successfully!');
     } catch (error) {
         console.error('Error creating schedule:', error);
@@ -2818,13 +2837,17 @@ function getEmployeeIdByName(empName) {
 }
 
 async function saveStaffScheduleChanges(zohoId, popup) {
+    showLoader();
 const empId = getEmployeeIdByName(popup.querySelector('#staff').value);
+console.log(`${JSON.stringify(runRowDetails)} - ${runRowDetails[popup.querySelector('#run').value]} - ${popup.querySelector('#run').value} `);
+
 const run_id = runRowDetails[popup.querySelector('#run').value];
     
+    console.log(run_id);
     
     const formData = {
         Staff: empId,
-        Care_Group:run_id,
+        Care_Group:run_id ?? null ,
         Available_Status: popup.querySelector('#availabilityStatus').value,
         Start_Time: popup.querySelector('#startTime').value,
         End_Time: popup.querySelector('#endTime').value,
@@ -2836,13 +2859,19 @@ const run_id = runRowDetails[popup.querySelector('#run').value];
     
     try {
         const config = {
-            appName: app_name,
-            reportName: "Daily_schedule_for_Staff",
+            app_name: app_name,
+            report_name: "Daily_schedule_for_Staff",
             id: zohoId,
-            data: formData
+            payload: 
+            {
+                "data" : formData
+            }
         };
         
-        // await ZOHO.CREATOR.API.updateRecord(config);
+        const save_res = await ZOHO.CREATOR.DATA.updateRecordById(config);
+        console.log(`${currentView} - ${currentViewType} - ${ JSON.stringify(save_res)} `);
+        
+        if( currentView === 'week' && currentViewType === 'staff' ){
         const dateKey = popup.querySelector('#fromDate').value;
         console.log(dateKey);
         console.log(staffRunEventDatabase);
@@ -2852,39 +2881,86 @@ const run_id = runRowDetails[popup.querySelector('#run').value];
     const record = staffRunEventDatabase[dateKey].find(
         e => e.zoho_id === zohoId
     );
-
+    const run_value = popup.querySelector('#run').value;
     if (record) {
-
-        // Update only required fields
         record.start_time = popup.querySelector('#startTime').value;
         record.end_time   = popup.querySelector('#endTime').value;
         record.break      = popup.querySelector('#break').value;
         record.leave_Type = popup.querySelector('#leaveType').value;
         record.reason_for_leave = popup.querySelector('#leaveReason').value;
         record.off = popup.querySelector('#availabilityStatus').value === 'Off' ? "true" : "false";
+        const runInput = popup.querySelector('#run');
+        const runValue = runInput?.value?.trim();
 
-        // Update run name if Care_Group changed
-        if (popup.querySelector('#run').value) {
-            record.run_name = popup.querySelector('#run').value;
+        if (record.off === true || record.off === 'true') {
+            record.run_name = record.leave_Type || null;
+        } else if (runValue) {
+            record.run_name = runValue;
+        } else {
+            record.run_name = 'Available';
         }
+
 
         // Update staff ONLY if changed
         const newStaff = popup.querySelector('#staff').value;
         if (record.staff !== newStaff) {
             record.staff = newStaff;
         }
+        console.log(record);
+        
     }
+    }
+    renderWeekStaffRunRows();
 }
- 
+else if( currentView === 'week' && currentViewType === 'run' ){
+    const dateKey = popup.querySelector('#fromDate').value;
+        console.log(dateKey);
+        console.log(runEventDatabase);
         
-        // await getWeekStaffRunDetails();
-        renderWeekStaffRunRows();
+        if (runEventDatabase[dateKey]) {
+
+    const record = runEventDatabase[dateKey].find(
+        e => e.zoho_id === zohoId
+    );
+    const run_value = popup.querySelector('#run').value;
+    if (record) {
+        record.start_time = popup.querySelector('#startTime').value;
+        record.end_time   = popup.querySelector('#endTime').value;
+        record.break      = popup.querySelector('#break').value;
+        record.leave_Type = popup.querySelector('#leaveType').value;
+        record.reason_for_leave = popup.querySelector('#leaveReason').value;
+        record.off = popup.querySelector('#availabilityStatus').value === 'Off' ? "true" : "false";
+        const runInput = popup.querySelector('#run');
+        const runValue = runInput?.value?.trim();
+
+        if (record.off === true || record.off === 'true') {
+            record.run_name = record.leave_Type || null;
+        } else if (runValue) {
+            record.run_name = runValue;
+        } else {
+            record.run_name = 'Available';
+        }
+
+
+        // Update staff ONLY if changed
+        const newStaff = popup.querySelector('#staff').value;
+        if (record.staff !== newStaff) {
+            record.staff = newStaff;
+        }
+        console.log(record);
         
-        alert('Schedule updated successfully!');
+    }
+    }
+    renderWeekRunRows();
+}
+        
+        
+        
     } catch (error) {
         console.error('Error updating schedule:', error);
         alert('Failed to update schedule. Please try again.');
     }
+    hideLoader();   
 }
 // New function: Render events for person (no drag & drop)
 function renderWeekEventsForPerson(container, events, dateKey) {
