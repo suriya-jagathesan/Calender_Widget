@@ -1840,7 +1840,7 @@ function renderWeekRunRows(){
             }
         }
         
-        const eventNeededHeight = (maxEventsInDay * (EVENT_HEIGHT + EVENT_GAP)) + (ROW_PADDING * 2);
+        const eventNeededHeight = (maxEventsInDay * (run_event_height + EVENT_GAP)) + (ROW_PADDING * 2);
         const finalRowHeight = Math.max(fillHeight, eventNeededHeight);
         rowHeightsMap[person] = finalRowHeight;
         
@@ -2041,7 +2041,7 @@ function renderWeekEventsForRun(container, events, dateKey) {
         el.draggable = false; 
         el.dataset.start = evt.start_time;
         el.dataset.end = evt.end_time;
-        const topPosition = ROW_PADDING + (index * (run_event_height + EVENT_GAP));
+        const topPosition = ROW_PADDING + (index * (EVENT_GAP));
         
         el.style.top = `${topPosition}px`;
         el.style.height = `${run_event_height}px`;
@@ -2912,47 +2912,53 @@ const run_id = runRowDetails[popup.querySelector('#run').value];
     }
     renderWeekStaffRunRows();
 }
-else if( currentView === 'week' && currentViewType === 'run' ){
+else if (currentView === 'week' && currentViewType === 'run') {
     const dateKey = popup.querySelector('#fromDate').value;
-        console.log(dateKey);
-        console.log(runEventDatabase);
-        
-        if (runEventDatabase[dateKey]) {
 
-    const record = runEventDatabase[dateKey].find(
-        e => e.zoho_id === zohoId
-    );
-    const run_value = popup.querySelector('#run').value;
-    if (record) {
-        record.start_time = popup.querySelector('#startTime').value;
-        record.end_time   = popup.querySelector('#endTime').value;
-        record.break      = popup.querySelector('#break').value;
-        record.leave_Type = popup.querySelector('#leaveType').value;
-        record.reason_for_leave = popup.querySelector('#leaveReason').value;
-        record.off = popup.querySelector('#availabilityStatus').value === 'Off' ? "true" : "false";
-        const runInput = popup.querySelector('#run');
-        const runValue = runInput?.value?.trim();
+    const records = runEventDatabase[dateKey];
+    if (!records) return;
 
-        if (record.off === true || record.off === 'true') {
-            record.run_name = record.leave_Type || null;
-        } else if (runValue) {
-            record.run_name = runValue;
-        } else {
-            record.run_name = 'Available';
-        }
+    const index = records.findIndex(e => e.zoho_id === zohoId);
+    if (index === -1) return;
 
+    const record = records[index];
 
-        // Update staff ONLY if changed
-        const newStaff = popup.querySelector('#staff').value;
-        if (record.staff !== newStaff) {
-            record.staff = newStaff;
-        }
-        console.log(record);
-        
+    record.start_time = popup.querySelector('#startTime').value;
+    record.end_time   = popup.querySelector('#endTime').value;
+    record.break      = popup.querySelector('#break').value;
+    record.leave_Type = popup.querySelector('#leaveType').value;
+    record.reason_for_leave = popup.querySelector('#leaveReason').value;
+
+    record.off = popup.querySelector('#availabilityStatus').value === 'Off';
+    const runValue = popup.querySelector('#run')?.value?.trim();
+
+    let newRunName;
+
+    if (record.off) {
+        newRunName = record.leave_Type || null;
+    } else if (runValue) {
+        newRunName = runValue;
+    } else {
+        newRunName = 'Available';
     }
+
+
+    
+    if (record.off || newRunName === 'Available') {
+        records.splice(index, 1);
+    } else {
+        record.run_name = newRunName;
     }
-    renderWeekRunRows();
+
+   
+    const newStaff = popup.querySelector('#staff').value;
+    if (record.staff !== newStaff) {
+        record.staff = newStaff;
+    }
+
+    await renderWeekRunView();
 }
+
         
         
         
