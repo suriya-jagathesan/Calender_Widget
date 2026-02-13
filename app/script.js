@@ -2775,6 +2775,7 @@ function timeToMinutes(timeStr) {
 }
 // Update save functions to get site name from correct field
 async function createNewStaffSchedule(popup, dateKey) {
+    showLoader();
     // Get site name from either input or hidden field depending on which is visible
     const siteNameInputContainer = popup.querySelector('#siteNameInputContainer');
     let siteName;
@@ -2822,14 +2823,20 @@ const run_id = runRowDetails[popup.querySelector('#run').value];
         };
         
         const add_res = await ZOHO.CREATOR.DATA.addRecords(config);
-        console.log(`${currentView} - ${currentViewType} - ${add_res} `);
+        console.log(`${currentView} - ${currentViewType} - ${JSON.stringify(add_res)} `);
         await getWeekStaffRunDetails();
-        renderWeekStaffRunRows();
-        // alert('New schedule created successfully!');
+        if( currentViewType === 'staff' ){
+            await renderWeekStaffView();
+        }
+        else if(  currentViewType === 'run'){
+            await renderWeekRunView();
+        }
+    
     } catch (error) {
         console.error('Error creating schedule:', error);
         alert('Failed to create schedule. Please try again.');
     }
+    hideLoader();
 }
 function getEmployeeIdByName(empName) {
     const emp = employeeDetails.find(e => e.name === empName);
@@ -2843,7 +2850,7 @@ console.log(`${JSON.stringify(runRowDetails)} - ${runRowDetails[popup.querySelec
 
 const run_id = runRowDetails[popup.querySelector('#run').value];
     
-    console.log(run_id);
+    console.log(currentView,currentViewType);
     
     const formData = {
         Staff: empId,
@@ -2958,7 +2965,10 @@ else if (currentView === 'week' && currentViewType === 'run') {
 
     await renderWeekRunView();
 }
-
+else if( currentView === 'day' && currentViewType === 'employee' ){
+   await getEmployeeShifts(currentDate);
+    await re_renderDayView();
+}
         
         
         
