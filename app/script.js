@@ -2769,6 +2769,13 @@ function renderDropdownOptions(container, options, selectedValue, dropdownText, 
             // Close dropdown
             dropdownMenu.classList.remove('show');
             dropdownMenu.previousElementSibling.classList.remove('active');
+            if (fieldName === 'staff' && container.closest('.schedule-popup')) {
+        const popup = container.closest('.schedule-popup').parentElement;
+        const isNew = popup.querySelector('.popup-header h2').textContent.includes('New');
+        if (isNew) {
+            updateSiteNameForStaff(popup, option);
+        }
+    }
         });
         
         container.appendChild(optionEl);

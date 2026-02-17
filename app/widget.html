@@ -834,6 +834,7 @@
             flex-direction: column;
             gap: 3px;
             pointer-events: auto;
+            z-index: 6;
         }
         
         .quarter-slot[data-quarter="0"] { left: 0; width: 25%; }
@@ -2267,7 +2268,7 @@ min-width: 100px;
     top: 0;
     bottom: 0;
     border: 0px;
-    pointer-events: none;
+    /* pointer-events: none; */
     z-index: 5;
 }
 .employee-working-hours::after {
@@ -3448,7 +3449,7 @@ function openEventModal(evt) {
 
   // OTHER FIELDS (example)
   const titleEl = document.getElementById('mTitle');
-  if (titleEl) titleEl.value = evt.title || '';
+  if (titleEl) titleEl.value = evt.visit_title || '';
 
 
   document.getElementById('eventModal').classList.remove('hidden');
@@ -5103,7 +5104,7 @@ else if(  currentViewType === 'staff'){
             }
         }
         function createBookingObject(rec, emp) {
-            // console.log(rec);
+            console.log(rec);
             
             let cur_book = {};
     cur_book.id = Number(rec.ID);
@@ -5111,6 +5112,7 @@ else if(  currentViewType === 'staff'){
     cur_book.date = rec.Date_field1;
     cur_book.Manager_notes = rec.Manager_Notes;
     cur_book.title = rec.Care_Service_User.zc_display_value;
+    cur_book.visit_title = rec?.Visit_Title;
     cur_book.service = rec.Site_Name.zc_display_value;
     cur_book.from = rec.Start_time;
     cur_book.to = rec.End_time;
