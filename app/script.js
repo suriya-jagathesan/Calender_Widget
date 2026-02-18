@@ -452,7 +452,11 @@ function renderRunViewColumn(rowHeightsMap = {}) {
     } else {
       let total_mins = 0;
       const events = getEventsForRunGroup(runGroup, dateKey);
+      let emp = [];
       events.forEach((evt) => {
+        if (evt.employee && !emp.includes(evt.employee)) {
+          emp.push(evt.employee);
+        }
         total_mins += evt.endMinutes - evt.startMinutes;
       });
 
@@ -464,7 +468,7 @@ function renderRunViewColumn(rowHeightsMap = {}) {
     <div class="employee-name-row">
       <span
         class="employee-name"
-        title="${runGroup}"
+        title="${runGroup} ${emp.length > 0 ? `- ${emp.join(", ")}` : ""}"
       >
         ${runGroup}
       </span>
