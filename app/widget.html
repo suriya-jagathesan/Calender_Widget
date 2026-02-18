@@ -7381,9 +7381,9 @@ document.addEventListener('mouseover', e => {
     if (evtEl.classList.contains('dragging')) return;
 
     if (evtEl.classList.contains('selected')) return;
-    if( currentView !== 'week' && currentViewType !== 'run' ){
-        showTooltip(evtEl, e);
-    }
+    if( currentView === 'week' && currentViewType === 'run' ) return
+    showTooltip(evtEl, e);
+    
 });
 
 document.addEventListener('mouseout', e => {
