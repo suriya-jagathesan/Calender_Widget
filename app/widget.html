@@ -5099,7 +5099,6 @@ else if(  currentViewType === 'staff'){
     }
 }
 
-
         function updateDateTitle() {
             if (currentView === 'day') {
                 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -5139,6 +5138,7 @@ cur_book.distance_duration  = rec.Distance_Duration_Details;
 
     if( personName && !persons.includes(personName) ){
         persons.push(personName);
+        personDetails[personName] = person_id;
     }
 
 cur_book.run_view = runName;
@@ -5202,7 +5202,10 @@ if (runName && !runGroups.includes(runName)) {
         console.log(cur_book);
         
     }
+    console.log(personDetails);
+    
     return cur_book;
+    
 }
         async function re_renderDayView(){
             renderHourHeaders();
@@ -5938,6 +5941,58 @@ function renderWeekEmployeeRows() {
         column.appendChild(row);
     });
 }
+function openPersonWeekPDF( personName ){
+    if (!personName || personName === '—' || personName === '') {
+        showToast("No employee selected", "error");
+        return;
+    }
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay() );
+    weekStart.setDate(weekStart.getDate() + 1);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    
+    const startDate = formatDateDDMMYYYY(weekStart);
+    const endDate = formatDateDDMMYYYY(weekEnd);
+    const employeeId = personDetails[personName];
+    console.log(employeeId);
+    
+    if (!employeeId) {
+        showToast("Person ID not found", "error");
+        return;
+    }
+    const pdfUrl = `https://${scope}.domportal.care/pdf/Pdf_Client_View?zc_PdfSize=A4&amp;zc_PdfOrientation=landscape&amp;staff=${employeeId}&amp;start=${startDate}`;
+    
+
+    
+    
+    // Open in new window/tab
+    window.open(pdfUrl, '_blank');
+    
+    // console.log(`Opening PDF for ${employeeName} (${employeeId}) - Week: ${startDate} to ${endDate}`);
+}
+function openRunWeekPDF(runName){
+    if (!runName || runName === '—' || runName === '') {
+        showToast("No employee selected", "error");
+        return;
+    }
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay() );
+    weekStart.setDate(weekStart.getDate() + 1);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    
+    const startDate = formatDateDDMMYYYY(weekStart);
+    const endDate = formatDateDDMMYYYY(weekEnd);
+     const pdfUrl = `https://${scope}.domportal.care//pdf/Manual_Rostering?&zc_LoadIn=dialog&Care_Group=${runName}&Date_field1=${weekStart};${weekEnd}&Date_field1_op=58`;
+    
+    
+    
+    
+    // Open in new window/tab
+    window.open(pdfUrl, '_blank');
+}
+
 function openEmployeeWeekPDF(employeeName) {
     if (!employeeName || employeeName === '—' || employeeName === '') {
         showToast("No employee selected", "error");

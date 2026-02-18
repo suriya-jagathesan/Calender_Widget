@@ -460,16 +460,26 @@ function renderRunViewColumn(rowHeightsMap = {}) {
       let displayHours = workingHours > 0 ? workingHours.toFixed(1) : "0.0";
 
       row.innerHTML = `
-                  <div class="employee-label">
-                      <div class="employee-name-row">
-                          <span class="employee-name">${runGroup}</span>
-                      </div>
-                      <div class="employee-hours-info">
-            
-            <span class="hours-value" data-tooltip="Actual Hours">${displayHours}</span>
-        </div>
-                  </div>
-              `;
+  <div class="employee-label">
+    <div class="employee-name-row">
+      <span
+        class="employee-name"
+        title="${runGroup}"
+      >
+        ${runGroup}
+      </span>
+    </div>
+
+    <div class="employee-hours-info">
+      <span
+        class="hours-value"
+        data-tooltip="Actual Hours"
+      >
+        ${displayHours}
+      </span>
+    </div>
+  </div>
+`;
     }
 
     const height = rowHeightsMap[runGroup] || MIN_ROW_HEIGHT;
@@ -1683,6 +1693,8 @@ async function getWeekRunDetails() {
     data.leave_Type = rec?.leave_Type;
     data.reason_for_leave = rec?.Reason_for_Leave;
     data.break = rec.Break;
+    data.endMinutes = getMinutes(rec?.To_Time_Line);
+    data.startMinutes = getMinutes(rec?.From_Time_Line);
     data.service = rec?.Site_Name?.zc_display_value;
     if (!runRows.includes(run_name)) {
       runRows.push(run_name);
@@ -2097,7 +2109,7 @@ function renderWeekPersonColumn(rowHeightsMap = {}) {
                         <div class="week-employee-hours-info">
                             <span class="week-employee-hours-value">${displayHours}h</span>
                         </div>
-                        <div class="week-employee-pdf-icon" onclick="openEmployeeWeekPDF('123123')" title="Download Week Schedule">
+                        <div class="week-employee-pdf-icon" onclick="openPersonWeekPDF('${person}')" title="Download Week Schedule">
                             <i class="fa fa-file-pdf"></i>
                         </div>
                     </div>
@@ -2120,17 +2132,38 @@ function renderWeekRunColumn(rowHeightsMap = {}) {
   } else {
     displayRuns = runRows.length > 0 ? [...new Set(runRows)] : ["—"];
   }
-
+  const weekStart = new Date(currentDate);
+  weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1);
   displayRuns.forEach((person) => {
     const row = document.createElement("div");
     row.className = "week-employee-row";
+    let total_mins = 0;
+    for (let day = 0; day < 7; day++) {
+      const dayDate = new Date(weekStart);
+      dayDate.setDate(weekStart.getDate() + day);
+      const events = getEventsForWeekRun(person, getDateKey(dayDate));
+      events.forEach((evt) => {
+        total_mins += evt.endMinutes - evt.startMinutes;
+      });
+    }
+    // const t_count = total_mins / 60;
+    const workingHours = total_mins / 60;
+    let displayHours = workingHours > 0 ? workingHours.toFixed(1) : "0.0";
 
     if (person !== "—") {
       row.innerHTML = `
-                <div class="employee-name-row">
-                    <div class="employee-name">${person}</div>
+        <div class="employee-label">
+                    <div title="${person}" class="employee-name">${person}</div>
+                    <div class="week-employee-hours-row">
+                        <div class="week-employee-hours-info">
+                            <span class="week-employee-hours-value" data-tooltip="${displayHours} hours">${displayHours}h</span>
+                        </div>
+                        <div class="week-employee-pdf-icon" onclick="openRunWeekPDF('${person}')" title="Download Week Schedule">
+                            <i class="fa fa-file-pdf"></i>
+                        </div>
+                    </div>
                 </div>
-            `;
+                    `;
     }
 
     const height = rowHeightsMap[person] || MIN_ROW_HEIGHT;
