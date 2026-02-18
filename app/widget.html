@@ -989,7 +989,7 @@
 .week-employee-row .employee-name {
     font-size: 13px;
     font-weight: 600;
-    color: #374151;
+    color: #682987;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -3853,7 +3853,9 @@ function hideLoader() {
                 // console.log(staffId);
                 const skills_res = await ZOHO.CREATOR.DATA.getRecordById(skills_config);
                 let skills = [];
+                let week_hours = 0;
                 if (skills_res.code === 3000) {
+                    week_hours = skills_res?.data?.Contracted_Hours_Per_Week ?? 0.0;
     skills = (skills_res?.data?.Skills_Experience_Capacity || [])
         .map(s => s?.Skills_Name)
         .filter(Boolean);
@@ -3864,7 +3866,8 @@ function hideLoader() {
                     name,
                     id: staffId,
                     skills,
-                    service: serviceList
+                    service: serviceList,
+                    week_hours:  week_hours
                 });
             }
         }    
@@ -3903,8 +3906,9 @@ function hideLoader() {
             // console.log(id);
             
             const skills_res = await ZOHO.CREATOR.DATA.getRecordById(skills_config);
-
+            let week_hours_1 = 0;
            if (skills_res.code === 3000) {
+             week_hours_1 = skills_res?.data?.Contracted_Hours_Per_Week ?? 0.0;
     skills = (skills_res?.data?.Skills_Experience_Capacity || [])
         .map(s => s?.Skills_Name)
         .filter(Boolean);
@@ -3915,7 +3919,8 @@ function hideLoader() {
                 name,
                 id,
                 skills,
-                service: serviceList
+                service: serviceList,
+                week_hours:  week_hours_1
             });
         }
     }
@@ -5111,7 +5116,7 @@ else if(  currentViewType === 'staff'){
             }
         }
         function createBookingObject(rec, emp) {
-            console.log(rec);
+            // console.log(rec);
             
             let cur_book = {};
     cur_book.id = Number(rec.ID);

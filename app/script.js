@@ -1413,7 +1413,9 @@ function updateViewSwitcherOptions() {
   }
 }
 function getEventsForStaffRun(staffName, dateKey) {
-  // console.log(`${staffName} - ${dateKey} - ${JSON.stringify(staffRunEventDatabase[dateKey])} `);
+  //   console.log(
+  //     `${staffName} - ${dateKey} - ${JSON.stringify(staffRunEventDatabase[dateKey])} `,
+  //   );
 
   const allEvents = staffRunEventDatabase[dateKey] || [];
   return allEvents.filter((evt) => {
@@ -1575,6 +1577,8 @@ async function getWeekStaffRunDetails() {
     data.service = rec?.Site_Name?.zc_display_value;
     data.leave_Type = rec?.leave_Type;
     data.reason_for_leave = rec?.Reason_for_Leave;
+    data.endMinutes = getMinutes(rec?.To_Time_Line);
+    data.startMinutes = getMinutes(rec?.From_Time_Line);
     data.staff = rec.Staff?.zc_display_value;
     if (
       !runStaffList.includes(rec.Staff?.zc_display_value) &&
@@ -2015,6 +2019,8 @@ function renderWeekPersonRows() {
 }
 
 function renderWeekStaffRunColumn(rowHeightsMap = {}) {
+  const weekStart = new Date(currentDate);
+  weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1);
   const column = document.getElementById("weekEmployeeColumn");
   column.innerHTML = "";
   if (appliedFilters.length > 0) {
@@ -2026,12 +2032,39 @@ function renderWeekStaffRunColumn(rowHeightsMap = {}) {
   employeeValues.forEach((person) => {
     const row = document.createElement("div");
     row.className = "week-employee-row";
-    const displayHours = getTotalWeekHoursPerson(person);
+
+    let total_mins = 0;
+    for (let day = 0; day < 7; day++) {
+      const dayDate = new Date(weekStart);
+      dayDate.setDate(weekStart.getDate() + day);
+      const events = getEventsForStaffRun(person, getDateKey(dayDate));
+      events.forEach((evt) => {
+        total_mins += evt.endMinutes - evt.startMinutes;
+      });
+    }
+    // const t_count = total_mins / 60;
+    const workingHours = total_mins / 60;
+    let displayHours = workingHours > 0 ? workingHours.toFixed(1) : "0.0";
+
+    // Get contracted hours from shift data
+
+    const emp_data = employeeDetails.filter((e) => e.name === person);
+    const con_hours =
+      emp_data?.[0]?.week_hours === ""
+        ? "0.0"
+        : emp_data?.[0]?.week_hours || "0.0";
+
     if (person !== "—") {
       row.innerHTML = `
                 <div class="employee-label">
-                    <div class="employee-name">${person}</div>
-                    
+                 <div class="employee-name-row">
+                    <span class="employee-name">${person}</span>
+                   </div>
+                   <div class="employee-hours-left">
+                <span class="hours-value" data-tooltip="Contracted Hours">${con_hours}</span>
+                <span class="hours-separator">|</span>
+                <span class="hours-value" data-tooltip="Actual Hours">${displayHours}</span>
+            </div> 
                 </div>
             `;
     }
@@ -2094,7 +2127,7 @@ function renderWeekRunColumn(rowHeightsMap = {}) {
 
     if (person !== "—") {
       row.innerHTML = `
-                <div class="employee-label">
+                <div class="employee-name-row">
                     <div class="employee-name">${person}</div>
                 </div>
             `;
