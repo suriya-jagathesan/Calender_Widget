@@ -2268,9 +2268,16 @@ min-width: 100px;
     top: 0;
     bottom: 0;
     border: 0px;
-    /* pointer-events: none; */
-    z-index: 5;
+    pointer-events: auto;
+    z-index: 7;
 }
+.employee-working-hours.clickable {
+    pointer-events: auto; 
+}
+body.dragging .employee-working-hours {
+    pointer-events: none;
+}
+
 .employee-working-hours::after {
     content: '';
     position: absolute;
@@ -6107,7 +6114,7 @@ el.addEventListener('mouseup', (e) => {
 
         // DRAG AND DROP HANDLERS
         function handleDragStart(e) {
-
+document.body.classList.add('dragging');
             console.log("drag started");
             
 
@@ -6172,6 +6179,7 @@ console.log('Drag started with data:', draggedEventData);
         function handleDragEnd(e) {            
             e.currentTarget.classList.remove('dragging');
             document.body.classList.remove('dragging-active');
+             document.body.classList.remove('dragging');
             document.querySelectorAll('.drop-highlight').forEach(el => el.classList.remove('drop-highlight'));
             draggedElement = null;
             draggedEventId = null;
@@ -7386,22 +7394,19 @@ document.addEventListener('mouseout', e => {
 document.addEventListener('scroll', hideTooltip, true);
 document.addEventListener('mousedown', hideTooltip);
 function renderEmployeeWorkingHours(container, employee, shiftsData) {
-    const date1 = new Date();          // current date
-    const date2 = new Date(currentDate);   // date from key
-    
-    // console.log(`${employee} - ${shiftsData} `);
-    
+    const date1 = new Date();
+    const date2 = new Date(currentDate);
 
     date1.setHours(0, 0, 0, 0);
-    date2.setHours(0, 0, 0, 0);    
+    date2.setHours(0, 0, 0, 0);
+
     const shifts = shiftsData[employee];
     if (!Array.isArray(shifts) || shifts.length === 0) return;
 
     const hourWidth = 100;
+    const isFutureOrToday = date1 <= date2;
 
     shifts.forEach(shift => {
-        // console.log(shift);
-        
         const startHour = Math.floor(shift.startMinutes / 60);
         const startMinute = shift.startMinutes % 60;
         const duration = shift.endMinutes - shift.startMinutes;
@@ -7413,22 +7418,26 @@ function renderEmployeeWorkingHours(container, employee, shiftsData) {
         indicator.className = 'employee-working-hours';
         indicator.style.left = left + 'px';
         indicator.style.width = width + 'px';
-        indicator.title =
-            `Working hours: ${minutesToHHMM(shift.startMinutes)} - ${minutesToHHMM(shift.endMinutes)}`;
-           
-            
-            if( date1 <= date2 ){
-                indicator.style.cursor ='pointer';
-        indicator.addEventListener('click', (e) => {
-            console.log('Event box clicked:', shift);
-            e.stopPropagation();
-            handleEventClick(shift, currentDate);
-        });
-    }
+        indicator.title = `Working hours: ${minutesToHHMM(shift.startMinutes)} - ${minutesToHHMM(shift.endMinutes)}`;
+
+        if (isFutureOrToday) {
+            indicator.style.cursor = 'pointer';
+            indicator.addEventListener('click', (e) => {
+                e.stopPropagation();
+                handleEventClick(shift, currentDate);
+            });
+        }
+
         container.appendChild(indicator);
     });
 }
-
+// Helper: temporarily hide element to find what's underneath it
+function getElementBeneath(element, x, y, selector) {
+    element.style.pointerEvents = 'none';
+    const below = document.elementFromPoint(x, y)?.closest(selector);
+    element.style.pointerEvents = 'auto';
+    return below;
+}
 let shiftsMap = {};
 
 async function getEmployeeShifts(date) {
