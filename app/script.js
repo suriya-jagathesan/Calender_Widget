@@ -1429,15 +1429,27 @@ function updateViewSwitcherOptions() {
   }
 }
 function getEventsForStaffRun(staffName, dateKey) {
-  //   console.log(
-  //     `${staffName} - ${dateKey} - ${JSON.stringify(staffRunEventDatabase[dateKey])} `,
-  //   );
-
   const allEvents = staffRunEventDatabase[dateKey] || [];
+
+  const runFilter = appliedFilters.find((f) => f.field === "run");
+
   return allEvents.filter((evt) => {
-    if (evt.staff === staffName) return true;
+    // staff match
+    if (normalize(evt.staff) !== normalize(staffName)) return false;
+
+    // no run filter
+    if (!runFilter) return true;
+
+    const eventRun = normalize(evt.run_name);
+
+    return runFilter.searchValues.some((v) => eventRun === normalize(v));
   });
 }
+
+function normalize(val) {
+  return String(val).trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 function getEventsForWeekRun(runName, dateKey) {
   const allEvents = runEventDatabase[dateKey] || [];
 
@@ -1459,6 +1471,8 @@ function getEventsForWeekRun(runName, dateKey) {
         search_key = "staff";
       } else if (f.field === "service") {
         search_key = "service";
+      } else if (f.field === "run") {
+        search_key = "run_name";
       } else {
         search_key = f.field;
       }
@@ -1512,6 +1526,8 @@ function getEventsForPerson(personName, dateKey) {
           search_key = "employee";
         } else if (f.field === "service") {
           search_key = "service";
+        } else if (f.field === "run") {
+          search_key = "run_view";
         } else {
           search_key = f.field;
         }
@@ -3732,6 +3748,12 @@ function getRunsFromEventsWeek() {
     const employeeFilter = appliedFilters.find(
       (f) => f.field === "employee" || f.field === "staff",
     );
+    const runFilter = appliedFilters.find((f) => f.field === "run");
+    if (runFilter) {
+      filteredEvents = filteredEvents.filter((e) =>
+        runFilter.searchValues.includes(e.run_name),
+      );
+    }
     if (serviceFilter) {
       filteredEvents = filteredEvents.filter((e) =>
         serviceFilter.searchValues.includes(e.service),
@@ -3767,6 +3789,12 @@ function getPersonFromEventsWeek() {
     const employeeFilter = appliedFilters.find(
       (f) => f.field === "employee" || f.field === "staff",
     );
+    const runFilter = appliedFilters.find((f) => f.field === "run");
+    if (runFilter) {
+      filteredEvents = filteredEvents.filter((e) =>
+        runFilter.searchValues.includes(e.run_view),
+      );
+    }
     if (serviceFilter) {
       filteredEvents = filteredEvents.filter((e) =>
         serviceFilter.searchValues.includes(e.service),
@@ -3807,6 +3835,12 @@ function getEmployeesFromEventsWeek() {
     const employeeFilter = appliedFilters.find(
       (f) => f.field === "employee" || f.field === "staff",
     );
+    const runFilter = appliedFilters.find((f) => f.field === "run");
+    if (runFilter) {
+      filteredEvents = filteredEvents.filter((e) =>
+        runFilter.searchValues.includes(e.run_name),
+      );
+    }
     if (serviceFilter) {
       filteredEvents = filteredEvents.filter((e) =>
         serviceFilter.searchValues.includes(e.service),
