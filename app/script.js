@@ -2576,6 +2576,13 @@ function openStaffSchedulePopup(eventData, dateKey, isNewRecord = false) {
       closePopup();
     });
 }
+document.addEventListener("click", function (e) {
+  document.querySelectorAll(".quick-dropdown.open").forEach((dropdown) => {
+    if (!dropdown.contains(e.target)) {
+      dropdown.classList.remove("active");
+    }
+  });
+});
 function toggleAvailabilityFields(popup) {
   const status = popup.querySelector("#availabilityStatus").value;
 

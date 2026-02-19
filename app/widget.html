@@ -2806,7 +2806,7 @@ body.dragging .employee-working-hours {
         <div class="quick-filter-label">Staff</div>
 
         <div class="quick-dropdown" data-field="employee">
-            <div class="quick-dropdown-display" onclick="toggleQuickDropdown(this)">
+            <div class="quick-dropdown-display" onclick="toggleQuickDropdown(this, event)">
                 <span>Select Staff</span>
                 <i class="fa fa-chevron-down"></i>
             </div>
@@ -2817,7 +2817,7 @@ body.dragging .employee-working-hours {
         <div class="quick-filter-label">Person</div>
 
         <div class="quick-dropdown" data-field="persons">
-            <div class="quick-dropdown-display" onclick="toggleQuickDropdown(this)">
+            <div class="quick-dropdown-display" onclick="toggleQuickDropdown(this, event)">
                 <span>Select Person</span>
                 <i class="fa fa-chevron-down"></i>
             </div>
@@ -2829,8 +2829,20 @@ body.dragging .employee-working-hours {
         <div class="quick-filter-label">Services</div>
 
         <div class="quick-dropdown" data-field="service">
-            <div class="quick-dropdown-display" onclick="toggleQuickDropdown(this)">
+            <div class="quick-dropdown-display" onclick="toggleQuickDropdown(this, event)">
                 <span>Select Service</span>
+                <i class="fa fa-chevron-down"></i>
+            </div>
+            <div class="quick-dropdown-options"></div>
+        </div>
+    </div>
+
+    <div class="quick-filter-block">
+        <div class="quick-filter-label">Run</div>
+
+        <div class="quick-dropdown" data-field="run">
+            <div class="quick-dropdown-display" onclick="toggleQuickDropdown(this, event)">
+                <span>Select Run</span>
                 <i class="fa fa-chevron-down"></i>
             </div>
             <div class="quick-dropdown-options"></div>
@@ -4137,7 +4149,7 @@ console.log(persons);
         }
 function isFilterApplied(field, value) {
     return appliedFilters.some(
-        f => f.field === field && f.searchValues[0] === value
+        f => f.field === field && f.searchValues.includes(value)
     );
 }
 
@@ -4683,15 +4695,24 @@ document.addEventListener('click', () => {
     document.getElementById('quickFilterPopover')?.classList.remove('active');
 });
 
-function toggleQuickDropdown(el) {
-    event.stopPropagation();
+function toggleQuickDropdown(el, e) {
+    e.stopPropagation();
+
     const dropdown = el.closest('.quick-dropdown');
 
+    // close others
     document.querySelectorAll('.quick-dropdown.active')
         .forEach(d => d !== dropdown && d.classList.remove('active'));
 
     dropdown.classList.toggle('active');
 }
+document.addEventListener('click', function (e) {
+    document.querySelectorAll('.quick-dropdown.active').forEach(dropdown => {
+        if (!dropdown.contains(e.target)) {
+            dropdown.classList.remove('active');
+        }
+    });
+});
 document
   .getElementById('quickFilterPopover')
   .addEventListener('click', e => {
@@ -4715,6 +4736,8 @@ function getOptionsByField(field) {
             return services_details.flatMap(obj => Object.keys(obj));
         case "persons":
             return persons.filter(i => i !== '').sort();
+        case "run":
+            return runGroups.filter( i => i !== '' ).sort();
         default:
             return [];
     }
@@ -4734,7 +4757,6 @@ function populateQuickDropdowns() {
             opt.className = 'quick-dropdown-option';
 
             const applied = isFilterApplied(field, value);
-
             opt.innerHTML = applied
                 ? `<span>${value}</span><i class="fa fa-check"></i>`
                 : `<span>${value}</span>`;
@@ -4759,7 +4781,10 @@ function populateQuickDropdowns() {
 
 async function applyQuickFilter(field, value) {
     if (isFilterApplied(field, value)) return;
-
+    if( field === 'service' ){
+        console.log(appliedFilters);
+        
+    }
     const existing = appliedFilters.find(f => f.field === field);
 
 if (existing) {
@@ -4775,6 +4800,11 @@ if (existing) {
 
     renderAppliedFilters();    
     document.getElementById('quickFilterPopover').classList.remove('active');
+    document.querySelectorAll('.quick-dropdown.active').forEach(dropdown => {
+        
+        dropdown.classList.remove('active');
+        
+    });
     if (currentView === 'week') {
                 if (currentViewType === 'person') {
                 await renderWeekPersonView();
@@ -4817,7 +4847,6 @@ if (existing) {
 // }
         
         let eventDatabase = JSON.parse(JSON.stringify(initialEventDatabase));
-
         function getDateKey(date) {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
