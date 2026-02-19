@@ -2571,16 +2571,49 @@ function openStaffSchedulePopup(eventData, dateKey, isNewRecord = false) {
       const run = popup.querySelector("#run").value;
       const leaveType = popup.querySelector("#leaveType")?.value;
       const staff = popup.querySelector("#staff").value;
+      console.log(JSON.stringify(staffRunEventDatabase[dateKey]));
 
       // Basic validations
       if (!staff) {
         showToast("Staff is required.", "error");
         return;
       }
-      if (status === "Available" && !run) {
-        showToast("Run is required when status is Available.", "error");
+      const dayRecords = staffRunEventDatabase[dateKey] || [];
+
+      // Records for this staff on that day
+      const staffRecords = dayRecords.filter((r) => r.staff === staff);
+
+      // Are we editing an existing record?
+      const isEditingExisting = !isNewRecord;
+
+      // Count excluding the current record (when editing)
+      const otherRecords = isEditingExisting
+        ? staffRecords.filter((r) => r.zoho_id !== eventData.zoho_id)
+        : staffRecords;
+
+      const hasOtherRecords = otherRecords.length > 0;
+      const multipleRecords = staffRecords.length > 1;
+
+      // 🚨 RULES
+
+      // Case 1: creating new & already record exists → run required
+      if (isNewRecord && hasOtherRecords && !run) {
+        showToast(
+          "Run is required when multiple entries exist for this staff on the same day.",
+          "error",
+        );
         return;
       }
+
+      // Case 2: editing & multiple records exist → run required
+      if (isEditingExisting && multipleRecords && !run) {
+        showToast(
+          "Run is required when multiple entries exist for this staff on the same day.",
+          "error",
+        );
+        return;
+      }
+
       if (status === "Off" && !leaveType) {
         showToast("Leave type is required when status is Off.", "error");
         return;
