@@ -1873,7 +1873,7 @@ function renderWeekStaffRunRows() {
         person === "—" ? [] : getEventsForStaffRun(person, dateKey);
       renderWeekStaffRunEvents(eventsContainer, events, dateKey);
       const date1 = new Date(dateKey);
-      const date2 = new Date(currentDate);
+      const date2 = new Date();
       date1.setHours(0, 0, 0, 0);
       date2.setHours(0, 0, 0, 0);
 
@@ -1958,7 +1958,7 @@ function renderWeekRunRows() {
       const events = person === "—" ? [] : getEventsForWeekRun(person, dateKey);
       renderWeekEventsForRun(eventsContainer, events, dateKey);
       const date1 = new Date(dateKey);
-      const date2 = new Date(currentDate);
+      const date2 = new Date();
       date1.setHours(0, 0, 0, 0);
       date2.setHours(0, 0, 0, 0);
       dayColumn.appendChild(eventsContainer);
@@ -2293,7 +2293,7 @@ function renderWeekStaffRunEvents(container, events, dateKey) {
     el.appendChild(title);
     el.appendChild(time);
     const date1 = new Date(dateKey);
-    const date2 = new Date(currentDate);
+    const date2 = new Date();
     date1.setHours(0, 0, 0, 0);
     date2.setHours(0, 0, 0, 0);
     // Click handler for existing events
