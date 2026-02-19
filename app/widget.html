@@ -4889,7 +4889,10 @@ if (existing) {
                 search_key = 'title';
             } else if (f.field === 'staff' || f.field === 'employee' ) {
                 search_key = 'employee';
-            } else {
+            }else if( f.field === 'run' ){
+                search_key = 'run_view';
+            }
+             else {
                 search_key = f.field;
             }
             const eventValue = evt[search_key];

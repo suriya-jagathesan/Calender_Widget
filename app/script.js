@@ -324,6 +324,8 @@ function getEventsForRunGroup(runGroup, dateKey) {
           search_key = "employee";
         } else if (f.field === "service") {
           search_key = "service";
+        } else if (f.field === "run") {
+          search_key = "run_view";
         } else {
           search_key = f.field;
         }
@@ -3829,13 +3831,14 @@ function getEmployeesFromEventsWeek() {
 function getEmployeesFromEvents() {
   const dateKey = getCurrentDateKey();
   let filteredEvents = eventDatabase[dateKey];
+  console.log(`events for:`, filteredEvents);
 
   const serviceFilter = appliedFilters.find((f) => f.field === "service");
   const personFilter = appliedFilters.find((f) => f.field === "persons");
   const employeeFilter = appliedFilters.find(
     (f) => f.field === "employee" || f.field === "staff",
   );
-
+  const runFilter = appliedFilters.find((f) => f.field === "run");
   if (serviceFilter) {
     filteredEvents = filteredEvents.filter((e) =>
       serviceFilter.searchValues.includes(e.service),
@@ -3852,7 +3855,11 @@ function getEmployeesFromEvents() {
       employeeFilter.searchValues.includes(e.employee),
     );
   }
-
+  if (runFilter) {
+    filteredEvents = filteredEvents.filter((e) =>
+      runFilter.searchValues.includes(e.run_view),
+    );
+  }
   const employeeSet = new Set();
   employeeSet.add("");
   filteredEvents.forEach((e) => {
@@ -3875,7 +3882,7 @@ function getRunFromEvents() {
   const employeeFilter = appliedFilters.find(
     (f) => f.field === "employee" || f.field === "staff",
   );
-
+  const runFilter = appliedFilters.find((f) => f.field === "run");
   if (serviceFilter) {
     filteredEvents = filteredEvents.filter((e) =>
       serviceFilter.searchValues.includes(e.service),
@@ -3892,7 +3899,11 @@ function getRunFromEvents() {
       employeeFilter.searchValues.includes(e.employee),
     );
   }
-
+  if (runFilter) {
+    filteredEvents = filteredEvents.filter((e) =>
+      runFilter.searchValues.includes(e.run_view),
+    );
+  }
   const employeeSet = new Set();
   employeeSet.add("");
   filteredEvents.forEach((e) => {
