@@ -3748,7 +3748,6 @@ function hideLoader() {
     try {
         let initparam = await ZOHO.CREATOR.UTIL.getInitParams();
         
-        
         app_name = initparam.appLinkName;
         loginUser = initparam.loginUser;
         scope = initparam.scope;
@@ -3779,6 +3778,7 @@ function hideLoader() {
         // await getTodayAllEmployees();
         await getBookings();
         getRunGroups();
+        getAllEmployeeDetails();
     } catch (err) {
         console.log("getZohoData failed:", err);
     }
@@ -5234,7 +5234,7 @@ if (runName && !runGroups.includes(runName)) {
         console.log(cur_book);
         
     }
-    console.log(personDetails);
+    // console.log(personDetails);
     
     return cur_book;
     
@@ -5993,9 +5993,10 @@ function openPersonWeekPDF( personName ){
         showToast("Person ID not found", "error");
         return;
     }
-    const pdfUrl = `https://${scope}.domportal.care/pdf/Pdf_Client_View?zc_PdfSize=A4&amp;zc_PdfOrientation=landscape&amp;staff=${employeeId}&amp;start=${startDate}`;
+   
+    const pdfUrl = `https://${scope}.domportal.care/export/${scope}/${app_name}/pdf/Pdf_Client_View?zc_PdfSize=A4&zc_PdfOrientation=landscape&staff=${employeeId}&start=${startDate}`;
     
-
+ console.log(pdfUrl)
     
     
     // Open in new window/tab
@@ -6017,6 +6018,7 @@ function openRunWeekPDF(runName){
     const startDate = formatDateDDMMYYYY(weekStart);
     const endDate = formatDateDDMMYYYY(weekEnd);
      const pdfUrl = `https://${scope}.domportal.care//pdf/Manual_Rostering?&zc_LoadIn=dialog&Care_Group=${runName}&Date_field1=${weekStart};${weekEnd}&Date_field1_op=58`;
+    console.log(pdfUrl);
     
     
     
@@ -6051,8 +6053,9 @@ function openEmployeeWeekPDF(employeeName) {
     }
     
 
-    const pdfUrl = `https://${scope}.domportal.care//pdf/Pdf_Staff_View?zc_PdfSize=A4&zc_PdfOrientation=landscape&staff=${employeeId}&start=${startDate}`;
+    const pdfUrl = `https://${scope}.domportal.care/pdf/Pdf_Staff_View?zc_PdfSize=A4&zc_PdfOrientation=landscape&staff=${employeeId}&start=${startDate}`;
     
+    console.log(pdfUrl);
     
     
     
@@ -7366,8 +7369,10 @@ async function renderFilteredEmployeeRows(emp) {
 
     renderEmployeeColumnBasedOnFilter(rowHeightsMap,emp);
 }
-
-async function getAllEmployees() {
+let allStaff = [];
+let allStaffDetails = [];
+async function getAllEmployeeDetails() {
+    allStaff = [];
      const serviceList = `[${services.join(",")}]`;
     const criteria_2 = `Sites.ID == ${serviceList} && Status == "Active"`;
     var staffs = {
@@ -7376,7 +7381,24 @@ async function getAllEmployees() {
         criteria: criteria_2
     };       
     staff_resp = await ZOHO.CREATOR.DATA.getRecords(staffs);
-    console.log(staff_resp);
+    // console.log(staff_resp);
+    staff_resp.data.forEach(function (rec) {
+        const name = rec?.Name1 ?? '';
+        console.log(name);
+        
+        if( !allStaff.includes(name) && name !== '' ){
+            allStaff.push(name);
+            allStaffDetails.push({
+                name: name,
+                id: rec?.ID
+            })
+        }
+        
+    });
+    // console.log(allStaff);
+    // console.log(allStaffDetails);
+    
+    
 }
 function toggleEmployeeDropdown(e) {
     e.stopPropagation();
@@ -7617,7 +7639,8 @@ var config = {
         'api_name': 'Most_Probable_Staff',
         'public_key': 'Av7kPvbZrGVvnaHgqXpR4wFE8',
         'payload':{
-            "id": evt.zoho_id
+            "id": evt.zoho_id,
+            "app_name": app_name
         }
         
     };

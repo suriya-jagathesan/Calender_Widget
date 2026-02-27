@@ -1133,6 +1133,7 @@ async function loadTravelDetails(evt) {
       public_key: "ahg0WmdMKZpOW8SMYFUOrsFv5",
       payload: {
         id: evt.zoho_id,
+        app_name: app_name,
       },
     };
 
@@ -1573,36 +1574,59 @@ async function getWeekStaffRunDetails() {
   runRows = [];
   staffRunEventDatabase = {};
   runStaffList = [];
+
   const weekStart = new Date(currentDate);
   weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1);
+
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 6);
+
   let zoho_start_date = formatDateDDMMYYYY(weekStart);
   let zoho_end_date = formatDateDDMMYYYY(weekEnd);
+
   const serviceList = `[${services.join(",")}]`;
   const criteria_2 = `Site_Name.ID == ${serviceList} && Date_From >= '${zoho_start_date}' && Date_From <= '${zoho_end_date}'`;
-  var booking = {
+
+  const booking = {
     app_name: app_name,
     report_name: "Daily_schedule_for_Staff",
     criteria: criteria_2,
     max_records: 1000,
   };
-  booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
-  booking_resp.data.forEach(function (rec) {
-    let runRunBooking = [];
+
+  let booking_resp;
+
+  try {
+    booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
+  } catch (err) {
+    console.error("Zoho API error:", err);
+    return;
+  }
+
+  // ✅ Handle no records safely
+  if (
+    !booking_resp ||
+    !Array.isArray(booking_resp.data) ||
+    booking_resp.data.length === 0
+  ) {
+    console.warn("No staff run records found for the selected week.");
+    return;
+  }
+
+  booking_resp.data.forEach((rec) => {
     let data = {};
+
     const isActualRun =
       rec?.Care_Group &&
       Object.keys(rec.Care_Group).length > 0 &&
       rec.Care_Group.Care_Group_Name;
-    const run_name =
-      rec?.Care_Group &&
-      Object.keys(rec.Care_Group).length > 0 &&
-      rec.Care_Group.Care_Group_Name
-        ? rec.Care_Group.Care_Group_Name
-        : rec?.Available_Status === "Off"
-          ? rec?.leave_Type
-          : rec?.Available_Status;
+
+    const run_name = rec?.Care_Group?.Care_Group_Name
+      ? rec.Care_Group.Care_Group_Name
+      : rec?.Available_Status === "Off"
+        ? rec?.leave_Type
+        : rec?.Available_Status;
+
     data.off = rec?.Available_Status === "Off" ? "true" : "false";
     data.zoho_id = rec.ID;
     data.run_name = run_name;
@@ -1612,18 +1636,18 @@ async function getWeekStaffRunDetails() {
     data.endMinutes = getMinutes(rec?.To_Time_Line);
     data.startMinutes = getMinutes(rec?.From_Time_Line);
     data.staff = rec.Staff?.zc_display_value;
-    if (
-      !runStaffList.includes(rec.Staff?.zc_display_value) &&
-      rec.Staff?.zc_display_value !== undefined &&
-      rec.Staff?.zc_display_value != ""
-    ) {
-      runStaffList.push(rec.Staff?.zc_display_value);
-    }
     data.start_time = rec?.Start_Time;
     data.end_time = rec?.End_Time;
     data.from_date = rec.Date_From;
     data.to_date = rec.Date_To;
     data.break = rec.Break;
+
+    const staffName = data.staff;
+
+    if (staffName && !runStaffList.includes(staffName)) {
+      runStaffList.push(staffName);
+    }
+
     if (
       !runRows.includes(run_name) &&
       run_name !== "Available" &&
@@ -1631,20 +1655,12 @@ async function getWeekStaffRunDetails() {
     ) {
       runRows.push(run_name);
     }
-    if (
-      rec?.Care_Group?.Care_Group_Name != null &&
-      rec?.Care_Group?.Care_Group_Name != undefined &&
-      Object.keys(rec.Care_Group).length > 0
-    ) {
-      runRowDetails[rec?.Care_Group?.Care_Group_Name] = rec?.Care_Group?.ID;
-    }
-    runRunBooking.push(data);
-    const key = toYYYYMMDD(rec.Date_From);
-    if (!staffRunEventDatabase[key]) {
-      staffRunEventDatabase[key] = [];
-    }
-    const staffName = rec.Staff?.zc_display_value;
 
+    if (rec?.Care_Group?.Care_Group_Name) {
+      runRowDetails[rec.Care_Group.Care_Group_Name] = rec.Care_Group.ID;
+    }
+
+    const key = toYYYYMMDD(rec.Date_From);
     if (!staffRunEventDatabase[key]) {
       staffRunEventDatabase[key] = [];
     }
@@ -1653,18 +1669,15 @@ async function getWeekStaffRunDetails() {
       (e) => e.staff === staffName,
     );
 
-    // If this is an Available/Off record
+    // Skip Available/Off if actual run exists
     if (!isActualRun) {
       const hasActualRunAlready = existingForStaff.some(
         (e) => e.run_name !== "Available" && e.run_name !== "Off",
       );
-
-      if (hasActualRunAlready) {
-        return;
-      }
+      if (hasActualRunAlready) return;
     }
 
-    // ✅ If this is a real run, remove any existing Available/Off
+    // Remove Available/Off if real run exists
     if (isActualRun && existingForStaff.length > 0) {
       staffRunEventDatabase[key] = staffRunEventDatabase[key].filter(
         (e) =>
@@ -1675,9 +1688,9 @@ async function getWeekStaffRunDetails() {
       );
     }
 
-    // Finally push
     staffRunEventDatabase[key].push(data);
   });
+
   runStaffList.sort();
   console.log(runRowDetails);
 }
@@ -1744,7 +1757,11 @@ async function re_renderWeekRunView() {
 }
 
 async function renderWeekStaffView() {
+  console.log("Next1");
+
   await getWeekStaffRunDetails();
+  console.log("Next");
+
   renderWeekDaysHeaderPerson();
   renderWeekStaffRunRows();
   syncWeekScroll();
@@ -2072,8 +2089,22 @@ function renderWeekStaffRunColumn(rowHeightsMap = {}) {
       const dayDate = new Date(weekStart);
       dayDate.setDate(weekStart.getDate() + day);
       const events = getEventsForStaffRun(person, getDateKey(dayDate));
+      if (person === "Ololade Ogunpola") {
+        console.log(
+          "Events for Ololade Ogunpola on " + getDateKey(dayDate) + ":",
+          JSON.stringify(events),
+        );
+      }
       events.forEach((evt) => {
-        total_mins += evt.endMinutes - evt.startMinutes;
+        if (evt.off === "false") {
+          let duration = evt.endMinutes - evt.startMinutes;
+
+          if (duration < 0) {
+            duration += 24 * 60;
+          }
+
+          total_mins += duration;
+        }
       });
     }
     // const t_count = total_mins / 60;
@@ -2476,7 +2507,7 @@ function openStaffSchedulePopup(eventData, dateKey, isNewRecord = false) {
   });
 
   // Initialize custom dropdowns
-  initializeCustomDropdown(popup, "staff", runStaffList, eventData.staff);
+  initializeCustomDropdown(popup, "staff", allStaff, eventData.staff);
 
   // Handle Site Name based on context
   // This will populate the site field
@@ -3138,7 +3169,7 @@ async function createNewStaffSchedule(popup, dateKey) {
   hideLoader();
 }
 function getEmployeeIdByName(empName) {
-  const emp = employeeDetails.find((e) => e.name === empName);
+  const emp = allStaffDetails.find((e) => e.name === empName);
   return emp ? emp.id : null;
 }
 
@@ -3216,7 +3247,10 @@ async function saveStaffScheduleChanges(zohoId, popup) {
           if (record.staff !== newStaff) {
             record.staff = newStaff;
           }
-          console.log(record);
+          if (!runStaffList.includes(newStaff)) {
+            runStaffList.push(newStaff);
+          }
+          // console.log(record);
         }
       }
       renderWeekStaffRunRows();
