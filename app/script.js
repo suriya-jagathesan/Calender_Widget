@@ -1133,7 +1133,6 @@ async function loadTravelDetails(evt) {
       public_key: "ahg0WmdMKZpOW8SMYFUOrsFv5",
       payload: {
         id: evt.zoho_id,
-        app_name: app_name,
       },
     };
 
@@ -2120,10 +2119,15 @@ function renderWeekStaffRunColumn(rowHeightsMap = {}) {
         : emp_data?.[0]?.week_hours || "0.0";
 
     if (person !== "—") {
+      const empId = getEmpIdByName(person);
+      const url =
+        `https://${portal_url}/#Report:Manual_Rostering?&zc_LoadIn=dialog&Care_Providers.ID=` +
+        empId;
       row.innerHTML = `
                 <div class="employee-label">
                  <div class="employee-name-row">
-                    <span class="employee-name">${person}</span>
+                    <a href="${url}" 
+               target="_blank"  class="employee-name">${person}</a>
                    </div>
                    <div class="employee-hours-left">
                 <span class="hours-value" data-tooltip="Contracted Hours">${con_hours}</span>
@@ -3615,7 +3619,7 @@ function openDateReport() {
 
   const formattedDate = formatDateDDMMYYYY(currentDate);
 
-  const url = `https://${scope}.domportal.care/#Report:Manual_Rostering?&zc_LoadIn=dialog&Date_field1=${formattedDate}`;
+  const url = `https://${portal_url}/#Report:Manual_Rostering?&zc_LoadIn=dialog&Date_field1=${formattedDate}`;
 
   window.open(url, "_blank", "noopener");
 }

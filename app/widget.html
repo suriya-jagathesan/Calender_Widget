@@ -3288,7 +3288,7 @@ body.dragging .employee-working-hours {
                     <select id="availabilityStatus" class="form-control">
                         <option value="Available">Available</option>
                         <option value="Off">Off</option>
-
+                        <option value="Delete">Delete</option>
                     </select>
                 </div>
                 
@@ -3738,6 +3738,7 @@ const CLICK_TOLERANCE = 5;
     if (overlay) overlay.classList.remove('hidden');
 }
 let scope;
+let portal_url = "";
 function hideLoader() {
     const overlay = document.getElementById('loadingOverlay');
     if (overlay) overlay.classList.add('hidden');
@@ -3747,6 +3748,11 @@ function hideLoader() {
        async function getZohoData() {
     try {
         let initparam = await ZOHO.CREATOR.UTIL.getInitParams();
+        ZOHO.CREATOR.UTIL.getQueryParams().then((response) => {
+        portal_url = response?.portal_url ?? "";
+        console.log( "Portal URL " + portal_url );
+        
+        })
         
         app_name = initparam.appLinkName;
         loginUser = initparam.loginUser;
@@ -5357,7 +5363,7 @@ const travelTotals = calculateEmployeeTravelTotals(employee, dateKey);
                 iconHTML = `<i class="fa-solid fa-car"></i>`;
             } 
             const empId = getEmpIdByName(employee);
-            const url = `https://${scope}.domportal.care/#Report:Manual_Rostering?&zc_LoadIn=dialog&Care_Providers.ID=`+empId;
+            const url = `https://${portal_url}/#Report:Manual_Rostering?&zc_LoadIn=dialog&Care_Providers.ID=`+empId;
             row.innerHTML = `
     <div class="employee-label">
         <div class="employee-name-row">
@@ -5994,7 +6000,7 @@ function openPersonWeekPDF( personName ){
         return;
     }
    
-    const pdfUrl = `https://${scope}.domportal.care/export/${scope}/${app_name}/pdf/Pdf_Client_View?zc_PdfSize=A4&zc_PdfOrientation=landscape&staff=${employeeId}&start=${startDate}`;
+    const pdfUrl = `https://${portal_url}/export/${scope}/${app_name}/pdf/Pdf_Client_View?zc_PdfSize=A4&zc_PdfOrientation=landscape&staff=${employeeId}&start=${startDate}`;
     
  console.log(pdfUrl)
     
@@ -6017,7 +6023,7 @@ function openRunWeekPDF(runName){
     
     const startDate = formatDateDDMMYYYY(weekStart);
     const endDate = formatDateDDMMYYYY(weekEnd);
-     const pdfUrl = `https://${scope}.domportal.care//pdf/Manual_Rostering?&zc_LoadIn=dialog&Care_Group=${runName}&Date_field1=${weekStart};${weekEnd}&Date_field1_op=58`;
+     const pdfUrl = `https://${portal_url}/export/${scope}/${app_name}/pdf/Manual_Rostering?&zc_LoadIn=dialog&Care_Group=${runName}&Date_field1=${weekStart};${weekEnd}&Date_field1_op=58`;
     console.log(pdfUrl);
     
     
@@ -6053,7 +6059,7 @@ function openEmployeeWeekPDF(employeeName) {
     }
     
 
-    const pdfUrl = `https://${scope}.domportal.care/pdf/Pdf_Staff_View?zc_PdfSize=A4&zc_PdfOrientation=landscape&staff=${employeeId}&start=${startDate}`;
+    const pdfUrl = `https://${portal_url}/export/${scope}/${app_name}/pdf/Pdf_Staff_View?zc_PdfSize=A4&zc_PdfOrientation=landscape&staff=${employeeId}&start=${startDate}`;
     
     console.log(pdfUrl);
     
