@@ -3351,7 +3351,10 @@ body.dragging .employee-working-hours {
                     <label>Break</label>
                    <input type="text" id="break" class="form-control">
                 </div>
-                
+                <div class="form-group">
+    <label>Total Duration</label>
+    <input type="text" id="totalDuration" class="form-control" disabled>
+</div>
                 
                 
                 <div class="form-actions">
@@ -3801,7 +3804,7 @@ function hideLoader() {
         if( currentView == "day" ){
             employees_config = {
             app_name,
-            report_name: "Daily_Shift_Report",
+            report_name: "Daily_schedule_for_Staff",
             criteria: `Site_Name.ID == ${serviceList} && Date_From == '${formatDateDDMMYYYY(currentDate)}' && Available_Status == "Available" `
         };
 
@@ -3823,7 +3826,7 @@ function hideLoader() {
 
              employees_config = {
             app_name,
-            report_name: "Daily_Shift_Report",
+            report_name: "Daily_schedule_for_Staff",
             criteria: `Site_Name.ID == ${serviceList} && Date_From >= '${zoho_start_date}' &&  Date_From <= '${zoho_end_date}' && Available_Status == "Available"  `,
             max_records: 1000
         };

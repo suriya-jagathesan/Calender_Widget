@@ -1133,6 +1133,7 @@ async function loadTravelDetails(evt) {
       public_key: "ahg0WmdMKZpOW8SMYFUOrsFv5",
       payload: {
         id: evt.zoho_id,
+        app_name: app_name,
       },
     };
 
@@ -2596,7 +2597,18 @@ function openStaffSchedulePopup(eventData, dateKey, isNewRecord = false) {
 
   popup.querySelector(".close-popup-btn").addEventListener("click", closePopup);
   popup.querySelector(".btn-cancel").addEventListener("click", closePopup);
+  popup
+    .querySelector("#startTime")
+    .addEventListener("input", () => calculateTotalDuration(popup));
 
+  popup
+    .querySelector("#endTime")
+    .addEventListener("input", () => calculateTotalDuration(popup));
+
+  popup
+    .querySelector("#break")
+    .addEventListener("change", () => calculateTotalDuration(popup));
+  calculateTotalDuration(popup);
   // Form submission
   popup
     .querySelector("#staffScheduleForm")
@@ -2661,6 +2673,40 @@ function openStaffSchedulePopup(eventData, dateKey, isNewRecord = false) {
       }
       closePopup();
     });
+}
+function calculateTotalDuration(popup) {
+  const startTime = popup.querySelector("#startTime").value;
+  const endTime = popup.querySelector("#endTime").value;
+  const breakTime = popup.querySelector("#break").value || "00:00";
+
+  if (!startTime || !endTime) {
+    popup.querySelector("#totalDuration").value = "";
+    return;
+  }
+
+  const toMinutes = (timeStr) => {
+    const [hours, minutes] = timeStr.split(":").map(Number);
+    return hours * 60 + minutes;
+  };
+
+  let startMinutes = toMinutes(startTime);
+  let endMinutes = toMinutes(endTime);
+  let breakMinutes = toMinutes(breakTime);
+
+  // Handle next day scenario
+  if (endMinutes < startMinutes) {
+    endMinutes += 24 * 60;
+  }
+
+  let totalMinutes = endMinutes - startMinutes - breakMinutes;
+
+  if (totalMinutes < 0) totalMinutes = 0;
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  popup.querySelector("#totalDuration").value =
+    String(hours).padStart(2, "0") + ":" + String(minutes).padStart(2, "0");
 }
 document.addEventListener("click", function (e) {
   document.querySelectorAll(".quick-dropdown.open").forEach((dropdown) => {
