@@ -2447,7 +2447,7 @@ body.dragging .employee-working-hours {
   background: #fff;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  max-height: 200px;
+  max-height: 150px;
   overflow-y: auto;
   box-shadow: 0 8px 20px rgba(0,0,0,0.15);
   display: none;
@@ -2530,6 +2530,132 @@ body.dragging .employee-working-hours {
     </style>
 </head>
 <body>
+    <!-- Add Visit Modal -->
+<div id="addVisitModal" class="modal-overlay hidden">
+  <div class="modal-card" style="width:560px;">
+
+    <!-- Header -->
+    <div class="event-modal-tabs-header">
+      <span style="font-size:15px; font-weight:600; color:#1f2937; padding-left:4px;">Add Visit</span>
+      <button class="close-btn" onclick="closeAddVisitModal()">×</button>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body">
+
+      <!-- Service -->
+     
+<div class="modal-form-row">
+  <label>Service <span>*</span></label>
+  <div class="av-custom-dropdown" id="av_service_dd">
+    <div class="av-custom-dropdown-display" onclick="toggleAvDropdown('av_service_dd')">
+      <span id="av_service_text" style="color:#9ca3af;">Select service</span>
+      <i class="fa fa-chevron-down"></i>
+    </div>
+    <div class="av-custom-dropdown-options" id="av_service_options">
+      <div class="av-custom-dropdown-search">
+        <input type="text" placeholder="Search..." oninput="avFilterOptions(document.getElementById('av_service_dd'), this.value)" onclick="event.stopPropagation()" />
+      </div>
+    </div>
+  </div>
+  <input type="hidden" id="av_service_val" />
+</div>
+
+      <!-- Person -->
+      <!-- Person -->
+<div class="modal-form-row">
+  <label>Person <span>*</span></label>
+  <div class="av-custom-dropdown" id="av_person_dd">
+    <div class="av-custom-dropdown-display disabled" id="av_person_display" onclick="toggleAvDropdown('av_person_dd')">
+      <span id="av_person_text" style="color:#9ca3af;">Select person</span>
+      <i class="fa fa-chevron-down"></i>
+    </div>
+    <div class="av-custom-dropdown-options" id="av_person_options">
+      <div class="av-custom-dropdown-search">
+        <input type="text" placeholder="Search..." oninput="avFilterOptions(document.getElementById('av_person_dd'), this.value)" onclick="event.stopPropagation()" />
+      </div>
+    </div>
+  </div>
+  <input type="hidden" id="av_person_val" />
+</div>
+
+      <!-- Visit Title -->
+      <div class="modal-form-row">
+        <label>Visit Title</label>
+        <input id="av_title" class="modal-input" type="text" placeholder="Visit Title" />
+      </div>
+
+      <!-- Date -->
+      <div class="modal-form-row">
+        <label>Date <span>*</span></label>
+        <input id="av_date" class="modal-input" type="date" />
+      </div>
+
+      <!-- From -->
+      <div class="modal-form-row">
+        <label>From <span>*</span></label>
+        <input id="av_from" class="modal-input" type="time" />
+      </div>
+
+      <!-- To -->
+      <div class="modal-form-row">
+        <label>To <span>*</span></label>
+        <input id="av_to" class="modal-input" type="time" />
+      </div>
+
+      <!-- Status -->
+      <div class="modal-form-row">
+        <label>Status <span>*</span></label>
+        <div class="av-custom-dropdown" id="av_status_dd">
+          <div class="av-custom-dropdown-display" onclick="toggleAvDropdown('av_status_dd')">
+            <span id="av_status_text">Not Started</span>
+            <i class="fa fa-chevron-down"></i>
+          </div>
+          <div class="av-custom-dropdown-options">
+            <div class="av-custom-dropdown-option" onclick="selectAvOption('av_status_dd','av_status_val','av_status_text', 'Not Started')">Not Started</div>
+            <div class="av-custom-dropdown-option" onclick="selectAvOption('av_status_dd','av_status_val','av_status_text', 'Started')">Started</div>
+            <div class="av-custom-dropdown-option" onclick="selectAvOption('av_status_dd','av_status_val','av_status_text', 'Completed')">Completed</div>
+            <div class="av-custom-dropdown-option" onclick="selectAvOption('av_status_dd','av_status_val','av_status_text', 'Not Completed')">Not Completed</div>
+            <div class="av-custom-dropdown-option" onclick="selectAvOption('av_status_dd','av_status_val','av_status_text', 'Missed')">Missed</div>
+            <div class="av-custom-dropdown-option" onclick="selectAvOption('av_status_dd','av_status_val','av_status_text', 'Cancelled')">Cancelled</div>
+            <div class="av-custom-dropdown-option" onclick="selectAvOption('av_status_dd','av_status_val','av_status_text', 'Inactive')">Inactive</div>
+          </div>
+        </div>
+        <input type="hidden" id="av_status_val" value="Not Started" />
+      </div>
+
+      <!-- Staff -->
+      <div class="modal-form-row" style="align-items:start;">
+  <label style="padding-top:8px;">Staff </label>
+  <div class="multi-select" id="avStaffMultiSelect">
+    <div class="multi-select-input" id="avStaffMultiInput">
+      <!-- pills injected here -->
+      <input
+        type="text"
+        id="avStaffSearchInput"
+        placeholder="Select staff"
+        autocomplete="off"
+      />
+    </div>
+    <div class="multi-select-dropdown" id="avStaffDropdown"></div>
+  </div>
+</div>
+      <!-- Manager Notes -->
+      <div class="modal-form-row" style="align-items:start;">
+        <label style="padding-top:6px;">Manager Notes</label>
+        <textarea id="av_notes" class="modal-input" rows="3"></textarea>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeAddVisitModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitAddVisit()">Save</button>
+    </div>
+
+  </div>
+</div>
     <div id="timeChangeConfirmModal" class="modal-overlay hidden">
   <div class="time-confirm-modal">
     <div class="time-confirm-header">
@@ -2793,6 +2919,7 @@ body.dragging .employee-working-hours {
                         </div>
                     </div>
                 </div>  
+                <button class="nav-btn" onclick="openAddVisitModal()" > <i class="fa-solid fa-plus"></i> </button>
                 <button class="calendar-icon" onclick="toggleSearch()"><i class="fa fa-search fa-lg"></i></button>
                 <button class="calendar-icon" onclick="init()"><i class="fa-solid fa-arrow-rotate-right"></i></i></button>
                 <button class="calendar-icon" onclick="toggleQuickFilter(event)">
@@ -3788,6 +3915,7 @@ function hideLoader() {
         await getBookings();
         getRunGroups();
         getAllEmployeeDetails();
+        getAllPersonDetails();
     } catch (err) {
         console.log("getZohoData failed:", err);
     }
@@ -7393,19 +7521,24 @@ async function getAllEmployeeDetails() {
     // console.log(staff_resp);
     staff_resp.data.forEach(function (rec) {
         const name = rec?.Name1 ?? '';
-        console.log(name);
+        let emp_service = [];
+
+rec?.Sites?.forEach(i => {
+  emp_service.push(i.zc_display_value);
+});
         
         if( !allStaff.includes(name) && name !== '' ){
             allStaff.push(name);
             allStaffDetails.push({
                 name: name,
-                id: rec?.ID
+                id: rec?.ID,
+                service: emp_service
             })
         }
         
     });
     // console.log(allStaff);
-    // console.log(allStaffDetails);
+    console.log(allStaffDetails);
     
     
 }

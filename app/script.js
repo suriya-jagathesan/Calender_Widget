@@ -4079,3 +4079,357 @@ function getRunFromEvents() {
 
   return Array.from(employeeSet);
 }
+function toggleAvDropdown(ddId) {
+  const dd = document.getElementById(ddId);
+  if (
+    dd
+      .querySelector(".av-custom-dropdown-display")
+      .classList.contains("disabled")
+  )
+    return;
+
+  document.querySelectorAll(".av-custom-dropdown.active").forEach((el) => {
+    if (el.id !== ddId) {
+      el.classList.remove("active");
+      // Clear search in closed dropdowns
+      const si = el.querySelector(".av-custom-dropdown-search input");
+      if (si) {
+        si.value = "";
+        avFilterOptions(el, "");
+      }
+    }
+  });
+
+  dd.classList.toggle("active");
+
+  // Focus the search input when opened
+  if (dd.classList.contains("active")) {
+    const searchInput = dd.querySelector(".av-custom-dropdown-search input");
+    if (searchInput) {
+      searchInput.value = "";
+      avFilterOptions(dd, "");
+      setTimeout(() => searchInput.focus(), 50);
+    }
+  }
+}
+
+function avFilterOptions(ddEl, query) {
+  const q = query.toLowerCase();
+  const options = ddEl.querySelectorAll(".av-custom-dropdown-option");
+  let visibleCount = 0;
+
+  options.forEach((opt) => {
+    const match = opt.textContent.toLowerCase().includes(q);
+    opt.style.display = match ? "block" : "none";
+    if (match) visibleCount++;
+  });
+
+  // Show/hide no results message
+  let noResults = ddEl.querySelector(".av-no-results");
+  if (!noResults) {
+    noResults = document.createElement("div");
+    noResults.className = "av-no-results";
+    noResults.textContent = "No results found";
+    ddEl.querySelector(".av-custom-dropdown-options").appendChild(noResults);
+  }
+  noResults.style.display = visibleCount === 0 ? "block" : "none";
+}
+
+function selectAvOption(ddId, hiddenId, textId, value) {
+  document.getElementById(hiddenId).value = value;
+
+  const textEl = document.getElementById(textId);
+  textEl.textContent = value;
+  textEl.style.color = "#1f2937";
+
+  // Mark selected option
+  const dd = document.getElementById(ddId);
+  dd.querySelectorAll(".av-custom-dropdown-option").forEach((opt) => {
+    opt.classList.toggle("selected", opt.textContent === value);
+  });
+
+  dd.classList.remove("active");
+
+  // If service changed, refresh person dropdown
+  if (ddId === "av_service_dd") {
+    onAddVisitServiceChange(value);
+  }
+}
+
+function onAddVisitServiceChange(service) {
+  const personDisplay = document.getElementById("av_person_display");
+  const personOptions = document.getElementById("av_person_options");
+  const personText = document.getElementById("av_person_text");
+  const personVal = document.getElementById("av_person_val");
+
+  // Reset person
+  personText.textContent = "Select person";
+  personText.style.color = "#9ca3af";
+  personVal.value = "";
+  personOptions.innerHTML = "";
+  personOptions.innerHTML = `
+  <div class="av-custom-dropdown-search">
+    <input type="text" placeholder="Search..." oninput="avFilterOptions(document.getElementById('av_person_dd'), this.value)" onclick="event.stopPropagation()" />
+  </div>
+`;
+  if (!service) {
+    personDisplay.classList.add("disabled");
+    return;
+  }
+
+  // Enable person dropdown
+  personDisplay.classList.remove("disabled");
+
+  const persons = allPersonDetails
+    .filter((s) => s.service.includes(service))
+    .map((s) => s.name);
+
+  console.log(persons);
+
+  persons.forEach((p) => {
+    const opt = document.createElement("div");
+    opt.className = "av-custom-dropdown-option";
+    opt.textContent = p;
+    opt.onclick = () =>
+      selectAvOption("av_person_dd", "av_person_val", "av_person_text", p);
+    personOptions.appendChild(opt);
+  });
+
+  if (!service) {
+    avCurrentServiceStaff = [];
+  } else {
+    avCurrentServiceStaff = persons;
+  }
+
+  // Reset selected staff and re-render
+  avSelectedStaff = [];
+  avRenderStaffPills();
+  avRenderStaffDropdown("", avCurrentServiceStaff);
+}
+
+function openAddVisitModal() {
+  // Populate Service options
+  const serviceOptions = document.getElementById("av_service_options");
+  serviceOptions.innerHTML = "";
+  let names = services_details.map((obj) => Object.keys(obj)[0]);
+  names.forEach((svc) => {
+    const opt = document.createElement("div");
+    opt.className = "av-custom-dropdown-option";
+    opt.textContent = svc;
+    opt.onclick = () =>
+      selectAvOption("av_service_dd", "av_service_val", "av_service_text", svc);
+    serviceOptions.appendChild(opt);
+  });
+
+  // Reset all fields
+  document.getElementById("av_service_text").textContent = "Select service";
+  document.getElementById("av_service_text").style.color = "#9ca3af";
+  document.getElementById("av_service_val").value = "";
+
+  document.getElementById("av_person_text").textContent = "Select person";
+  document.getElementById("av_person_text").style.color = "#9ca3af";
+  document.getElementById("av_person_val").value = "";
+  document.getElementById("av_person_options").innerHTML = "";
+  document.getElementById("av_person_display").classList.add("disabled"); // locked until service chosen
+
+  initAvStaffMultiSelect();
+
+  document.getElementById("av_status_text").textContent = "Not Started";
+  document.getElementById("av_status_val").value = "Not Started";
+
+  document.getElementById("av_title").value = "";
+  document.getElementById("av_notes").value = "";
+  document.getElementById("av_from").value = "";
+  document.getElementById("av_to").value = "";
+
+  // Pre-fill date to current calendar date
+  const d =
+    typeof currentDate !== "undefined" ? new Date(currentDate) : new Date();
+  document.getElementById("av_date").value = d.toISOString().split("T")[0];
+
+  // Close any open dropdowns
+  document
+    .querySelectorAll(".av-custom-dropdown.active")
+    .forEach((el) => el.classList.remove("active"));
+
+  document.getElementById("addVisitModal").classList.remove("hidden");
+}
+
+function closeAddVisitModal() {
+  document.getElementById("addVisitModal").classList.add("hidden");
+  document
+    .querySelectorAll(".av-custom-dropdown.active")
+    .forEach((el) => el.classList.remove("active"));
+}
+
+function submitAddVisit() {
+  const service = document.getElementById("av_service_val").value;
+  const date = document.getElementById("av_date").value;
+  const from = document.getElementById("av_from").value;
+  const to = document.getElementById("av_to").value;
+  const status = document.getElementById("av_status_val").value;
+  const staff = document.getElementById("av_staff_val").value;
+
+  if (!service || !date || !from || !to || !status) {
+    showToast("Please fill in all required fields (*).");
+    return;
+  }
+
+  // TODO: replace with your Zoho Creator API call
+  console.log("New visit:", {
+    service,
+    person: document.getElementById("av_person_val").value,
+    title: document.getElementById("av_title").value,
+    date,
+    from,
+    to,
+    status,
+    staff,
+    notes: document.getElementById("av_notes").value,
+  });
+
+  // closeAddVisitModal();
+}
+
+document.addEventListener("click", function (e) {
+  // Close av dropdowns when clicking outside
+  if (!e.target.closest(".av-custom-dropdown")) {
+    document
+      .querySelectorAll(".av-custom-dropdown.active")
+      .forEach((el) => el.classList.remove("active"));
+  }
+
+  // Close modal when clicking the backdrop
+  const modal = document.getElementById("addVisitModal");
+  if (modal && e.target === modal) {
+    closeAddVisitModal();
+  }
+});
+// ── Add Visit Modal - Staff Multi Select ──────────────────────
+
+function initAvStaffMultiSelect() {
+  avSelectedStaff = [];
+  avRenderStaffPills();
+  // avRenderStaffDropdown("");
+
+  const input = document.getElementById("avStaffSearchInput");
+  const dropdown = document.getElementById("avStaffDropdown");
+
+  // Fresh listeners — clone to remove old ones
+  const newInput = input.cloneNode(true);
+  input.parentNode.replaceChild(newInput, input);
+  // In newInput.oninput:
+  newInput.oninput = () =>
+    avRenderStaffDropdown(newInput.value, avCurrentServiceStaff);
+
+  // In newInput.onkeydown (Backspace handler):
+  avRenderStaffDropdown("", avCurrentServiceStaff);
+
+  newInput.onfocus = () => dropdown.classList.add("active");
+
+  newInput.oninput = () => avRenderStaffDropdown(newInput.value);
+
+  newInput.onkeydown = (e) => {
+    if (
+      e.key === "Backspace" &&
+      newInput.value === "" &&
+      avSelectedStaff.length
+    ) {
+      avSelectedStaff.pop();
+      avRenderStaffPills();
+      avRenderStaffDropdown("");
+    }
+  };
+
+  document.addEventListener("click", function avOutsideClick(e) {
+    if (!document.getElementById("avStaffMultiSelect")?.contains(e.target)) {
+      dropdown.classList.remove("active");
+    }
+  });
+}
+
+function avRenderStaffPills() {
+  const container = document.getElementById("avStaffMultiInput");
+  const input = document.getElementById("avStaffSearchInput");
+
+  container.querySelectorAll(".multi-pill").forEach((p) => p.remove());
+
+  avSelectedStaff.forEach((name, index) => {
+    const pill = document.createElement("div");
+    pill.className = "multi-pill";
+    pill.innerHTML = `<span>${name}</span><button>&times;</button>`;
+    pill.querySelector("button").onclick = () => {
+      avSelectedStaff.splice(index, 1);
+      avRenderStaffPills();
+      avRenderStaffDropdown("");
+    };
+    container.insertBefore(pill, input);
+  });
+}
+
+function avRenderStaffDropdown(query, allowedStaff = null) {
+  const dropdown = document.getElementById("avStaffDropdown");
+  dropdown.innerHTML = "";
+
+  const q = query.toLowerCase();
+
+  const pool =
+    allowedStaff !== null
+      ? allowedStaff
+      : typeof employees !== "undefined"
+        ? employees
+        : [];
+
+  pool
+    .filter(
+      (name) =>
+        name &&
+        !avSelectedStaff.includes(name) &&
+        name.toLowerCase().includes(q),
+    )
+    .forEach((name) => {
+      const opt = document.createElement("div");
+      opt.className = "multi-option";
+      opt.textContent = name;
+      opt.onclick = () => {
+        avSelectedStaff.push(name);
+        document.getElementById("avStaffSearchInput").value = "";
+        avRenderStaffPills();
+        avRenderStaffDropdown("", avCurrentServiceStaff); // pass filtered list on rerender
+      };
+      dropdown.appendChild(opt);
+    });
+
+  dropdown.classList.add("active");
+}
+let avSelectedStaff = [];
+let avCurrentServiceStaff = [];
+
+let allPerson = [];
+let allPersonDetails = [];
+async function getAllPersonDetails() {
+  allPerson = [];
+  const serviceList = `[${services.join(",")}]`;
+  const criteria_2 = `Primary_Site.ID == ${serviceList} && Status == "Active"`;
+  var staffs = {
+    app_name: app_name,
+    report_name: "Customers_Report",
+    criteria: criteria_2,
+  };
+  staff_resp = await ZOHO.CREATOR.DATA.getRecords(staffs);
+  // console.log(staff_resp);
+  staff_resp.data.forEach(function (rec) {
+    const name = rec?.Name ?? "";
+
+    if (!allPerson.includes(name) && name !== "") {
+      allPerson.push(name);
+      allPersonDetails.push({
+        name: name,
+        id: rec?.ID,
+        service: rec?.Primary_Site?.zc_display_value ?? "",
+      });
+    }
+  });
+  // console.log(allStaff);
+  console.log(allPersonDetails);
+}
