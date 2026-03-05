@@ -2579,10 +2579,24 @@ body.dragging .employee-working-hours {
   <input type="hidden" id="av_person_val" />
 </div>
 
-      <!-- Visit Title -->
       <div class="modal-form-row">
-        <label>Visit Title</label>
-        <input id="av_title" class="modal-input" type="text" placeholder="Visit Title" />
+        <label>Visit Title <span>*</span></label>
+        <div class="av-custom-dropdown" id="av_visit_dd">
+          <div class="av-custom-dropdown-display" onclick="toggleAvDropdown('av_visit_dd')">
+            <span id="av_visit_text"></span>
+            <i class="fa fa-chevron-down"></i>
+          </div>
+          <div class="av-custom-dropdown-options">
+            <div class="av-custom-dropdown-option" onclick="selectAvOption('av_visit_dd','av_title','av_visit_text', 'AM')">AM</div>
+            <div class="av-custom-dropdown-option" onclick="selectAvOption('av_visit_dd','av_title','av_visit_text', 'Lunch')">Lunch</div>
+            <div class="av-custom-dropdown-option" onclick="selectAvOption('av_visit_dd','av_title','av_visit_text', 'Tea')">Tea</div>
+            <div class="av-custom-dropdown-option" onclick="selectAvOption('av_visit_dd','av_title','av_visit_text', 'Evening')">Evening</div>
+            <div class="av-custom-dropdown-option" onclick="selectAvOption('av_visit_dd','av_title','av_visit_text', 'Assessment')">Assessment</div>
+            <div class="av-custom-dropdown-option" onclick="selectAvOption('av_visit_dd','av_title','av_visit_text', 'Clinical')">Clinical</div>
+            <div class="av-custom-dropdown-option" onclick="selectAvOption('av_visit_dd','av_title','av_visit_text', 'Welfare Check')">Welfare Check</div>
+          </div>
+        </div>
+        <input type="hidden" id="av_title" />
       </div>
 
       <!-- Date -->
@@ -2594,13 +2608,16 @@ body.dragging .employee-working-hours {
       <!-- From -->
       <div class="modal-form-row">
         <label>From <span>*</span></label>
-        <input id="av_from" class="modal-input" type="time" />
+        <input id="av_from" class="modal-input" type="time" oninput="calcAvDuration()" />
       </div>
-
+      <div class="modal-form-row">
+  <label>Duration</label>
+  <input id="av_duration" class="modal-input" type="text" placeholder="--" disabled />
+</div>
       <!-- To -->
       <div class="modal-form-row">
         <label>To <span>*</span></label>
-        <input id="av_to" class="modal-input" type="time" />
+        <input id="av_to" class="modal-input" type="time" oninput="calcAvDuration()" />
       </div>
 
       <!-- Status -->

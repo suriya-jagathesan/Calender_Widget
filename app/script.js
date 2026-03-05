@@ -4198,7 +4198,9 @@ function onAddVisitServiceChange(service) {
   if (!service) {
     avCurrentServiceStaff = [];
   } else {
-    avCurrentServiceStaff = persons;
+    avCurrentServiceStaff = allStaffDetails
+      .filter((s) => s.service.includes(service))
+      .map((s) => s.name);
   }
 
   // Reset selected staff and re-render
@@ -4225,6 +4227,7 @@ function openAddVisitModal() {
   document.getElementById("av_service_text").textContent = "Select service";
   document.getElementById("av_service_text").style.color = "#9ca3af";
   document.getElementById("av_service_val").value = "";
+  document.getElementById("av_duration").value = "";
 
   document.getElementById("av_person_text").textContent = "Select person";
   document.getElementById("av_person_text").style.color = "#9ca3af";
@@ -4268,13 +4271,25 @@ function submitAddVisit() {
   const from = document.getElementById("av_from").value;
   const to = document.getElementById("av_to").value;
   const status = document.getElementById("av_status_val").value;
-  const staff = document.getElementById("av_staff_val").value;
+  const staff = avSelectedStaff;
 
   if (!service || !date || !from || !to || !status) {
     showToast("Please fill in all required fields (*).");
     return;
   }
-
+  const cur_data = {
+    service,
+    person: document.getElementById("av_person_val").value,
+    title: document.getElementById("av_title").value,
+    date,
+    from,
+    to,
+    status,
+    staff,
+    notes: document.getElementById("av_notes").value,
+    duration: document.getElementById("av_duration").value,
+    visit: document.getElementById("av_title").value,
+  };
   // TODO: replace with your Zoho Creator API call
   console.log("New visit:", {
     service,
@@ -4286,9 +4301,75 @@ function submitAddVisit() {
     status,
     staff,
     notes: document.getElementById("av_notes").value,
+    duration: document.getElementById("av_duration").value,
+  });
+  createNewBookingZoho(cur_data);
+  // closeAddVisitModal();
+}
+async function createNewBookingZoho(evt) {
+  let service_id;
+
+  services_details.forEach((obj) => {
+    if (obj[evt.service]) {
+      service_id = obj[evt.service];
+    }
   });
 
-  // closeAddVisitModal();
+  let empId = [];
+  evt.staff.forEach((name) => {
+    empId.push(allStaffDetails.find((s) => s.name === name)?.id);
+  });
+
+  let personId = null;
+  if (evt.person) {
+    personId = allPersonDetails.find((p) => p.name === evt.person)?.id;
+  }
+  let date = formatDateDDMMYYYY(new Date(evt.date));
+  let fromDateTime = `${date} ${evt.from}`;
+  let toDateTime = `${date} ${evt.to}`;
+  let startTime = `${evt.from}`;
+  let endTime = `${evt.to}`;
+  let duration = evt.duration;
+  let visit = evt.visit;
+  console.log("FINAL PAYLOAD:", {
+    service_id,
+    empId,
+    personId,
+    date,
+    fromDateTime,
+    toDateTime,
+    startTime,
+    endTime,
+    duration,
+    visit,
+  });
+  const fromData = {
+    Site_Name: service_id,
+    Care_Service_User: personId,
+    Date_field1: date,
+    Start_time: startTime,
+    End_time: endTime,
+    Duration: evt.duration,
+    Manager_notes: evt.notes,
+    Status: evt.status,
+    Care_Providers: empId,
+    Visit_Title: evt.visit,
+  };
+  console.log(fromData);
+
+  const config = {
+    app_name: app_name,
+    form_name: "Bookings",
+    payload: {
+      data: fromData,
+    },
+  };
+  const add_res = await ZOHO.CREATOR.DATA.addRecords(config);
+  if( currentView === "day"){
+    if( currentViewType === "employee" ){
+
+    }
+  }
 }
 
 document.addEventListener("click", function (e) {
@@ -4432,4 +4513,32 @@ async function getAllPersonDetails() {
   });
   // console.log(allStaff);
   console.log(allPersonDetails);
+}
+
+function calcAvDuration() {
+  const from = document.getElementById("av_from").value;
+  const to = document.getElementById("av_to").value;
+  const durationEl = document.getElementById("av_duration");
+
+  if (!from || !to) {
+    durationEl.value = "";
+    return;
+  }
+
+  const [fh, fm] = from.split(":").map(Number);
+  const [th, tm] = to.split(":").map(Number);
+
+  let totalMinutes = th * 60 + tm - (fh * 60 + fm);
+
+  if (totalMinutes <= 0) {
+    durationEl.value = "Invalid range";
+    return;
+  }
+
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+
+  const hh = String(hours).padStart(2, "0");
+  const mm = String(mins).padStart(2, "0");
+  durationEl.value = `${hh}:${mm}`;
 }
