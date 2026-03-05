@@ -1694,8 +1694,9 @@ async function getWeekStaffRunDetails() {
   runStaffList.sort();
   console.log(runRowDetails);
 }
-
+let run_service_details = {};
 async function getWeekRunDetails() {
+  run_service_details = {};
   runRows = [];
   runEventDatabase = {};
   const weekStart = new Date(currentDate);
@@ -1735,6 +1736,7 @@ async function getWeekRunDetails() {
       runRows.push(run_name);
     }
     runRunBooking.push(data);
+    run_service_details[run_name] = rec?.Site_Name?.zc_display_value;
     const key = toYYYYMMDD(rec.Date_From);
     if (!runEventDatabase[key]) {
       runEventDatabase[key] = [];
@@ -2410,9 +2412,11 @@ function handleEmptySpaceClick(person, dateKey, event) {
       off: "false",
     };
   } else if (currentViewType === "run") {
+    let service = run_service_details[person] || "";
+
     emptyEventData = {
-      zoho_id: null, // null indicates new record
-      service: "", // Default to first service if available
+      zoho_id: null,
+      service: service,
       staff: "",
       run_name: person,
       from_date: dateFromKey,
@@ -2790,32 +2794,40 @@ function setupSiteNameField(popup, eventData, isNewRecord) {
     siteNameInput.value = eventData.service || "";
   } else {
     // New record - check staff's services
-    const staffName = eventData.staff;
-    const staffServices = getServicesForStaff(staffName);
+    if (currentViewType === "staff") {
+      const staffName = eventData.staff;
+      console.log(currentViewType);
 
-    if (staffServices.length === 0) {
-      // No staff selected yet or no services - show readonly empty
+      const staffServices = getServicesForStaff(staffName);
+
+      if (staffServices.length === 0) {
+        // No staff selected yet or no services - show readonly empty
+        siteNameInputContainer.style.display = "block";
+        siteNameDropdownContainer.style.display = "none";
+        siteNameInput.value = "";
+      } else if (staffServices.length === 1) {
+        // Only one service - show as readonly
+        siteNameInputContainer.style.display = "block";
+        siteNameDropdownContainer.style.display = "none";
+        siteNameInput.value = staffServices[0].zc_display;
+      } else {
+        // Multiple services - show as dropdown
+        siteNameInputContainer.style.display = "none";
+        siteNameDropdownContainer.style.display = "block";
+
+        // Initialize site name dropdown
+        const siteOptions = staffServices.map((s) => s.zc_display);
+        initializeCustomDropdown(
+          popup,
+          "siteName",
+          siteOptions,
+          eventData.service || siteOptions[0],
+        );
+      }
+    } else if (currentViewType === "run") {
       siteNameInputContainer.style.display = "block";
       siteNameDropdownContainer.style.display = "none";
-      siteNameInput.value = "";
-    } else if (staffServices.length === 1) {
-      // Only one service - show as readonly
-      siteNameInputContainer.style.display = "block";
-      siteNameDropdownContainer.style.display = "none";
-      siteNameInput.value = staffServices[0].zc_display;
-    } else {
-      // Multiple services - show as dropdown
-      siteNameInputContainer.style.display = "none";
-      siteNameDropdownContainer.style.display = "block";
-
-      // Initialize site name dropdown
-      const siteOptions = staffServices.map((s) => s.zc_display);
-      initializeCustomDropdown(
-        popup,
-        "siteName",
-        siteOptions,
-        eventData.service || siteOptions[0],
-      );
+      siteNameInput.value = eventData.service || "";
     }
   }
 }
