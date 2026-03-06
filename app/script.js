@@ -4386,6 +4386,12 @@ async function createNewBookingZoho(evt) {
       } else if (currentViewType === "run") {
         re_renderRunView();
       }
+    } else if (currentView === "week") {
+      if (currentViewType === "employee") {
+        renderWeekView();
+      } else if (currentViewType === "person") {
+        await renderWeekPersonView();
+      }
     }
   }
 }
