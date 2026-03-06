@@ -4265,7 +4265,7 @@ function closeAddVisitModal() {
     .forEach((el) => el.classList.remove("active"));
 }
 
-function submitAddVisit() {
+async function submitAddVisit() {
   const service = document.getElementById("av_service_val").value;
   const date = document.getElementById("av_date").value;
   const from = document.getElementById("av_from").value;
@@ -4303,8 +4303,10 @@ function submitAddVisit() {
     notes: document.getElementById("av_notes").value,
     duration: document.getElementById("av_duration").value,
   });
-  createNewBookingZoho(cur_data);
-  // closeAddVisitModal();
+  showLoader();
+  await createNewBookingZoho(cur_data);
+  closeAddVisitModal();
+  hideLoader();
 }
 async function createNewBookingZoho(evt) {
   let service_id;
@@ -4365,9 +4367,25 @@ async function createNewBookingZoho(evt) {
     },
   };
   const add_res = await ZOHO.CREATOR.DATA.addRecords(config);
-  if( currentView === "day"){
-    if( currentViewType === "employee" ){
+  if (add_res.code === 3000) {
+    const newRecordId = add_res.data.ID;
+    await getSingleBooking(newRecordId);
+    const final_staff = evt.staff.filter((x) => !employees.includes(x));
 
+    if (final_staff.length > 0) {
+      let newEmpID = [];
+      final_staff.forEach((name) => {
+        newEmpID.push(allStaffDetails.find((s) => s.name === name)?.id);
+      });
+
+      await fetchNewStaffDetails(newEmpID);
+    }
+    if (currentView === "day") {
+      if (currentViewType === "employee") {
+        re_renderDayView();
+      } else if (currentViewType === "run") {
+        re_renderRunView();
+      }
     }
   }
 }
@@ -4386,8 +4404,76 @@ document.addEventListener("click", function (e) {
     closeAddVisitModal();
   }
 });
-// ── Add Visit Modal - Staff Multi Select ──────────────────────
 
+async function fetchNewStaffDetails(staffNames) {
+  const staffList = `[${staffNames.join(",")}]`;
+  employees_config = {
+    app_name,
+    report_name: "Employees_Report",
+    criteria: `ID == ${staffList}`,
+  };
+  const employee_res = await ZOHO.CREATOR.DATA.getRecords(employees_config);
+  if (employee_res.code === 3000 && employee_res.data?.length) {
+    for (const rec of employee_res.data) {
+      console.log(rec);
+      const emp_service = rec.Sites ?? [];
+      const serviceList = emp_service.map((site) => ({
+        id: site.ID,
+        zc_display: site.zc_display_value,
+      }));
+      const name = rec?.Name1;
+      const staffId = rec?.ID;
+      let week_hours = rec?.Contracted_Hours_Per_Week ?? 0.0;
+      let skills = (rec?.Skills_Experience_Capacity || [])
+        .map((s) => s?.Skills_Name)
+        .filter(Boolean);
+      employees.push(name);
+      employeeDetails.push({
+        name,
+        id: staffId,
+        skills,
+        service: serviceList,
+        week_hours: week_hours,
+      });
+    }
+  }
+  employees.sort();
+}
+// ── Add Visit Modal - Staff Multi Select ──────────────────────
+async function getSingleBooking(bookingId) {
+  var booking = {
+    app_name: app_name,
+    report_name: "Bookings_Backend",
+    id: bookingId,
+  };
+  booking_resp = await ZOHO.CREATOR.DATA.getRecordById(booking);
+  console.log(booking_resp);
+
+  try {
+    if (booking_resp.code === 3000) {
+      let date_booking = [];
+      const rec = booking_resp.data;
+      if (rec.Care_Providers.length === 0) {
+        let cur_book = createBookingObject(rec, null);
+        date_booking.push(cur_book);
+      }
+
+      rec.Care_Providers.forEach(function (emp) {
+        let cur_book = createBookingObject(rec, emp);
+        date_booking.push(cur_book);
+      });
+
+      const key = formatDateYYYYMMDD(currentDate);
+
+      if (!eventDatabase[key]) {
+        eventDatabase[key] = [];
+      }
+      eventDatabase[key].push(...date_booking);
+    }
+  } catch (err) {
+    console.error("Error fetching booking details:", err);
+  }
+}
 function initAvStaffMultiSelect() {
   avSelectedStaff = [];
   avRenderStaffPills();
