@@ -2530,6 +2530,162 @@ body.dragging .employee-working-hours {
     </style>
 </head>
 <body>
+
+    <!-- Add Schedule Modal -->
+<div id="addScheduleModal" class="modal-overlay hidden">
+  <div class="modal-card" style="width:560px;">
+
+    <!-- Header -->
+    <div class="event-modal-tabs-header">
+      <span style="font-size:15px; font-weight:600; color:#1f2937; padding-left:4px;">Add New Visit</span>
+      <button class="close-btn" onclick="closeAddScheduleModal()">×</button>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body">
+
+      <!-- Site Name -->
+      <div class="modal-form-row">
+        <label>Site Name <span>*</span></label>
+        <div class="sch-dropdown" id="sch_site_dd">
+          <div class="sch-dropdown-trigger" onclick="toggleSchDropdown('sch_site_dd')">
+            <span id="sch_site_text" style="color:#9ca3af;">Select site</span>
+            <i class="fa fa-chevron-down"></i>
+          </div>
+          <div class="sch-dropdown-menu" id="sch_site_menu">
+            <div class="sch-search-box">
+              <input type="text" placeholder="Search..." onclick="event.stopPropagation()" oninput="schFilterItems('sch_site_dd', this.value)" />
+            </div>
+          </div>
+        </div>
+        <input type="hidden" id="sch_site_val" />
+      </div>
+
+      <!-- Staff -->
+      <div class="modal-form-row">
+        <label>Staff <span>*</span></label>
+        <div class="sch-dropdown" id="sch_staff_dd">
+          <div class="sch-dropdown-trigger sch-disabled" id="sch_staff_trigger" onclick="toggleSchDropdown('sch_staff_dd')">
+            <span id="sch_staff_text" style="color:#9ca3af;">Select Staff</span>
+            <i class="fa fa-chevron-down"></i>
+          </div>
+          <div class="sch-dropdown-menu" id="sch_staff_menu">
+            <div class="sch-search-box">
+              <input type="text" placeholder="Search..." onclick="event.stopPropagation()" oninput="schFilterItems('sch_staff_dd', this.value)" />
+            </div>
+          </div>
+        </div>
+        <input type="hidden" id="sch_staff_val" />
+      </div>
+
+      <!-- Availability Status -->
+      <div class="modal-form-row">
+        <label>Availability Status <span>*</span></label>
+        <div class="sch-dropdown" id="sch_avail_dd">
+          <div class="sch-dropdown-trigger" onclick="toggleSchDropdown('sch_avail_dd')">
+            <span id="sch_avail_text">Available</span>
+            <i class="fa fa-chevron-down"></i>
+          </div>
+          <div class="sch-dropdown-menu">
+            <div class="sch-search-box">
+              <input type="text" placeholder="Search..." onclick="event.stopPropagation()" oninput="schFilterItems('sch_avail_dd', this.value)" />
+            </div>
+            <div class="sch-dropdown-item" onclick="selectSchOption('sch_avail_dd','sch_avail_val','sch_avail_text','Available')">Available</div>
+            <div class="sch-dropdown-item" onclick="selectSchOption('sch_avail_dd','sch_avail_val','sch_avail_text','Off')">Off</div>
+            <div class="sch-dropdown-item" onclick="selectSchOption('sch_avail_dd','sch_avail_val','sch_avail_text','Leave')">Leave</div>
+          </div>
+        </div>
+        <input type="hidden" id="sch_avail_val" value="Available" />
+      </div>
+      <div class="modal-form-row" id="sch_type_row" style="display:none;">
+  <label>Type <span>*</span></label>
+  <div class="sch-dropdown" id="sch_type_dd">
+    <div class="sch-dropdown-trigger" onclick="toggleSchDropdown('sch_type_dd')">
+      <span id="sch_type_text" style="color:#9ca3af;">Select Type</span>
+      <i class="fa fa-chevron-down"></i>
+    </div>
+    <div class="sch-dropdown-menu">
+      <div class="sch-search-box">
+        <input type="text" placeholder="Search..." onclick="event.stopPropagation()" oninput="schFilterItems('sch_type_dd', this.value)" />
+      </div>
+      <div class="sch-dropdown-item" onclick="selectSchOption('sch_type_dd','sch_type_val','sch_type_text','Annual Leave')">Annual Leave</div>
+      <div class="sch-dropdown-item" onclick="selectSchOption('sch_type_dd','sch_type_val','sch_type_text','Sickness')">Sickness</div>
+      <div class="sch-dropdown-item" onclick="selectSchOption('sch_type_dd','sch_type_val','sch_type_text','Training')">Training</div>
+      <div class="sch-dropdown-item" onclick="selectSchOption('sch_type_dd','sch_type_val','sch_type_text','TOIL')">TOIL</div>
+    </div>
+  </div>
+  <input type="hidden" id="sch_type_val" />
+</div>
+
+<!-- Reason (shown only when Status = Off) -->
+<div class="modal-form-row" id="sch_reason_row" style="display:none; align-items:start;">
+  <label style="padding-top:6px;">Reason</label>
+  <textarea id="sch_reason" class="modal-input" rows="3"></textarea>
+</div>
+
+      <!-- Run -->
+      <div class="modal-form-row" id="sch_run_row">
+        <label>Run</label>
+        <div class="sch-dropdown" id="sch_run_dd">
+          <div class="sch-dropdown-trigger sch-disabled" id="sch_run_trigger" onclick="toggleSchDropdown('sch_run_dd')">
+            <span id="sch_run_text" style="color:#9ca3af;">Select run</span>
+            <i class="fa fa-chevron-down"></i>
+          </div>
+          <div class="sch-dropdown-menu" id="sch_run_menu">
+            <div class="sch-search-box">
+              <input type="text" placeholder="Search..." onclick="event.stopPropagation()" oninput="schFilterItems('sch_run_dd', this.value)" />
+            </div>
+          </div>
+        </div>
+        <input type="hidden" id="sch_run_val" />
+      </div>
+
+      <!-- From Date -->
+      <div class="modal-form-row">
+        <label>From date <span>*</span></label>
+        <input id="sch_from_date" class="modal-input" type="date" />
+      </div>
+
+      <!-- To Date -->
+      <div class="modal-form-row">
+        <label>To date <span>*</span></label>
+        <input id="sch_to_date" class="modal-input" type="date" />
+      </div>
+
+      <!-- Start Time -->
+      <div class="modal-form-row">
+        <label>Start Time <span>*</span></label>
+        <input id="sch_start_time" class="modal-input" type="time" onchange="schCalcDuration()" />
+      </div>
+
+      <!-- End Time -->
+      <div class="modal-form-row">
+        <label>End Time <span>*</span></label>
+        <input id="sch_end_time" class="modal-input" type="time" onchange="schCalcDuration()" />
+      </div>
+
+      <!-- Break -->
+      <div class="modal-form-row">
+        <label>Break</label>
+        <input id="sch_break" class="modal-input" type="text" placeholder="00:00" onchange="schCalcDuration()"  />
+      </div>
+
+      <!-- Total Duration -->
+      <div class="modal-form-row">
+        <label>Total Duration</label>
+        <input id="sch_duration" class="modal-input" type="text" placeholder="00:00" disabled />
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeAddScheduleModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitAddSchedule()">Save Changes</button>
+    </div>
+
+  </div>
+</div>
     <!-- Add Visit Modal -->
 <div id="addVisitModal" class="modal-overlay hidden">
   <div class="modal-card" style="width:560px;">
@@ -2936,7 +3092,7 @@ body.dragging .employee-working-hours {
                         </div>
                     </div>
                 </div>  
-                <button class="nav-btn" onclick="openAddVisitModal()" > <i class="fa-solid fa-plus"></i> </button>
+                <button class="nav-btn" onclick="openPopBasedView()" > <i class="fa-solid fa-plus"></i> </button>
                 <button class="calendar-icon" onclick="toggleSearch()"><i class="fa fa-search fa-lg"></i></button>
                 <button class="calendar-icon" onclick="init()"><i class="fa-solid fa-arrow-rotate-right"></i></i></button>
                 <button class="calendar-icon" onclick="toggleQuickFilter(event)">

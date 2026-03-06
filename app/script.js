@@ -1067,7 +1067,7 @@ async function getRunGroups() {
   try {
     const run_config = {
       app_name: app_name,
-      report_name: "Care_Groups_Report", // Adjust to your actual report name
+      report_name: "Care_Groups_Report",
       criteria: `Site_Name.ID == ${serviceList} && Status == "Active"`,
     };
 
@@ -1083,13 +1083,10 @@ async function getRunGroups() {
         if (!site_run_details[site]) {
           site_run_details[site] = [];
         }
-        console.log(`${rec?.Care_Group_Name} - ${rec?.ID}`);
         if (
           rec?.Care_Group_Name != null &&
           rec?.Care_Group?.Care_Group_Name != "undefined"
         ) {
-          console.log(`${rec?.Care_Group_Name} - ${rec?.ID}`);
-
           runRowDetails[rec?.Care_Group_Name] = rec?.ID;
         }
         site_run_details[site].push(careGroup);
@@ -1104,7 +1101,7 @@ async function getRunGroups() {
     }
 
     runGroups.sort();
-    console.log(JSON.stringify(runRowDetails));
+    console.log(JSON.stringify(site_run_details));
   } catch (err) {
     console.error("Error fetching run groups:", err);
   }
@@ -4633,4 +4630,425 @@ function calcAvDuration() {
   const hh = String(hours).padStart(2, "0");
   const mm = String(mins).padStart(2, "0");
   durationEl.value = `${hh}:${mm}`;
+}
+
+// ── Add Schedule Modal ────────────────────────────────────────
+
+function toggleSchDropdown(ddId) {
+  const dd = document.getElementById(ddId);
+  if (
+    dd.querySelector(".sch-dropdown-trigger").classList.contains("sch-disabled")
+  )
+    return;
+
+  // Close all other sch dropdowns
+  document.querySelectorAll(".sch-dropdown.sch-open").forEach((el) => {
+    if (el.id !== ddId) {
+      el.classList.remove("sch-open");
+      const si = el.querySelector(".sch-search-box input");
+      if (si) {
+        si.value = "";
+        schFilterItems(el.id, "");
+      }
+    }
+  });
+
+  dd.classList.toggle("sch-open");
+
+  if (dd.classList.contains("sch-open")) {
+    const si = dd.querySelector(".sch-search-box input");
+    if (si) {
+      si.value = "";
+      schFilterItems(ddId, "");
+      setTimeout(() => si.focus(), 50);
+    }
+  }
+}
+
+function selectSchOption(ddId, hiddenId, textId, value) {
+  document.getElementById(hiddenId).value = value;
+
+  const textEl = document.getElementById(textId);
+  textEl.textContent = value;
+  textEl.style.color = "#1f2937";
+
+  document
+    .getElementById(ddId)
+    .querySelectorAll(".sch-dropdown-item")
+    .forEach((opt) => {
+      opt.classList.toggle("sch-selected", opt.textContent.trim() === value);
+    });
+
+  document.getElementById(ddId).classList.remove("sch-open");
+
+  // Trigger dependent dropdowns
+  if (ddId === "sch_site_dd") onSchSiteChange(value);
+  if (ddId === "sch_staff_dd") onSchStaffChange(value);
+  if (ddId === "sch_avail_dd") onSchAvailChange(value);
+}
+
+function onSchAvailChange(status) {
+  const typeRow = document.getElementById("sch_type_row");
+  const reasonRow = document.getElementById("sch_reason_row");
+  const runRow = document.getElementById("sch_run_row");
+  const runTrigger = document.getElementById("sch_run_trigger");
+
+  if (status === "Off") {
+    // Show type & reason
+    typeRow.style.display = "grid";
+    reasonRow.style.display = "grid";
+
+    // Hide & reset run
+    runRow.style.display = "none";
+    document.getElementById("sch_run_text").textContent = "Select run";
+    document.getElementById("sch_run_text").style.color = "#9ca3af";
+    document.getElementById("sch_run_val").value = "";
+    runTrigger.classList.add("sch-disabled");
+  } else {
+    // Hide & reset type and reason
+    typeRow.style.display = "none";
+    reasonRow.style.display = "none";
+    document.getElementById("sch_type_text").textContent = "Select Type";
+    document.getElementById("sch_type_text").style.color = "#9ca3af";
+    document.getElementById("sch_type_val").value = "";
+    document.getElementById("sch_reason").value = "";
+
+    // Show run row
+    runRow.style.display = "grid";
+
+    // Re-enable run only if a site is already selected (run options already built)
+    const siteVal = document.getElementById("sch_site_val").value;
+    const runMenu = document.getElementById("sch_run_menu");
+    const hasItems = runMenu.querySelectorAll(".sch-dropdown-item").length > 0;
+
+    if (siteVal && hasItems) {
+      runTrigger.classList.remove("sch-disabled");
+    } else {
+      runTrigger.classList.add("sch-disabled");
+    }
+  }
+}
+
+function schFilterItems(ddId, query) {
+  const dd = document.getElementById(ddId);
+  const q = query.toLowerCase();
+  const items = dd.querySelectorAll(".sch-dropdown-item");
+  let visible = 0;
+
+  items.forEach((item) => {
+    const match = item.textContent.toLowerCase().includes(q);
+    item.style.display = match ? "block" : "none";
+    if (match) visible++;
+  });
+
+  let noRes = dd.querySelector(".sch-no-results");
+  if (!noRes) {
+    noRes = document.createElement("div");
+    noRes.className = "sch-no-results";
+    noRes.textContent = "No results found";
+    dd.querySelector(".sch-dropdown-menu").appendChild(noRes);
+  }
+  noRes.style.display = visible === 0 ? "block" : "none";
+}
+
+function schBuildItems(menuEl, items, ddId, hiddenId, textId) {
+  // Remove old items but keep search box and no-results
+  menuEl.querySelectorAll(".sch-dropdown-item").forEach((el) => el.remove());
+  const noRes = menuEl.querySelector(".sch-no-results");
+  if (noRes) noRes.remove();
+
+  items.forEach((val) => {
+    const item = document.createElement("div");
+    item.className = "sch-dropdown-item";
+    item.textContent = val;
+    item.onclick = () => selectSchOption(ddId, hiddenId, textId, val);
+    menuEl.appendChild(item);
+  });
+}
+
+function onSchSiteChange(site) {
+  // Reset & lock Staff
+  const staffTrigger = document.getElementById("sch_staff_trigger");
+  const staffMenu = document.getElementById("sch_staff_menu");
+  staffTrigger.classList.add("sch-disabled");
+  document.getElementById("sch_staff_text").textContent = "Select Staff";
+  document.getElementById("sch_staff_text").style.color = "#9ca3af";
+  document.getElementById("sch_staff_val").value = "";
+
+  // Reset & lock Run
+  const runTrigger = document.getElementById("sch_run_trigger");
+  const runMenu = document.getElementById("sch_run_menu");
+  runTrigger.classList.add("sch-disabled");
+  document.getElementById("sch_run_text").textContent = "Select run";
+  document.getElementById("sch_run_text").style.color = "#9ca3af";
+  document.getElementById("sch_run_val").value = "";
+
+  if (!site) return;
+
+  // Populate Staff based on site — uses your existing employeeDetails array
+  console.log(allStaffDetails);
+
+  const siteStaff = allStaffDetails
+    .filter((s) => s.service.includes(site))
+    .map((s) => s.name);
+
+  schBuildItems(
+    staffMenu,
+    siteStaff,
+    "sch_staff_dd",
+    "sch_staff_val",
+    "sch_staff_text",
+  );
+  staffTrigger.classList.remove("sch-disabled");
+
+  const runNames = site_run_details[site] || [];
+
+  schBuildItems(runMenu, runNames, "sch_run_dd", "sch_run_val", "sch_run_text");
+  runTrigger.classList.remove("sch-disabled");
+}
+
+function onSchStaffChange(staff) {
+  // Reset & lock Run
+  // const runTrigger = document.getElementById("sch_run_trigger");
+  // const runMenu = document.getElementById("sch_run_menu");
+  // runTrigger.classList.add("sch-disabled");
+  // document.getElementById("sch_run_text").textContent = "Select run";
+  // document.getElementById("sch_run_text").style.color = "#9ca3af";
+  // document.getElementById("sch_run_val").value = "";
+  // if (!staff) return;
+  // // Populate Run — uses your existing runRowDetails object {runName: id}
+  // console.log(staff);
+  // const runNames = site_run_details[staff] || [];
+  // schBuildItems(runMenu, runNames, "sch_run_dd", "sch_run_val", "sch_run_text");
+  // runTrigger.classList.remove("sch-disabled");
+}
+
+function schCalcDuration() {
+  const start = document.getElementById("sch_start_time").value;
+  const end = document.getElementById("sch_end_time").value;
+  if (!start || !end) return;
+
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  let mins = eh * 60 + em - (sh * 60 + sm);
+  if (mins < 0) mins += 24 * 60;
+
+  const brk = document.getElementById("sch_break").value || "00:00";
+  console.log(brk);
+
+  const [bh, bm] = brk.split(":").map(Number);
+  mins -= bh * 60 + bm;
+  if (mins < 0) mins = 0;
+
+  const hh = String(Math.floor(mins / 60)).padStart(2, "0");
+  const mm = String(mins % 60).padStart(2, "0");
+  document.getElementById("sch_duration").value = `${hh}:${mm}`;
+}
+
+function openAddScheduleModal() {
+  const siteMenu = document.getElementById("sch_site_menu");
+  const siteNames = services_details.map((obj) => Object.keys(obj)[0]);
+  schBuildItems(
+    siteMenu,
+    siteNames,
+    "sch_site_dd",
+    "sch_site_val",
+    "sch_site_text",
+  );
+
+  // Reset all fields
+  document.getElementById("sch_site_text").textContent = "Select site";
+  document.getElementById("sch_site_text").style.color = "#9ca3af";
+  document.getElementById("sch_site_val").value = "";
+  document.getElementById("sch_run_row").style.display = "grid";
+
+  document.getElementById("sch_staff_text").textContent = "Select Staff";
+  document.getElementById("sch_staff_text").style.color = "#9ca3af";
+  document.getElementById("sch_staff_val").value = "";
+  document.getElementById("sch_staff_trigger").classList.add("sch-disabled");
+
+  document.getElementById("sch_avail_text").textContent = "Available";
+  document.getElementById("sch_avail_val").value = "Available";
+
+  document.getElementById("sch_run_text").textContent = "Select run";
+  document.getElementById("sch_run_text").style.color = "#9ca3af";
+  document.getElementById("sch_run_val").value = "";
+  document.getElementById("sch_run_trigger").classList.add("sch-disabled");
+
+  document.getElementById("sch_type_text").textContent = "Select Type";
+  document.getElementById("sch_type_text").style.color = "#9ca3af";
+  document.getElementById("sch_type_val").value = "";
+  document.getElementById("sch_reason").value = "";
+  document.getElementById("sch_type_row").style.display = "none";
+  document.getElementById("sch_reason_row").style.display = "none";
+
+  // Pre-fill dates to current calendar date
+  const d =
+    typeof currentDate !== "undefined" ? new Date(currentDate) : new Date();
+  const dateStr = d.toISOString().split("T")[0];
+  document.getElementById("sch_from_date").value = dateStr;
+  document.getElementById("sch_to_date").value = dateStr;
+  document.getElementById("sch_start_time").value = "";
+  document.getElementById("sch_end_time").value = "";
+  document.getElementById("sch_break").value = "00:00";
+  document.getElementById("sch_duration").value = "";
+  flatpickr(document.getElementById("sch_break"), {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: "H:i",
+    time_24hr: true,
+  });
+  // Close any open dropdowns
+  document
+    .querySelectorAll(".sch-dropdown.sch-open")
+    .forEach((el) => el.classList.remove("sch-open"));
+
+  document.getElementById("addScheduleModal").classList.remove("hidden");
+}
+
+function closeAddScheduleModal() {
+  document.getElementById("addScheduleModal").classList.add("hidden");
+  document
+    .querySelectorAll(".sch-dropdown.sch-open")
+    .forEach((el) => el.classList.remove("sch-open"));
+}
+
+async function submitAddSchedule() {
+  const site = document.getElementById("sch_site_val").value;
+  const staff = document.getElementById("sch_staff_val").value;
+
+  const from = document.getElementById("sch_from_date").value;
+  const to = document.getElementById("sch_to_date").value;
+  const start = document.getElementById("sch_start_time").value;
+  const end = document.getElementById("sch_end_time").value;
+
+  const avail = document.getElementById("sch_avail_val").value;
+  const type = document.getElementById("sch_type_val").value;
+  const run = document.getElementById("sch_run_val").value;
+  if (avail === "Off" && !type) {
+    showToast("Please select a Type.");
+    return;
+  }
+
+  if (!site || !staff || !avail || !from || !to || !start || !end) {
+    showToast("Please fill in all required fields (*).");
+    return;
+  }
+
+  const dayRecords = staffRunEventDatabase[from] || [];
+
+  // Records for this staff on that day
+  const staffRecords = dayRecords.filter((r) => r.staff === staff);
+  const hasOtherRecords = staffRecords.length > 0;
+  if (hasOtherRecords && !run) {
+    showToast(
+      "Run is required when multiple entries exist for this staff on the same day.",
+      "error",
+    );
+    return;
+  }
+
+  // TODO: replace with your Zoho Creator API call
+  console.log("New schedule:", {
+    site,
+    staff,
+    avail,
+    run: document.getElementById("sch_run_val").value,
+    fromDate: from,
+    toDate: to,
+    startTime: start,
+    endTime: end,
+    break: document.getElementById("sch_break").value,
+    duration: document.getElementById("sch_duration").value,
+    type: type,
+    reason: document.getElementById("sch_reason").value,
+  });
+  const finalData = {
+    site,
+    staff,
+    avail,
+    run: document.getElementById("sch_run_val").value,
+    fromDate: from,
+    toDate: to,
+    startTime: start,
+    endTime: end,
+    break: document.getElementById("sch_break").value,
+    duration: document.getElementById("sch_duration").value,
+    type: type,
+    reason: document.getElementById("sch_reason").value,
+  };
+  showLoader();
+  await createNewVisitInZoho(finalData);
+  closeAddScheduleModal();
+  hideLoader();
+}
+async function createNewVisitInZoho(evt) {
+  let service_id;
+  services_details.forEach((obj) => {
+    if (obj[evt.site]) {
+      service_id = obj[evt.site];
+    }
+  });
+  let run_id = runRowDetails[evt.run];
+  const empId = getEmployeeIdByName(evt.staff);
+  const formData = {
+    Site_Name: service_id,
+    Staff: empId,
+    Care_Group: run_id,
+    Available_Status: evt.avail,
+    Date_From: formatDateForZoho(evt.fromDate),
+    Date_To: formatDateForZoho(evt.toDate),
+    Start_Time: evt.startTime,
+    End_Time: evt.endTime,
+    Break: evt.Break ?? "00:00",
+    Reason_for_Leave: evt.reason,
+    leave_Type: evt.type,
+  };
+  try {
+    const config = {
+      app_name: app_name,
+      form_name: "Daily_Staff_schedule",
+      payload: {
+        data: formData,
+      },
+    };
+
+    const add_res = await ZOHO.CREATOR.DATA.addRecords(config);
+    console.log(
+      `${currentView} - ${currentViewType} - ${JSON.stringify(add_res)} `,
+    );
+    await getWeekStaffRunDetails();
+    if (currentViewType === "staff") {
+      await renderWeekStaffView();
+    } else if (currentViewType === "run") {
+      await renderWeekRunView();
+    }
+  } catch (error) {
+    console.error("Error creating schedule:", error);
+    alert("Failed to create schedule. Please try again.");
+  }
+  hideLoader();
+}
+document.addEventListener("click", function (e) {
+  // Close sch dropdowns when clicking outside
+  if (!e.target.closest(".sch-dropdown")) {
+    document
+      .querySelectorAll(".sch-dropdown.sch-open")
+      .forEach((el) => el.classList.remove("sch-open"));
+  }
+
+  // Close modal when clicking backdrop
+  const modal = document.getElementById("addScheduleModal");
+  if (modal && e.target === modal) closeAddScheduleModal();
+});
+
+function openPopBasedView() {
+  if (
+    currentView === "week" &&
+    (currentViewType === "staff" || currentViewType === "run")
+  ) {
+    openAddScheduleModal();
+  } else {
+    openAddVisitModal();
+  }
 }
