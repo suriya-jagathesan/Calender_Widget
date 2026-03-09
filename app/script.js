@@ -1949,8 +1949,11 @@ function renderWeekRunRows() {
       }
     }
 
+    const BADGE_HEIGHT = 28; // badge height + padding below events
     const eventNeededHeight =
-      maxEventsInDay * (run_event_height + EVENT_GAP) + ROW_PADDING * 2;
+      maxEventsInDay * (run_event_height + EVENT_GAP) +
+      ROW_PADDING * 2 +
+      BADGE_HEIGHT;
     const finalRowHeight = Math.max(fillHeight, eventNeededHeight);
     rowHeightsMap[person] = finalRowHeight;
 
@@ -1973,20 +1976,25 @@ function renderWeekRunRows() {
       date1.setHours(0, 0, 0, 0);
       date2.setHours(0, 0, 0, 0);
 
-      // Declare dotsBtn outside if block so it's always in scope
+      // ── Three-dot button (top-right of cell) ──────────────────────────
       const dotsBtn = document.createElement("button");
       dotsBtn.className = "run-cell-dots-btn";
       dotsBtn.innerHTML = "&#8942;";
       dotsBtn.title = "Options";
       dotsBtn.addEventListener("click", function (e) {
         e.stopPropagation();
+
+        // Toggle — if menu already open in this cell, close it
         const existingMenu = dayColumn.querySelector(".run-dots-menu");
         if (existingMenu) {
           existingMenu.remove();
           return;
         }
+
+        // Close any other open menus
         closeAllRunMenus();
 
+        // Conditional options — wrap each push with an if() as needed
         const options = [];
         options.push({ label: "Create new staff schedule", action: "create" });
         options.push({ label: "Publish shift", action: "publish" });
@@ -2012,6 +2020,7 @@ function renderWeekRunRows() {
 
         dayColumn.appendChild(menu);
       });
+      // ─────────────────────────────────────────────────────────────────
 
       // Events container
       const eventsContainer = document.createElement("div");
@@ -2019,8 +2028,15 @@ function renderWeekRunRows() {
       const events = person === "—" ? [] : getEventsForWeekRun(person, dateKey);
       renderWeekEventsForRun(eventsContainer, events, dateKey);
 
-      // Append events first, then dots button on top
+      // Append events first, then dots button and badge on top
       dayColumn.appendChild(eventsContainer);
+
+      const badge = document.createElement("div");
+      badge.className =
+        "run-cell-count-badge" + (events.length === 0 ? " empty" : "");
+      badge.textContent = events.length;
+      dayColumn.appendChild(badge);
+      // ─────────────────────────────────────────────────────────────────
 
       // Only show dots button and click handler for today or future dates
       if (date1 >= date2) {
