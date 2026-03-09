@@ -1692,6 +1692,46 @@ async function getWeekStaffRunDetails() {
   console.log(runRowDetails);
 }
 let run_service_details = {};
+let runCounts = {};
+async function getWeekPublishDetails() {
+  runCounts = {};
+  const weekStart = new Date(currentDate);
+  weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  let zoho_start_date = formatDateDDMMYYYY(weekStart);
+  let zoho_end_date = formatDateDDMMYYYY(weekEnd);
+  const serviceList = `[${services.join(",")}]`;
+  const criteria_2 = `Service.ID == ${serviceList} && Date_field >= '${zoho_start_date}' && Date_field <= '${zoho_end_date}'`;
+  var booking = {
+    app_name: app_name,
+    report_name: "All_Publish_Shifts",
+    criteria: criteria_2,
+    max_records: 1000,
+  };
+  try {
+    booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
+    console.log(booking_resp);
+    booking_resp.data.forEach(function (rec) {
+      const date = rec.Date_field;
+      const run = rec.Run?.zc_display_value || "Unknown";
+      const count = rec.Employees?.length || 0;
+      const key = toYYYYMMDD(rec.Date_field);
+      if (!runCounts[key]) {
+        runCounts[key] = {};
+      }
+
+      if (!runCounts[key][run]) {
+        runCounts[key][run] = 0;
+      }
+
+      runCounts[key][run] += count;
+    });
+    console.log(runCounts);
+  } catch (err) {
+    console.log(err);
+  }
+}
 async function getWeekRunDetails() {
   run_service_details = {};
   runRows = [];
@@ -1743,6 +1783,7 @@ async function getWeekRunDetails() {
 }
 
 async function renderWeekRunView() {
+  await getWeekPublishDetails();
   await getWeekRunDetails();
   renderWeekDaysHeaderPerson();
   renderWeekRunRows();
@@ -1949,7 +1990,7 @@ function renderWeekRunRows() {
       }
     }
 
-    const BADGE_HEIGHT = 28; // badge height + padding below events
+    const BADGE_HEIGHT = 28;
     const eventNeededHeight =
       maxEventsInDay * (run_event_height + EVENT_GAP) +
       ROW_PADDING * 2 +
@@ -1975,6 +2016,8 @@ function renderWeekRunRows() {
       const date2 = new Date();
       date1.setHours(0, 0, 0, 0);
       date2.setHours(0, 0, 0, 0);
+      const events = person === "—" ? [] : getEventsForWeekRun(person, dateKey);
+      // console.log("Date Key " + dateKey);
 
       // ── Three-dot button (top-right of cell) ──────────────────────────
       const dotsBtn = document.createElement("button");
@@ -1996,7 +2039,7 @@ function renderWeekRunRows() {
 
         // Conditional options — wrap each push with an if() as needed
         const options = [];
-        options.push({ label: "Create new staff schedule", action: "create" });
+        options.push({ label: "Add Visit", action: "create" });
         options.push({ label: "Publish shift", action: "publish" });
 
         const menu = document.createElement("div");
@@ -2012,7 +2055,7 @@ function renderWeekRunRows() {
             if (opt.action === "create") {
               handleEmptySpaceClick(person, dateKey, ev);
             } else if (opt.action === "publish") {
-              alert(`Shift published for: ${person} on ${dateKey}`);
+              publishShift(person, dateKey);
             }
           });
           menu.appendChild(item);
@@ -2025,17 +2068,22 @@ function renderWeekRunRows() {
       // Events container
       const eventsContainer = document.createElement("div");
       eventsContainer.className = "week-events-container";
-      const events = person === "—" ? [] : getEventsForWeekRun(person, dateKey);
+
       renderWeekEventsForRun(eventsContainer, events, dateKey);
 
       // Append events first, then dots button and badge on top
       dayColumn.appendChild(eventsContainer);
+      // console.log(`${dateKey} - ${person} -> ${JSON.stringify(runCounts)} `);
 
-      const badge = document.createElement("div");
-      badge.className =
-        "run-cell-count-badge" + (events.length === 0 ? " empty" : "");
-      badge.textContent = events.length;
-      dayColumn.appendChild(badge);
+      if (runCounts?.[dateKey] && person in runCounts[dateKey]) {
+        const badge = document.createElement("div");
+
+        badge.className = "run-cell-count-badge";
+
+        badge.textContent = runCounts[dateKey][person] ?? 0;
+
+        dayColumn.appendChild(badge);
+      }
       // ─────────────────────────────────────────────────────────────────
 
       // Only show dots button and click handler for today or future dates
@@ -2049,7 +2097,7 @@ function renderWeekRunRows() {
             return;
           }
           console.log("Empty space clicked!");
-          handleEmptySpaceClick(person, dateKey, e);
+          // handleEmptySpaceClick(person, dateKey, e);
         });
       }
 
@@ -2273,9 +2321,7 @@ function renderWeekRunColumn(rowHeightsMap = {}) {
                         <div class="week-employee-hours-info">
                             <span class="week-employee-hours-value" data-tooltip="${displayHours} hours">${displayHours}h</span>
                         </div>
-                        <div class="week-employee-pdf-icon" onclick="openRunWeekPDF('${person}')" title="Download Week Schedule">
-                            <i class="fa fa-file-pdf"></i>
-                        </div>
+                        
                     </div>
                 </div>
                     `;
@@ -5119,3 +5165,28 @@ function closeAllRunMenus() {
 document.addEventListener("click", function () {
   closeAllRunMenus();
 });
+
+async function publishShift(run, dateKey) {
+  showLoader();
+  const config = {
+    http_method: "POST",
+    api_name: "Publish_Shift",
+    public_key: "kNTGUgPh6psy9VVRMsVbRWbtq",
+    payload: {
+      run: runRowDetails[run],
+      date: convertYYYYMMDDtoDDMMYYYY(dateKey),
+      app_name: app_name,
+    },
+  };
+  console.log(config);
+  try {
+    const response = await ZOHO.CREATOR.DATA.invokeCustomApi(config);
+    console.log(response);
+    await getWeekPublishDetails();
+    await re_renderWeekRunView();
+  } catch (err) {
+    console.error("Error publishing shift:", err);
+    // alert("Failed to publish shift. Please try again.");
+  }
+  hideLoader();
+}
