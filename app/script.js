@@ -1936,7 +1936,6 @@ function renderWeekRunRows() {
     displayRuns = runRows.length > 0 ? [...new Set(runRows)] : ["—"];
   }
 
-  // const displayRuns = runRows.length > 0 ? [...new Set(runRows)] : ['—'];
   displayRuns.forEach((person) => {
     let maxEventsInDay = 1;
 
@@ -1967,37 +1966,80 @@ function renderWeekRunRows() {
       const dayColumn = document.createElement("div");
       dayColumn.className = "week-day-column";
       dayColumn.style.flex = "1 1 0";
+      dayColumn.style.position = "relative";
 
-      // No drag and drop for person view
-      const eventsContainer = document.createElement("div");
-      eventsContainer.className = "week-events-container";
-      const events = person === "—" ? [] : getEventsForWeekRun(person, dateKey);
-      renderWeekEventsForRun(eventsContainer, events, dateKey);
       const date1 = new Date(dateKey);
       const date2 = new Date();
       date1.setHours(0, 0, 0, 0);
       date2.setHours(0, 0, 0, 0);
+
+      // Declare dotsBtn outside if block so it's always in scope
+      const dotsBtn = document.createElement("button");
+      dotsBtn.className = "run-cell-dots-btn";
+      dotsBtn.innerHTML = "&#8942;";
+      dotsBtn.title = "Options";
+      dotsBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        const existingMenu = dayColumn.querySelector(".run-dots-menu");
+        if (existingMenu) {
+          existingMenu.remove();
+          return;
+        }
+        closeAllRunMenus();
+
+        const options = [];
+        options.push({ label: "Create new staff schedule", action: "create" });
+        options.push({ label: "Publish shift", action: "publish" });
+
+        const menu = document.createElement("div");
+        menu.className = "run-dots-menu";
+
+        options.forEach((opt) => {
+          const item = document.createElement("div");
+          item.className = "run-dots-menu-item";
+          item.textContent = opt.label;
+          item.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            closeAllRunMenus();
+            if (opt.action === "create") {
+              handleEmptySpaceClick(person, dateKey, ev);
+            } else if (opt.action === "publish") {
+              alert(`Shift published for: ${person} on ${dateKey}`);
+            }
+          });
+          menu.appendChild(item);
+        });
+
+        dayColumn.appendChild(menu);
+      });
+
+      // Events container
+      const eventsContainer = document.createElement("div");
+      eventsContainer.className = "week-events-container";
+      const events = person === "—" ? [] : getEventsForWeekRun(person, dateKey);
+      renderWeekEventsForRun(eventsContainer, events, dateKey);
+
+      // Append events first, then dots button on top
       dayColumn.appendChild(eventsContainer);
+
+      // Only show dots button and click handler for today or future dates
       if (date1 >= date2) {
+        dayColumn.appendChild(dotsBtn);
         dayColumn.addEventListener("click", function (e) {
           console.log("Day column clicked!", e.target);
-
-          // Check if we clicked on an event box
           const eventBox = e.target.closest(".week-event-box");
-
           if (eventBox) {
             console.log("Clicked on event, ignoring column click");
-            return; // Let the event's own handler deal with it
+            return;
           }
-
-          // We clicked on empty space
           console.log("Empty space clicked!");
-          const staffName = dayColumn.dataset.staffName;
           handleEmptySpaceClick(person, dateKey, e);
         });
       }
+
       personRow.appendChild(dayColumn);
     }
+
     rowsContainer.appendChild(personRow);
   });
 
@@ -2240,9 +2282,10 @@ function renderWeekEventsForRun(container, events, dateKey) {
 
     el.style.top = `${topPosition}px`;
     el.style.height = `${run_event_height}px`;
-    el.style.left = "2px";
-    el.style.right = "2px";
-    el.style.width = "auto";
+    el.style.left = "0";
+    el.style.right = "0";
+    el.style.width = "calc(100% - 12px)";
+    el.style.margin = "0 6px";
 
     const title = document.createElement("div");
     title.className = "week-event-staff-name";
@@ -2300,9 +2343,10 @@ function renderWeekStaffRunEvents(container, events, dateKey) {
     const topPosition = ROW_PADDING + index * (run_event_height + EVENT_GAP);
     el.style.top = `${topPosition}px`;
     el.style.height = `${run_event_height}px`;
-    el.style.left = "2px";
-    el.style.right = "2px";
-    el.style.width = "auto";
+    el.style.left = "0";
+    el.style.right = "0";
+    el.style.width = "calc(100% - 12px)";
+    el.style.margin = "0 6px";
     el.style.cursor = "pointer";
     el.style.pointerEvents = "auto";
     el.style.position = "absolute";
@@ -5052,3 +5096,10 @@ function openPopBasedView() {
     openAddVisitModal();
   }
 }
+
+function closeAllRunMenus() {
+  document.querySelectorAll(".run-dots-menu").forEach((m) => m.remove());
+}
+document.addEventListener("click", function () {
+  closeAllRunMenus();
+});
