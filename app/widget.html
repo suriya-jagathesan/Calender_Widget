@@ -3334,6 +3334,24 @@ body.dragging .employee-working-hours {
           <input type="hidden" id="mStatus" value="Not Started">
         </div>
 
+        <!-- CANCELLATION NOTICE -->
+<div class="modal-form-row" id="cancellationNoticeRow" >
+  <label>Cancellation Notice</label>
+
+  <div class="custom-dropdown" data-field="cancellationNotice">
+    <div class="custom-dropdown-display" onclick="toggleCustomDropdown(this)">
+      <span id="mCancellationNoticeText">Select</span>
+      <i class="fa fa-chevron-down"></i>
+    </div>
+
+    <div class="custom-dropdown-options">
+      <div class="custom-dropdown-option" onclick="selectCustomOption(this,'More than 24 hours’ notice')">More than 24 hours’ notice</div>
+      <div class="custom-dropdown-option" onclick="selectCustomOption(this,'Less than 24 hours’ notice')">Less than 24 hours’ notice</div>
+    </div>
+  </div>
+
+  <input type="hidden" id="mCancellationNotice" value="">
+</div>
         <!-- STAFF -->
         <div class="modal-form-row">
   <label>Staff <span>*</span></label>
@@ -3747,6 +3765,15 @@ function openEventModal(evt) {
     statusText.textContent = status;
   }
   activeEvent = evt;
+  const cancellationRow = document.getElementById('cancellationNoticeRow');
+
+if (status === 'Cancelled') {
+  cancellationRow.style.removeProperty('display'); 
+} else {
+  cancellationRow.style.display = 'none';
+  document.getElementById('mCancellationNotice').value = '';
+  document.getElementById('mCancellationNoticeText').textContent = 'Select';
+}
  
    const groupRows = getEventGroupRows(evt);
 
@@ -3807,6 +3834,7 @@ async function saveEvent() {
   var temp_start = shours * 60 + sminutes;
   const [ehours, eminutes] = to.split(":").map(Number);
   var temp_end = ehours * 60 + eminutes;
+  const sts_reason = document.getElementById("mCancellationNotice").value ?? "";
 //   if( temp_end < temp_start ){
 //     showToast("To Time can't greater than from time");
 //     return;
@@ -3823,6 +3851,7 @@ async function saveEvent() {
    activeEvent.status = cur_sts;
    activeEvent.event_status = cur_sts.replace(' ', '_');
    activeEvent.Manager_Notes = document.getElementById('mNotes').value;
+   activeEvent.cancel_notice = sts_reason;
 //    activeEvent.staff = document.getElementById('mStaff').value; 
    activeEvent.startMinute = temp_start;
    activeEvent.endMinutes = temp_end;
@@ -3849,6 +3878,7 @@ assignedRows
     evt.startMinutes = temp_start;
     evt.endMinutes = temp_end;
     evt.status = cur_sts;
+    evt.cancel_notice = sts_reason;
     evt.event_status = cur_sts.replace('_', ' ');
     evt.date = `${dd}-${mm}-${yyyy}`;
     evt.Manager_notes = document.getElementById('mNotes').value;
@@ -3875,6 +3905,7 @@ toAdd.forEach((staff, index) => {
     unassignedRows[index].startMinutes = temp_start;
     unassignedRows[index].endMinutes = temp_end;
     unassignedRows[index].status = cur_sts;
+    unassignedRows[index].status_reason = sts_reason;
     unassignedRows[index].event_status = cur_sts.replace('_', ' ');
     unassignedRows[index].date = `${dd}-${mm}-${yyyy}`;
     unassignedRows[index].Manager_notes = document.getElementById('mNotes').value;
@@ -3972,14 +4003,31 @@ function toggleCustomDropdown(el) {
   dropdown.classList.toggle('active');
 }
 
-function selectCustomOption(optionEl, value) {
-  const dropdown = optionEl.closest('.custom-dropdown');
+function selectCustomOption(el, value) {
+  const dropdown = el.closest('.custom-dropdown');
+  dropdown.querySelector('.custom-dropdown-display span').textContent = value;
+  
+  // ← Remove 'active' from the dropdown itself (not the options)
+  dropdown.classList.remove('active');
+
   const field = dropdown.dataset.field;
 
-  dropdown.querySelector('span').textContent = value;
-  document.getElementById(`m${capitalize(field)}`).value = value;
+  if (field === 'status') {
+    document.getElementById('mStatus').value = value;
 
-  dropdown.classList.remove('active');
+    const cancellationRow = document.getElementById('cancellationNoticeRow');
+    if (value === 'Cancelled') {
+      cancellationRow.style.removeProperty('display'); 
+    } else {
+      cancellationRow.style.display = 'none';
+      document.getElementById('mCancellationNotice').value = '';
+      document.getElementById('mCancellationNoticeText').textContent = 'Select Cancellation Notice';
+    }
+  }
+
+  if (field === 'cancellationNotice') {
+    document.getElementById('mCancellationNotice').value = value;
+  }
 }
 
 function capitalize(str) {
@@ -4674,7 +4722,8 @@ let resizeDirtyEvent = null;
                 "To_Date_Time": toDateTime,
                 "Status": sts,
                 "Manager_notes": evt.Manager_Notes,
-                "Date_field1": evt.from_date || evt.date // 🔥 Use from_date as primary
+                "Date_field1": evt.from_date || evt.date,
+                "Select_Cancellation_Notice" : evt.cancel_notice
             }
                 }
             }
@@ -5471,6 +5520,7 @@ else if(  currentViewType === 'staff'){
     cur_book.to = rec.End_time;
     cur_book.no_of_staff = rec.No_of_Staff;
     cur_book.Female_Only = rec["Visit.Female_Only"] ?? "";
+    cur_book.cancel_notice = rec.Select_Cancellation_Notice;
     cur_book.Time_Critical_Visit = rec["Visit.Time_Critical_Visit"] ?? "";;
     const runName = rec.Care_Group?.Care_Group_Name ?? '';
 const runID   = rec.Care_Group?.ID ?? '';

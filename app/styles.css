@@ -1393,3 +1393,7 @@ select.form-control {
 .run-cell-badge-wrapper {
   display: none;
 }
+
+#cancellationNoticeRow label {
+  white-space: nowrap;
+}
