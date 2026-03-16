@@ -7772,13 +7772,15 @@ async function getAllEmployeeDetails() {
     allStaff = [];
      const serviceList = `[${services.join(",")}]`;
     const criteria_2 = `Sites.ID == ${serviceList} && Status == "Active"`;
+    console.log(criteria_2);
+    
     var staffs = {
         app_name: app_name,
         report_name: "Employees_Report",
         criteria: criteria_2
     };       
     staff_resp = await ZOHO.CREATOR.DATA.getRecords(staffs);
-    // console.log(staff_resp);
+    console.log(staff_resp);
     staff_resp.data.forEach(function (rec) {
         const name = rec?.Name1 ?? '';
         let emp_service = [];
@@ -7786,6 +7788,7 @@ async function getAllEmployeeDetails() {
 rec?.Sites?.forEach(i => {
   emp_service.push(i.zc_display_value);
 });
+        console.log();
         
         if( !allStaff.includes(name) && name !== '' ){
             allStaff.push(name);
@@ -7799,6 +7802,7 @@ rec?.Sites?.forEach(i => {
     });
     // console.log(allStaff);
     console.log(allStaffDetails);
+    console.log(allStaff);
     
     
 }

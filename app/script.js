@@ -2048,7 +2048,7 @@ function renderWeekRunRows() {
 
         // Conditional options — wrap each push with an if() as needed
         const options = [];
-        options.push({ label: "Add Visit", action: "create" });
+        options.push({ label: "Assign Staff", action: "create" });
         options.push({ label: "Publish shift", action: "publish" });
 
         const menu = document.createElement("div");
@@ -2626,6 +2626,7 @@ function openStaffSchedulePopup(eventData, dateKey, isNewRecord = false) {
   statusSelect.addEventListener("change", () => {
     toggleAvailabilityFields(popup);
   });
+  console.log(allStaff);
 
   // Initialize custom dropdowns
   initializeCustomDropdown(popup, "staff", allStaff, eventData.staff);
