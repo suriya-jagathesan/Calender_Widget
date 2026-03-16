@@ -2797,6 +2797,32 @@ body.dragging .employee-working-hours {
         <input type="hidden" id="av_status_val" value="Not Started" />
       </div>
 
+      <!-- Cancellation Notice -->
+<div class="modal-form-row" id="av_cancel_row" style="display:none;">
+  <label>Select Cancellation Notice</label>
+
+  <div class="av-custom-dropdown" id="av_cancel_dd">
+    <div class="av-custom-dropdown-display" onclick="toggleAvDropdown('av_cancel_dd')">
+      <span id="av_cancel_text" style="color:#9ca3af;">Select</span>
+      <i class="fa fa-chevron-down"></i>
+    </div>
+
+    <div class="av-custom-dropdown-options">
+      <div class="av-custom-dropdown-option"
+        onclick="selectAvOption('av_cancel_dd','av_cancel_val','av_cancel_text','More than 24 hours’ notice')">
+        More than 24 hours’ notice
+      </div>
+
+      <div class="av-custom-dropdown-option"
+        onclick="selectAvOption('av_cancel_dd','av_cancel_val','av_cancel_text','Less than 24 hours’ notice')">
+        Less than 24 hours’ notice
+      </div>
+    </div>
+  </div>
+
+  <input type="hidden" id="av_cancel_val">
+</div>
+
       <!-- Staff -->
       <div class="modal-form-row" style="align-items:start;">
   <label style="padding-top:8px;">Staff </label>
@@ -3742,6 +3768,8 @@ function openEventModal(evt) {
 
   const statusInput = document.getElementById('mStatus');
   const statusText  = document.getElementById('mStatusText');
+  const cancel_notice = document.getElementById('mCancellationNotice');
+  const cancel_notice_text  = document.getElementById('mCancellationNoticeText');
   console.log(statusInput,statusText);
   
   document.getElementById('mPerson').value =
@@ -3764,6 +3792,9 @@ function openEventModal(evt) {
     statusInput.value = status;
     statusText.textContent = status;
   }
+  console.log(evt);
+  
+  
   activeEvent = evt;
   const cancellationRow = document.getElementById('cancellationNoticeRow');
 
@@ -3773,6 +3804,10 @@ if (status === 'Cancelled') {
   cancellationRow.style.display = 'none';
   document.getElementById('mCancellationNotice').value = '';
   document.getElementById('mCancellationNoticeText').textContent = 'Select';
+}
+if (cancel_notice && cancel_notice_text) {
+  cancel_notice.value = evt.cancel_notice ?? "";
+  cancel_notice_text.textContent = evt.cancel_notice ?? "Select";
 }
  
    const groupRows = getEventGroupRows(evt);

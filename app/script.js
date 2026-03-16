@@ -4266,6 +4266,13 @@ function selectAvOption(ddId, hiddenId, textId, value) {
   if (ddId === "av_service_dd") {
     onAddVisitServiceChange(value);
   }
+  if (value === "Cancelled" && hiddenId === "av_status_val") {
+    document.getElementById("av_cancel_row").style.display = "grid";
+  } else if (hiddenId === "av_status_val") {
+    document.getElementById("av_cancel_row").style.display = "none";
+    document.getElementById("av_cancel_val").value = "";
+    document.getElementById("av_cancel_text").textContent = "Select";
+  }
 }
 
 function onAddVisitServiceChange(service) {
@@ -4334,7 +4341,9 @@ function openAddVisitModal() {
       selectAvOption("av_service_dd", "av_service_val", "av_service_text", svc);
     serviceOptions.appendChild(opt);
   });
-
+  document.getElementById("av_cancel_row").style.display = "none";
+  document.getElementById("av_cancel_val").value = "";
+  document.getElementById("av_cancel_text").textContent = "Select";
   // Reset all fields
   document.getElementById("av_service_text").textContent = "Select service";
   document.getElementById("av_service_text").style.color = "#9ca3af";
@@ -4384,9 +4393,14 @@ async function submitAddVisit() {
   const to = document.getElementById("av_to").value;
   const status = document.getElementById("av_status_val").value;
   const staff = avSelectedStaff;
+  const cancel_notice = document.getElementById("av_cancel_val").value;
 
   if (!service || !date || !from || !to || !status) {
     showToast("Please fill in all required fields (*).");
+    return;
+  }
+  if (status === "Cancelled" && !cancel_notice) {
+    showToast("Please provide cancellation notice period.");
     return;
   }
   const cur_data = {
@@ -4401,6 +4415,7 @@ async function submitAddVisit() {
     notes: document.getElementById("av_notes").value,
     duration: document.getElementById("av_duration").value,
     visit: document.getElementById("av_title").value,
+    cancel_notice: cancel_notice,
   };
   // TODO: replace with your Zoho Creator API call
   console.log("New visit:", {
@@ -4414,6 +4429,7 @@ async function submitAddVisit() {
     staff,
     notes: document.getElementById("av_notes").value,
     duration: document.getElementById("av_duration").value,
+    cancel_notice: cancel_notice,
   });
   showLoader();
   await createNewBookingZoho(cur_data);
@@ -4468,6 +4484,7 @@ async function createNewBookingZoho(evt) {
     Status: evt.status,
     Care_Providers: empId,
     Visit_Title: evt.visit,
+    Select_Cancellation_Notice: evt.cancel_notice,
   };
   console.log(fromData);
 
