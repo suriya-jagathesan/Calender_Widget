@@ -459,7 +459,9 @@ function renderRunViewColumn(rowHeightsMap = {}) {
         if (evt.employee && !emp.includes(evt.employee)) {
           emp.push(evt.employee);
         }
-        total_mins += evt.endMinutes - evt.startMinutes;
+        if (evt.event_status !== "Cancelled") {
+          total_mins += evt.endMinutes - evt.startMinutes;
+        }
       });
 
       const workingHours = total_mins / 60;
@@ -1245,6 +1247,7 @@ function updateDayStats() {
   // Required Hours: Sum of duration of all events
   let totalRequiredMinutes = 0;
   events.forEach((evt) => {
+    if (evt.event_status === "Cancelled") return;
     totalRequiredMinutes += evt.endMinutes - evt.startMinutes;
   });
   const requiredHours = (totalRequiredMinutes / 60).toFixed(1);
@@ -1252,9 +1255,12 @@ function updateDayStats() {
   employees.forEach((employee) => {
     const shift = shiftsMap[employee];
     if (shift) {
-      totalCarerMinutes += shift.endMinutes - shift.startMinutes;
+      shift.forEach((s) => {
+        totalCarerMinutes += s.endMinutes - s.startMinutes;
+      });
     }
   });
+
   const carersHours = (totalCarerMinutes / 60).toFixed(1);
   // Update UI
   const spareCapacityEl = document.getElementById("spareCapcity");
@@ -1288,6 +1294,7 @@ function updateWeekStats() {
 
     // Sum required hours
     events.forEach((evt) => {
+      if (evt.event_status === "Cancelled") return;
       totalRequiredMinutes += evt.endMinutes - evt.startMinutes;
     });
 
@@ -1325,7 +1332,9 @@ function updateWeekStats() {
   employees.forEach((employee) => {
     const shift = shiftsMap[employee];
     if (shift) {
-      totalCarerMinutes += shift.endMinutes - shift.startMinutes;
+      shift.forEach((s) => {
+        totalCarerMinutes += s.endMinutes - s.startMinutes;
+      });
     }
   });
 

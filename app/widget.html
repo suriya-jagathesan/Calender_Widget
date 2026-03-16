@@ -5623,7 +5623,9 @@ if (runName && !runGroups.includes(runName)) {
             let total_mins = 0;
             const events = getEventsForEmployee(employee, dateKey);
             events.forEach(evt => {
+                if( evt.event_status !== "Cancelled" ){
                 total_mins += (evt.endMinutes - evt.startMinutes);
+                }
             });
             const t_count = total_mins / 60;
 const workingHours = total_mins / 60;
