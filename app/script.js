@@ -1911,12 +1911,12 @@ function renderWeekStaffRunRows() {
   weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1);
   const rowHeightsMap = {};
 
-  const fillHeight = calculateFillHeight();
   if (appliedFilters.length > 0) {
     employeeValues = getEmployeesFromEventsWeek();
   } else {
     employeeValues = [...runStaffList];
   }
+  const fillHeight = calculateFillHeightCount(employeeValues.length);
   // if( appliedFilters.length > 0 ){
   //     employeeValues = getEmployeesFromEvents();
   // }
@@ -2001,14 +2001,12 @@ function renderWeekRunRows() {
   weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1);
   const rowHeightsMap = {};
 
-  const fillHeight = calculateFillHeight();
-
   if (appliedFilters.length > 0) {
     displayRuns = getRunsFromEventsWeek();
   } else {
     displayRuns = runRows.length > 0 ? [...new Set(runRows)] : ["—"];
   }
-
+  const fillHeight = calculateFillHeightCount(displayRuns.length);
   displayRuns.forEach((person) => {
     let maxEventsInDay = 1;
 
@@ -2027,6 +2025,10 @@ function renderWeekRunRows() {
       maxEventsInDay * (run_event_height + EVENT_GAP) +
       ROW_PADDING * 2 +
       BADGE_HEIGHT;
+    console.log(
+      `Event Needed Height ${eventNeededHeight} and Fill Height ${fillHeight}`,
+    );
+
     const finalRowHeight = Math.max(fillHeight, eventNeededHeight);
     rowHeightsMap[person] = finalRowHeight;
 

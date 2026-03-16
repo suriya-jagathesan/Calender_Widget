@@ -4573,6 +4573,22 @@ function removeFilterByFieldValue(field, value) {
     
     return Math.max(MIN_ROW_HEIGHT, fillHeight);
 }
+function calculateFillHeightCount(count) {
+    // Select the container based on which view is currently active
+    const selector = (currentView === 'day') ? '.calendar-body-scrollable' : '.week-view-container';
+    const container = document.querySelector(selector);
+    
+    if (!container) return MIN_ROW_HEIGHT;
+    
+    // Header heights (Day header vs Week header)
+    const headerHeight = (currentView === 'day') ? 45 : 55; 
+    const availableHeight = container.clientHeight - headerHeight;
+    
+
+    const fillHeight = availableHeight / count;
+    
+    return Math.min(MIN_ROW_HEIGHT, fillHeight);
+}
 function getTotalWeekHoursPerson(employee){
     if (!employee || employee === '' || employee === '—') {
         return "0.0";
