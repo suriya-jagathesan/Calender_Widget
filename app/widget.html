@@ -4593,10 +4593,12 @@ function getTotalWeekHoursPerson(employee){
             console.log(`Person Hours  ${employee} ${JSON.stringify(events)}  `  );
         }
         events.forEach(evt => {
+            if( evt.event_status !== "Cancelled" ){
             const duration = evt.duration_mins;
             if (duration > 0) {
                 totalMinutes += duration;
             }
+        }
         });
     }
 
@@ -4622,10 +4624,12 @@ function getTotalWeekHours(employee) {
         const events = getEventsForEmployee(employee, key);
         
         events.forEach(evt => {
+            if( evt.event_status !== "Cancelled" ){
             const duration = evt.endMinutes - evt.startMinutes;
             if (duration > 0) {
                 totalMinutes += duration;
             }
+        }
         });
     }
 

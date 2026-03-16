@@ -2125,19 +2125,22 @@ function renderWeekPersonRows() {
 
   const weekStart = new Date(currentDate);
   weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1);
-  const rowHeightsMap = {};
 
+  const rowHeightsMap = {};
   const fillHeight = calculateFillHeight();
 
-  // Get unique persons from the persons array
+  // Get unique persons
   if (appliedFilters.length > 0) {
     personValues = getPersonFromEventsWeek();
   } else {
     personValues = persons.length > 0 ? [...new Set(persons)] : ["—"];
   }
-  // const displayPersons = persons.length > 0 ? [...new Set(persons)] : ['—'];
+  console.log(personValues);
 
-  personValues.forEach((person) => {
+  const sorted_person = personValues.sort();
+  console.log(sorted_person);
+
+  sorted_person.forEach((person) => {
     let maxEventsInDay = 1;
 
     if (person !== "—") {
@@ -2210,7 +2213,7 @@ function renderWeekStaffRunColumn(rowHeightsMap = {}) {
         );
       }
       events.forEach((evt) => {
-        if (evt.off === "false") {
+        if (evt.off === "false" && evt.event_status !== "Cancelled") {
           let duration = evt.endMinutes - evt.startMinutes;
 
           if (duration < 0) {
@@ -2268,8 +2271,8 @@ function renderWeekPersonColumn(rowHeightsMap = {}) {
   } else {
     personValues = persons.length > 0 ? [...new Set(persons)] : ["—"];
   }
-
-  personValues.forEach((person) => {
+  const sorted_person = personValues.sort();
+  sorted_person.forEach((person) => {
     const row = document.createElement("div");
     row.className = "week-employee-row";
     const displayHours = getTotalWeekHoursPerson(person);
