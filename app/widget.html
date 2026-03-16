@@ -3945,7 +3945,7 @@ toAdd.forEach((staff, index) => {
     unassignedRows[index].date = `${dd}-${mm}-${yyyy}`;
     unassignedRows[index].Manager_notes = document.getElementById('mNotes').value;
     if( staff ){
-               employee_id =  employeeDetails.find(emp => emp.name === staff).id;
+               employee_id =  allStaffDetails.find(emp => emp.name === staff).id;
             }
             else{
                 employee_id = null;
@@ -5640,7 +5640,26 @@ if (runName && !runGroups.includes(runName)) {
 }
         async function re_renderDayView(){
             renderHourHeaders();
+            const query = document.getElementById("employeeSearchInput").value ?? "";
+            const q = query.trim().toLowerCase();
+            if( q !== '' ){
+                if (currentViewType === 'employee') {
+            const visibleEmployees = employees.filter(e =>
+                e.toLowerCase().includes(q)
+            );
+            visibleEmployees.unshift('');
+            renderFilteredEmployeeRows(visibleEmployees);
+        } else if (currentViewType === 'run') {
+            const visibleRuns = runGroups.filter(r =>
+                r.toLowerCase().includes(q)
+            );
+            visibleRuns.unshift('');
+            renderFilteredRunRows(visibleRuns);
+        }
+            }
+            else{
             await renderEmployeeRows();
+            }
             syncScroll();
         }
         async function renderDayView() {    
@@ -7665,7 +7684,7 @@ formatFilterText = function(filter) {
             if (currentViewType === 'employee') {
                 re_renderDayView();
             } else if (currentViewType === 'run') {
-                renderRunView();
+                re_renderRunView();
             }
             return;
         }

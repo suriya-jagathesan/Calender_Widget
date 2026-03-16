@@ -52,12 +52,17 @@ function renderStaffPills() {
   });
 }
 function renderStaffDropdown(query) {
+  const service = document.getElementById("mService").value;
   const dropdown = document.getElementById("staffDropdown");
   dropdown.innerHTML = "";
 
   const q = query.toLowerCase();
 
-  employees
+  const staffList = allStaffDetails
+    .filter((s) => s.service?.includes(service))
+    .map((s) => s.name);
+
+  staffList
     .filter(
       (name) =>
         name && !selectedStaff.includes(name) && name.toLowerCase().includes(q),
@@ -68,13 +73,15 @@ function renderStaffDropdown(query) {
       opt.textContent = name;
 
       opt.onclick = () => {
-        // if (selectedStaff.length >= activeEvent.no_of_staff ) {
+        // if (selectedStaff.length >= activeEvent.no_of_staff) {
         //   showToast(`You can select a maximum of ${activeEvent.no_of_staff} staff only`);
         //   return;
         // }
 
         selectedStaff.push(name);
+
         document.getElementById("staffSearchInput").value = "";
+
         renderStaffPills();
         renderStaffDropdown("");
       };
@@ -105,7 +112,7 @@ function cloneEventForEmployee(base, employee, employee_id = null) {
   console.log(employee);
 
   if (employee) {
-    employee_id = employeeDetails.find((emp) => emp.name === employee).id;
+    employee_id = allStaffDetails.find((emp) => emp.name === employee).id;
   } else {
     employee_id = null;
   }
@@ -142,7 +149,7 @@ function getEmployeeIdsForEvent(evt) {
   const employeeIds = eventDatabase[dateKey]
     .filter((e) => e.zoho_id === evt.zoho_id && e.employee)
     .map((e) => {
-      const emp = employeeDetails.find((emp) => emp.name === e.employee);
+      const emp = allStaffDetails.find((emp) => emp.name === e.employee);
       return emp ? emp.id : null;
     })
     .filter(Boolean);
@@ -1054,7 +1061,23 @@ async function renderRunView() {
 async function re_renderRunView() {
   showLoader();
   renderHourHeaders();
-  await renderRunViewRows();
+  const query = document.getElementById("employeeSearchInput").value ?? "";
+  const q = query.trim().toLowerCase();
+  if (q !== "") {
+    if (currentViewType === "employee") {
+      const visibleEmployees = employees.filter((e) =>
+        e.toLowerCase().includes(q),
+      );
+      visibleEmployees.unshift("");
+      renderFilteredEmployeeRows(visibleEmployees);
+    } else if (currentViewType === "run") {
+      const visibleRuns = runGroups.filter((r) => r.toLowerCase().includes(q));
+      visibleRuns.unshift("");
+      renderFilteredRunRows(visibleRuns);
+    }
+  } else {
+    await renderRunViewRows();
+  }
   syncScroll();
   hideLoader();
 }
