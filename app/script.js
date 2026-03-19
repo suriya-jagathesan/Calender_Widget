@@ -2307,7 +2307,7 @@ function renderWeekPersonColumn(rowHeightsMap = {}) {
                     <div class="employee-name">${person}</div>
                     <div class="week-employee-hours-row">
                         <div class="week-employee-hours-info">
-                            <span class="week-employee-hours-value">${displayHours}h</span>
+                            <span class="week-employee-hours-value" data-tooltip="Total hours" >${displayHours}h</span>
                         </div>
                         <div class="week-employee-pdf-icon" onclick="openPersonWeekPDF('${person}')" title="Download Week Schedule">
                             <i class="fa fa-file-pdf"></i>
@@ -2974,6 +2974,8 @@ function setupSiteNameField(popup, eventData, isNewRecord) {
 }
 
 function updateSiteNameForStaff(popup, staffName) {
+  console.log(popup, staffName);
+
   const siteNameInputContainer = popup.querySelector("#siteNameInputContainer");
   const siteNameDropdownContainer = popup.querySelector(
     "#siteNameDropdownContainer",
@@ -2981,6 +2983,7 @@ function updateSiteNameForStaff(popup, staffName) {
   const siteNameInput = popup.querySelector("#siteName");
 
   const staffServices = getServicesForStaff(staffName);
+  console.log(staffServices);
 
   if (staffServices.length === 0) {
     siteNameInputContainer.style.display = "block";
@@ -3067,6 +3070,8 @@ function updateSiteNameForStaff(popup, staffName) {
 }
 
 function getServicesForStaff(staffName) {
+  console.log(employeeDetails);
+
   if (!staffName || !employeeDetails) return [];
 
   const employee = employeeDetails.find((emp) => emp.name === staffName);
@@ -4581,6 +4586,8 @@ async function fetchNewStaffDetails(staffNames) {
     for (const rec of employee_res.data) {
       console.log(rec);
       const emp_service = rec.Sites ?? [];
+      console.log(`${name} => ${JSON.stringify(rec.Sites)}`);
+
       const serviceList = emp_service.map((site) => ({
         id: site.ID,
         zc_display: site.zc_display_value,

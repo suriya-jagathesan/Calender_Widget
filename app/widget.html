@@ -4178,9 +4178,12 @@ function hideLoader() {
 }
 
        async function getTodayAllEmployees() {
+        
+        
         console.log("Today Called");
         employees.length = 0;
         employees.push('');
+        employeeDetails = [];
         
         const serviceList = `[${services.join(",")}]`;
         let employees_config;
@@ -4239,7 +4242,7 @@ function hideLoader() {
         
         if (employee_res.code === 3000 && employee_res.data?.length) {
 
-            for (const rec of employee_res.data) {
+            for (const rec of employee_res.data) {   
                 const emp_service =  rec["Staff.Sites"]  ?? [] ;
                 const serviceList = emp_service.map(site => ({
                     id: site.ID,
@@ -4247,9 +4250,14 @@ function hideLoader() {
                 }));
                 const name = rec.Staff?.zc_display_value;
                 const staffId = rec.Staff?.ID;
-
+                if( name.toLowerCase().includes("laville")){
+                    console.log(!name || !staffId || employees.includes(name));
+                    console.log(employees);
+                } 
                 if (!name || !staffId || employees.includes(name)) continue;
-
+                if( name.toLowerCase().includes("laville")){
+                    console.log("Next to true");
+                }
                 const skills_config = {
                     app_name,
                     report_name: "Employees_Report",
@@ -4275,6 +4283,8 @@ function hideLoader() {
                     week_hours:  week_hours
                 });
             }
+            console.log(JSON.stringify(employeeDetails) );
+            
         }    
         const employee_res1 = await ZOHO.CREATOR.DATA.getRecords(employees_config1);
         
@@ -5076,7 +5086,7 @@ async function cancelTimeChange() {
         // const employees = ['John Smith', 'Sarah Johnson', 'Mike Wilson', 'Emily Davis', 'David Brown', 'Arun', 'Kamalam', 'Surya', 'Mugil', 'Nirmal', 'Sofia', 'Shiva'];
         const employees=[];
         employees.push('');
-        const employeeDetails = [];
+        let employeeDetails = [];
         const initialEventDatabase = {
             '2026-01-07': [
                 { id: 1, title: 'Team Meeting', startMinutes: 540, endMinutes: 630, employee: 'Sophia Roome' },
