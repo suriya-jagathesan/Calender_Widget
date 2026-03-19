@@ -4180,10 +4180,11 @@ function hideLoader() {
        async function getTodayAllEmployees() {
         
         
-        console.log("Today Called");
+        console.log("Today Called ");
         employees.length = 0;
         employees.push('');
         employeeDetails = [];
+        console.log(JSON.stringify(employeeDetails) );
         
         const serviceList = `[${services.join(",")}]`;
         let employees_config;
@@ -4192,13 +4193,15 @@ function hideLoader() {
             employees_config = {
             app_name,
             report_name: "Daily_schedule_for_Staff",
-            criteria: `Site_Name.ID == ${serviceList} && Date_From == '${formatDateDDMMYYYY(currentDate)}' && Available_Status == "Available" `
+            criteria: `Site_Name.ID == ${serviceList} && Date_From == '${formatDateDDMMYYYY(currentDate)}' && Available_Status == "Available" `,
+            max_records: 1000
         };
 
         employees_config1 = {
             app_name,
             report_name: "Bookings_Backend",
-            criteria: `Site_Name.ID == ${serviceList} && Care_Providers != null && Date_field1 == '${formatDateDDMMYYYY(currentDate)}' && Status != "Inactive" `
+            criteria: `Site_Name.ID == ${serviceList} && Care_Providers != null && Date_field1 == '${formatDateDDMMYYYY(currentDate)}' && Status != "Inactive" `,
+            max_records: 1000
         }
         }
         else{
@@ -4291,7 +4294,8 @@ function hideLoader() {
        if (employee_res1.code === 3000 && employee_res1.data?.length) {
 
     for (const rec of employee_res1.data) {
-
+        console.log(JSON.stringify(rec) );
+        
         const staffList = Array.isArray(rec.Care_Providers)
             ? rec.Care_Providers
             : rec.Care_Providers

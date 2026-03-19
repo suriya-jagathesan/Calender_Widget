@@ -2950,14 +2950,14 @@ function setupSiteNameField(popup, eventData, isNewRecord) {
         // Only one service - show as readonly
         siteNameInputContainer.style.display = "block";
         siteNameDropdownContainer.style.display = "none";
-        siteNameInput.value = staffServices[0].zc_display;
+        siteNameInput.value = staffServices[0];
       } else {
         // Multiple services - show as dropdown
         siteNameInputContainer.style.display = "none";
         siteNameDropdownContainer.style.display = "block";
 
         // Initialize site name dropdown
-        const siteOptions = staffServices.map((s) => s.zc_display);
+        const siteOptions = staffServices;
         initializeCustomDropdown(
           popup,
           "siteName",
@@ -2994,15 +2994,15 @@ function updateSiteNameForStaff(popup, staffName) {
   } else if (staffServices.length === 1) {
     siteNameInputContainer.style.display = "block";
     siteNameDropdownContainer.style.display = "none";
-    siteNameInput.value = staffServices[0].zc_display;
+    siteNameInput.value = staffServices[0];
     // Update runs for the single site
-    updateRunDropdownForSite(popup, staffServices[0].zc_display);
+    updateRunDropdownForSite(popup, staffServices[0]);
   } else {
     siteNameInputContainer.style.display = "none";
     siteNameDropdownContainer.style.display = "block";
 
     // Re-initialize site name dropdown with new options
-    const siteOptions = staffServices.map((s) => s.zc_display);
+    const siteOptions = staffServices;
     const dropdownMenu = popup.querySelector("#siteNameDropdownMenu");
     const optionsContainer = popup.querySelector("#siteNameOptions");
     const dropdownText = popup.querySelector(
@@ -3070,11 +3070,11 @@ function updateSiteNameForStaff(popup, staffName) {
 }
 
 function getServicesForStaff(staffName) {
-  console.log(employeeDetails);
+  console.log(allStaffDetails);
 
-  if (!staffName || !employeeDetails) return [];
+  if (!staffName || !allStaffDetails) return [];
 
-  const employee = employeeDetails.find((emp) => emp.name === staffName);
+  const employee = allStaffDetails.find((emp) => emp.name === staffName);
   if (!employee || !employee.service) return [];
 
   return employee.service;
