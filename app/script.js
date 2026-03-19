@@ -4347,6 +4347,7 @@ function onAddVisitServiceChange(service) {
       selectAvOption("av_person_dd", "av_person_val", "av_person_text", p);
     personOptions.appendChild(opt);
   });
+  console.log(JSON.stringify(allStaffDetails));
 
   if (!service) {
     avCurrentServiceStaff = [];
@@ -4355,6 +4356,8 @@ function onAddVisitServiceChange(service) {
       .filter((s) => s.service.includes(service))
       .map((s) => s.name);
   }
+  console.log("Service Name " + service);
+  console.log(JSON.stringify(avCurrentServiceStaff));
 
   // Reset selected staff and re-render
   avSelectedStaff = [];
@@ -4383,6 +4386,8 @@ function openAddVisitModal() {
   document.getElementById("av_service_text").style.color = "#9ca3af";
   document.getElementById("av_service_val").value = "";
   document.getElementById("av_duration").value = "";
+
+  document.getElementById("avStaffSearchInput").value = "";
 
   document.getElementById("av_person_text").textContent = "Select person";
   document.getElementById("av_person_text").style.color = "#9ca3af";
@@ -4665,7 +4670,8 @@ function initAvStaffMultiSelect() {
 
   newInput.onfocus = () => dropdown.classList.add("active");
 
-  newInput.oninput = () => avRenderStaffDropdown(newInput.value);
+  newInput.oninput = () =>
+    avRenderStaffDropdown(newInput.value, avCurrentServiceStaff);
 
   newInput.onkeydown = (e) => {
     if (
@@ -4708,11 +4714,11 @@ function avRenderStaffPills() {
 function avRenderStaffDropdown(query, allowedStaff = null) {
   const dropdown = document.getElementById("avStaffDropdown");
   dropdown.innerHTML = "";
-
   const q = query.toLowerCase();
 
+  // If no service selected yet, use full employees list
   const pool =
-    allowedStaff !== null
+    allowedStaff !== null && allowedStaff.length > 0
       ? allowedStaff
       : typeof employees !== "undefined"
         ? employees
@@ -4733,7 +4739,7 @@ function avRenderStaffDropdown(query, allowedStaff = null) {
         avSelectedStaff.push(name);
         document.getElementById("avStaffSearchInput").value = "";
         avRenderStaffPills();
-        avRenderStaffDropdown("", avCurrentServiceStaff); // pass filtered list on rerender
+        avRenderStaffDropdown("", avCurrentServiceStaff);
       };
       dropdown.appendChild(opt);
     });
