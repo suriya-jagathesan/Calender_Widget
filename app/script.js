@@ -2997,76 +2997,76 @@ function updateSiteNameForStaff(popup, staffName) {
     siteNameInput.value = staffServices[0];
     // Update runs for the single site
     updateRunDropdownForSite(popup, staffServices[0]);
-  } else {
+  } 
+  else {
     siteNameInputContainer.style.display = "none";
     siteNameDropdownContainer.style.display = "block";
 
-    // Re-initialize site name dropdown with new options
     const siteOptions = staffServices;
+
+    // ✅ Clone FIRST, then capture ALL references from the NEW element
+    const oldDropdownBtn = popup.querySelector("#siteNameDropdown");
+    const newDropdownBtn = oldDropdownBtn.cloneNode(true);
+    oldDropdownBtn.parentNode.replaceChild(newDropdownBtn, oldDropdownBtn);
+
+    // ✅ All references captured AFTER clone — these point to live DOM
     const dropdownMenu = popup.querySelector("#siteNameDropdownMenu");
     const optionsContainer = popup.querySelector("#siteNameOptions");
-    const dropdownText = popup.querySelector(
-      "#siteNameDropdown .dropdown-text",
-    );
+    const dropdownText = newDropdownBtn.querySelector(".dropdown-text");
     const hiddenInput = popup.querySelector("#siteNameHidden");
+    const searchInput = popup.querySelector("#siteNameSearch");
 
-    // Clear existing options
-    optionsContainer.innerHTML = "";
-
-    // Render new options
-    renderDropdownOptions(
-      optionsContainer,
-      siteOptions,
-      null,
-      dropdownText,
-      hiddenInput,
-      dropdownMenu,
-    );
-
-    // Set first site as default and update runs
+    // Set default to first site
     const firstSite = siteOptions[0];
     dropdownText.textContent = firstSite;
     dropdownText.classList.remove("placeholder");
     hiddenInput.value = firstSite;
-    updateRunDropdownForSite(popup, firstSite);
 
-    // Re-initialize the dropdown functionality
-    const dropdownBtn = popup.querySelector("#siteNameDropdown");
-    const searchInput = popup.querySelector("#siteNameSearch");
-
-    // Remove old listeners and add new ones
-    const newDropdownBtn = dropdownBtn.cloneNode(true);
-    dropdownBtn.parentNode.replaceChild(newDropdownBtn, dropdownBtn);
-
-    newDropdownBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const isOpen = dropdownMenu.classList.contains("show");
-      document.querySelectorAll(".dropdown-menu.show").forEach((menu) => {
-        menu.classList.remove("show");
-        menu.previousElementSibling.classList.remove("active");
-      });
-      if (!isOpen) {
-        dropdownMenu.classList.add("show");
-        newDropdownBtn.classList.add("active");
-        searchInput.focus();
-      }
-    });
-
-    searchInput.addEventListener("input", (e) => {
-      const searchTerm = e.target.value.toLowerCase();
-      const filteredOptions = siteOptions.filter((opt) =>
-        opt.toLowerCase().includes(searchTerm),
-      );
-      renderDropdownOptions(
+    // ✅ Pass fieldName so renderDropdownOptions can find the live button
+    optionsContainer.innerHTML = "";
+    renderDropdownOptions(
         optionsContainer,
-        filteredOptions,
+        siteOptions,
         null,
         dropdownText,
         hiddenInput,
         dropdownMenu,
-      );
+        "siteName"   // ← this was missing!
+    );
+
+    updateRunDropdownForSite(popup, firstSite);
+
+    newDropdownBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isOpen = dropdownMenu.classList.contains("show");
+        document.querySelectorAll(".dropdown-menu.show").forEach((menu) => {
+            menu.classList.remove("show");
+            menu.previousElementSibling?.classList.remove("active");
+        });
+        if (!isOpen) {
+            dropdownMenu.classList.add("show");
+            newDropdownBtn.classList.add("active");
+            searchInput.focus();
+        }
     });
-  }
+
+    searchInput.addEventListener("input", (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const filteredOptions = siteOptions.filter((opt) =>
+            opt.toLowerCase().includes(searchTerm)
+        );
+        // ✅ Fresh references, correct fieldName
+        renderDropdownOptions(
+            optionsContainer,
+            filteredOptions,
+            null,
+            dropdownText,
+            hiddenInput,
+            dropdownMenu,
+            "siteName"
+        );
+    });
+}
 }
 
 function getServicesForStaff(staffName) {
@@ -3202,7 +3202,7 @@ function initializeCustomDropdown(
   });
 
   // Search functionality
-  searchInput.addEventListener("input", (e) => {
+  searchInput.addEventListener("input", (e) => {    
     const searchTerm = e.target.value.toLowerCase();
     const filteredOptions = options.filter((opt) =>
       opt.toLowerCase().includes(searchTerm),
@@ -3238,7 +3238,7 @@ function renderDropdownOptions(
 ) {
   container.innerHTML = "";
 
-  if (options.length === 0) {
+  if (!options || options.length === 0) {
     const noResults = document.createElement("div");
     noResults.className = "dropdown-option no-results";
     noResults.textContent = "No results found";
@@ -3260,17 +3260,24 @@ function renderDropdownOptions(
       dropdownText.classList.remove("placeholder");
       hiddenInput.value = option;
 
-      // Update selected state
       container.querySelectorAll(".dropdown-option").forEach((opt) => {
         opt.classList.remove("selected");
       });
       optionEl.classList.add("selected");
 
-      // Close dropdown
       dropdownMenu.classList.remove("show");
-      dropdownMenu.previousElementSibling.classList.remove("active");
-      if (fieldName === "staff" && container.closest(".schedule-popup")) {
-        const popup = container.closest(".schedule-popup").parentElement;
+      dropdownMenu.previousElementSibling?.classList.remove("active");
+
+      const schedulePopup = container.closest(".schedule-popup");
+
+      if (fieldName === "siteName" && schedulePopup) {
+        const popup = schedulePopup.parentElement;
+        updateStaffDropdownForSite(popup, option);
+        updateRunDropdownForSite(popup, option);
+      }
+
+      if (fieldName === "staff" && schedulePopup) {
+        const popup = schedulePopup.parentElement;
         const isNew = popup
           .querySelector(".popup-header h2")
           .textContent.includes("New");
@@ -3282,6 +3289,40 @@ function renderDropdownOptions(
 
     container.appendChild(optionEl);
   });
+}
+function updateStaffDropdownForSite(popup, siteName) {
+  console.log(siteName);
+  console.log( JSON.stringify(allStaffDetails));
+  
+  
+  
+  const staffOptions = allStaffDetails
+    .filter((s) => s.service?.includes(siteName))
+    .map((s) => s.name);
+console.log( staffOptions.includes("Zainab") );
+  const staffDropdownMenu = popup.querySelector("#staffDropdownMenu");
+  const staffOptionsContainer = popup.querySelector("#staffOptions");
+  const staffDropdownText = popup.querySelector("#staffDropdown .dropdown-text");
+  const staffHiddenInput = popup.querySelector("#staff");
+  const staffSearchInput = popup.querySelector("#staffSearch");
+
+  staffHiddenInput.value = "";
+  staffDropdownText.textContent = "Select Staff";
+  staffDropdownText.classList.add("placeholder");
+
+  if (staffSearchInput) {
+    staffSearchInput.value = "";
+  }
+
+  renderDropdownOptions(
+    staffOptionsContainer,
+    staffOptions,
+    null,
+    staffDropdownText,
+    staffHiddenInput,
+    staffDropdownMenu,
+    "staff"
+  );
 }
 
 // Helper functions

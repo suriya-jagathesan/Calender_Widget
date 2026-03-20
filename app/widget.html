@@ -3595,7 +3595,7 @@ body.dragging .employee-working-hours {
                     <div id="siteNameDropdownContainer" style="display: none;">
                         <div class="custom-dropdown">
                             <div class="dropdown-selected" id="siteNameDropdown">
-                                <span class="dropdown-text placeholder">Select Site</span>
+                                <span id="siteNameDrop" class="dropdown-text placeholder">Select Site</span>
                                 <span class="dropdown-arrow">▼</span>
                             </div>
                             <div class="dropdown-menu" id="siteNameDropdownMenu">
@@ -4294,7 +4294,7 @@ function hideLoader() {
        if (employee_res1.code === 3000 && employee_res1.data?.length) {
 
     for (const rec of employee_res1.data) {
-        console.log(JSON.stringify(rec) );
+       
         
         const staffList = Array.isArray(rec.Care_Providers)
             ? rec.Care_Providers
