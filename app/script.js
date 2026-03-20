@@ -2616,7 +2616,6 @@ function openStaffSchedulePopup(eventData, dateKey, isNewRecord = false) {
   clone.style.display = "block";
   const popup = clone.querySelector(".schedule-popup");
   const overlay = clone.querySelector(".schedule-popup-overlay");
-
   // Update header title
   if (isNewRecord) {
     popup.querySelector(".popup-header h2").textContent = "New Staff Schedule";
@@ -3202,21 +3201,52 @@ function initializeCustomDropdown(
   });
 
   // Search functionality
-  searchInput.addEventListener("input", (e) => {    
-    const searchTerm = e.target.value.toLowerCase();
-    const filteredOptions = options.filter((opt) =>
-      opt.toLowerCase().includes(searchTerm),
-    );
-    renderDropdownOptions(
-      optionsContainer,
-      filteredOptions,
-      selectedValue,
-      dropdownText,
-      hiddenInput,
-      dropdownMenu,
-      fieldName,
-    );
-  });
+searchInput.addEventListener("input", (e) => {
+  const searchTerm = e.target.value.toLowerCase();
+
+  // ✅ For staff dropdown, always filter based on currently selected site
+  let currentOptions = options;
+
+  if (fieldName === "staff") {
+    const schedulePopup = container.querySelector("#staffOptions")
+      ?.closest(".schedule-popup");
+
+    if (schedulePopup) {
+      const siteNameInputContainer = schedulePopup.querySelector("#siteNameInputContainer");
+      const siteNameHidden = schedulePopup.querySelector("#siteNameHidden");
+      const siteNameText = schedulePopup.querySelector("#siteName");
+
+      let currentSite = "";
+      if (siteNameInputContainer && siteNameInputContainer.style.display !== "none") {
+        currentSite = siteNameText?.value || "";
+      } else if (siteNameHidden) {
+        currentSite = siteNameHidden.value || "";
+      }
+
+      if (currentSite) {
+        currentOptions = allStaffDetails
+          .filter((s) => s.service?.includes(currentSite))
+          .map((s) => s.name);
+      } else {
+        currentOptions = allStaffDetails.map((s) => s.name);
+      }
+    }
+  }
+
+  const filteredOptions = currentOptions.filter((opt) =>
+    opt.toLowerCase().includes(searchTerm)
+  );
+
+  renderDropdownOptions(
+    optionsContainer,
+    filteredOptions,
+    selectedValue,
+    dropdownText,
+    hiddenInput,
+    dropdownMenu,
+    fieldName,
+  );
+});
 
   // Close dropdown when clicking outside
   document.addEventListener("click", (e) => {
