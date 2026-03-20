@@ -374,7 +374,7 @@ async function renderRunViewRows() {
   const dateKey = getCurrentDateKey();
   const rowHeightsMap = {};
 
-  const fillHeight = calculateFillHeight();
+  const fillHeight = MIN_ROW_HEIGHT;
 
   let displayRunGroups = getRunFromEvents();
 
@@ -3300,7 +3300,7 @@ function renderDropdownOptions(
 
       const schedulePopup = container.closest(".schedule-popup");
 
-      if (fieldName === "siteName" && schedulePopup) {
+      if (fieldName === "siteName" && schedulePopup  ) {
         const popup = schedulePopup.parentElement;
         updateStaffDropdownForSite(popup, option);
         updateRunDropdownForSite(popup, option);
@@ -3724,7 +3724,7 @@ async function renderFilteredRunRows(visibleRuns) {
 
   const dateKey = getCurrentDateKey();
   const rowHeightsMap = {};
-  const fillHeight = calculateFillHeight();
+  const fillHeight = MIN_ROW_HEIGHT;
 
   visibleRuns.forEach((runGroup) => {
     const rawEvents = getEventsForRunGroup(runGroup, dateKey);

@@ -4091,7 +4091,7 @@ const CLICK_TOLERANCE = 5;
 
         const PIXELS_PER_15_MIN = PIXELS_PER_HOUR / 4;
         // 28 to 70
-        const MIN_ROW_HEIGHT = 70;  
+        const MIN_ROW_HEIGHT = 55;  
 
         const CALENDAR_BODY_SELECTOR = '.calendar-body-scrollable';
 
@@ -5836,10 +5836,14 @@ const travelTotals = calculateEmployeeTravelTotals(employee, dateKey);
     </div>
 `;
         }
-
+        console.log("Height details");
+        
+        console.log(rowHeightsMap[employee]);
+        
         const height =
             rowHeightsMap[employee] ||
-            (employees.length === 0 ? 500 : MIN_ROW_HEIGHT);
+            (employees.length === 0 ? MIN_ROW_HEIGHT : MIN_ROW_HEIGHT);
+        console.log(height);
         
         
         row.style.height = height + 'px';
@@ -5973,7 +5977,7 @@ function syncScroll() {
     const shiftsData = shiftsMap;
     
     
-    const fillHeight = calculateFillHeight();    
+    const fillHeight = MIN_ROW_HEIGHT;  
     const displayList = employees.length >= 0 ? employees : ['—'];   
     if( appliedFilters.length > 0 ){
         employeeValues = getEmployeesFromEvents();
@@ -6271,7 +6275,7 @@ function renderWeekEmployeeRows() {
     const rowHeightsMap = {};
     
     // 1. Calculate the height needed to fill the screen
-    const fillHeight = calculateFillHeight();
+    const fillHeight = MIN_ROW_HEIGHT;
 
     const displayList = employees.length >= 0 ? employees : ['—'];
     if( appliedFilters.length > 0 ){
@@ -7746,7 +7750,7 @@ async function renderFilteredEmployeeRows(emp) {
     
     
     // Calculate how much height each row needs to fill the screen
-    const fillHeight = calculateFillHeight();
+    const fillHeight = MIN_ROW_HEIGHT;
     const displayList = employees.length >= 0 ? employees : ['—'];   
     const employeeObj = appliedFilters.find(o => o.field === "staff" || o.field === "employee" );
     if(employeeObj){
