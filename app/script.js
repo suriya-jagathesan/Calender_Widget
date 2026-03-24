@@ -2656,7 +2656,13 @@ function openStaffSchedulePopup(eventData, dateKey, isNewRecord = false) {
   console.log(allStaff);
 
   // Initialize custom dropdowns
-  initializeCustomDropdown(popup, "staff", allStaff, eventData.staff);
+  let staffPool = allStaff;
+if (currentView === "week" && currentViewType === "run" && eventData.service) {
+    staffPool = allStaffDetails
+        .filter(s => s.service?.includes(eventData.service))
+        .map(s => s.name);
+}
+initializeCustomDropdown(popup, "staff", staffPool, eventData.staff);
 
   // Handle Site Name based on context
   // This will populate the site field
@@ -2691,11 +2697,21 @@ function openStaffSchedulePopup(eventData, dateKey, isNewRecord = false) {
       : "",
   );
 
+  if (currentView === "week" && currentViewType === "run") {
+    const runDropdownBtn = popup.querySelector("#runDropdown");
+    if (runDropdownBtn) {
+        runDropdownBtn.style.pointerEvents = "none";
+        runDropdownBtn.style.opacity = "0.5";
+        runDropdownBtn.style.cursor = "not-allowed";
+        runDropdownBtn.style.background = "#f3f4f6";
+    }
+}
+
   // Add event listener to staff dropdown to update site name options
   const staffDropdown = popup.querySelector("#staffDropdown");
   staffDropdown.addEventListener("click", () => {
     // When staff changes, update site name if it's a new record
-    if (isNewRecord) {
+    if (isNewRecord && currentViewType === "staff") {
       const currentStaff = popup.querySelector("#staff").value;
       if (currentStaff) {
         updateSiteNameForStaff(popup, currentStaff);
@@ -2739,6 +2755,9 @@ function openStaffSchedulePopup(eventData, dateKey, isNewRecord = false) {
     if (e.target === overlay) closePopup();
   });
 
+  if( currentViewType === "run"){
+
+  }
   popup.querySelector(".close-popup-btn").addEventListener("click", closePopup);
   popup.querySelector(".btn-cancel").addEventListener("click", closePopup);
   popup
@@ -2968,6 +2987,10 @@ function setupSiteNameField(popup, eventData, isNewRecord) {
       siteNameInputContainer.style.display = "block";
       siteNameDropdownContainer.style.display = "none";
       siteNameInput.value = eventData.service || "";
+      if (eventData.service) {
+        const popup = siteNameInputContainer.closest(".schedule-popup").parentElement;
+        setTimeout(() => updateStaffDropdownForSite(popup, eventData.service), 0);
+    }
     }
   }
 }
@@ -3306,12 +3329,14 @@ function renderDropdownOptions(
         updateRunDropdownForSite(popup, option);
       }
 
-      if (fieldName === "staff" && schedulePopup) {
+      if (fieldName === "staff" && schedulePopup && currentViewType === "staff") {
         const popup = schedulePopup.parentElement;
         const isNew = popup
           .querySelector(".popup-header h2")
           .textContent.includes("New");
         if (isNew) {
+          console.log("Called");
+          
           updateSiteNameForStaff(popup, option);
         }
       }

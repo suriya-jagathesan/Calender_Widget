@@ -7827,6 +7827,8 @@ async function renderFilteredEmployeeRows(emp) {
 let allStaff = [];
 let allStaffDetails = [];
 async function getAllEmployeeDetails() {
+    console.log("All Employee Fetch Ocurring");
+    
     allStaff = [];
      const serviceList = `[${services.join(",")}]`;
     const criteria_2 = `Sites.ID == ${serviceList} && Status == "Active"`;
