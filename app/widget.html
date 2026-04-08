@@ -3872,6 +3872,18 @@ async function saveEvent() {
   const [ehours, eminutes] = to.split(":").map(Number);
   var temp_end = ehours * 60 + eminutes;
   const sts_reason = document.getElementById("mCancellationNotice").value ?? "";
+
+  // Add this after calculating temp_start and temp_end
+const isStillMultiDay = activeEvent.from_date !== activeEvent.to_date;
+activeEvent.isMultiDay = isStillMultiDay;
+
+if (isStillMultiDay && temp_end < temp_start) {
+    activeEvent.duration_mins = (1440 - temp_start) + temp_end;
+    activeEvent.endMinutes = 1440; // cap at midnight for display
+} else {
+    activeEvent.duration_mins = temp_end - temp_start;
+    activeEvent.endMinutes = temp_end;
+}
 //   if( temp_end < temp_start ){
 //     showToast("To Time can't greater than from time");
 //     return;
@@ -5415,6 +5427,7 @@ if (existing) {
     
     // Update view switcher options
     updateViewSwitcherOptions();
+    console.log("View " + view);
     
     if (view === 'day') {
          document.getElementById('currentViewType').textContent = 'Staff';
@@ -5531,11 +5544,14 @@ else if(  currentViewType === 'staff'){
     
     try {
         await getTodayAllEmployees();
+        console.log(currentViewType + " = " + currentView);
+        
         
         if (currentViewType === 'employee') {
             
             if (currentView === 'day') {
-                
+                await getBookings();
+                await renderDayView();
             } else {
                 await getBookingsForWeek();
                 await renderWeekView();
@@ -5839,9 +5855,7 @@ const travelTotals = calculateEmployeeTravelTotals(employee, dateKey);
     </div>
 `;
         }
-        console.log("Height details");
-        
-        console.log(rowHeightsMap[employee]);
+       
         
         const height =
             rowHeightsMap[employee] ||
@@ -6059,7 +6073,13 @@ function syncScroll() {
             events.forEach(evt => {
                 const startHour = Math.floor(evt.startMinutes / 60);
                 const startMinute = evt.startMinutes % 60;
-                const duration = evt.endMinutes - evt.startMinutes;
+                let duration;
+if (evt.isMultiDay) {
+
+    duration = 1440 - evt.startMinutes;
+} else {
+    duration = evt.duration_mins ?? (evt.endMinutes - evt.startMinutes);
+}
                 const el = document.createElement('div');
                 el.className = `event status-${evt.status}`;
                 if (evt.Time_Critical_Visit === "Yes") {
