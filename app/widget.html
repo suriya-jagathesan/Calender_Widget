@@ -3810,6 +3810,7 @@ if (cancel_notice && cancel_notice_text) {
   cancel_notice.value = evt.cancel_notice ?? "";
   cancel_notice_text.textContent = evt.cancel_notice ?? "Select";
 }
+ document.getElementById("staffSearchInput").value = "";
  
    const groupRows = getEventGroupRows(evt);
 
@@ -3875,7 +3876,7 @@ async function saveEvent() {
 //     showToast("To Time can't greater than from time");
 //     return;
 //   }
-  if ( !document.getElementById("mDate").value || !from || !to  || ! document.getElementById('mStatus').value )   {
+  if ( !document.getElementById("mDate").value || !from || !to  || ! document.getElementById('mStatus').value || selectedStaff.length === 0 )   {
      showToast("Date,From,To,Status and Staff are Mandatory", "error");
     return;
   }
@@ -4291,6 +4292,8 @@ function hideLoader() {
             
         }    
         const employee_res1 = await ZOHO.CREATOR.DATA.getRecords(employees_config1);
+        console.log( `EMployee COnfig 1 ` + JSON.stringify(employees_config1) );
+        console.log(employee_res1);
         
        if (employee_res1.code === 3000 && employee_res1.data?.length) {
 
@@ -6116,7 +6119,7 @@ function syncScroll() {
                     lockIcon.title = 'Time Critical Visit - Time cannot be changed';
                     el.appendChild(lockIcon);
                 }
-                if( evt.status === "Completed" || evt.isMultiDay  ){
+                if( evt.status === "Completed"   ){
                     el.appendChild(title);
                 }
                 else{
@@ -6167,6 +6170,8 @@ el.addEventListener('mouseup', (e) => {
     const dy = Math.abs(e.clientY - mouseDownY);
 
     // If mouse moved → it was a drag, not a click
+    console.log(dx > CLICK_TOLERANCE || dy > CLICK_TOLERANCE || evt.status === 'Completed');
+    
     if (dx > CLICK_TOLERANCE || dy > CLICK_TOLERANCE || evt.status === 'Completed' ) return;
       openEventModal(evt);
 
@@ -7831,7 +7836,7 @@ async function getAllEmployeeDetails() {
     
     allStaff = [];
      const serviceList = `[${services.join(",")}]`;
-    const criteria_2 = `Sites.ID == ${serviceList} && Status == "Active"`;
+    const criteria_2 = `Status == "Active"`;
     console.log(criteria_2);
     
     var staffs = {
