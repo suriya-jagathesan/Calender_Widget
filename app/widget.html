@@ -3864,128 +3864,62 @@ function closeEventModal() {
 }
 
 /* SAVE (UI level only) */
-async function saveEvent() {    
-  const from = document.getElementById('mFrom').value;
-  const to = document.getElementById('mTo').value;
-  const [shours, sminutes] = from.split(":").map(Number);
-  var temp_start = shours * 60 + sminutes;
-  const [ehours, eminutes] = to.split(":").map(Number);
-  var temp_end = ehours * 60 + eminutes;
-  const sts_reason = document.getElementById("mCancellationNotice").value ?? "";
-
-  // Add this after calculating temp_start and temp_end
-const isStillMultiDay = activeEvent.from_date !== activeEvent.to_date;
-activeEvent.isMultiDay = isStillMultiDay;
-
-if (isStillMultiDay && temp_end < temp_start) {
-    activeEvent.duration_mins = (1440 - temp_start) + temp_end;
-    activeEvent.endMinutes = 1440; // cap at midnight for display
-} else {
-    activeEvent.duration_mins = temp_end - temp_start;
-    activeEvent.endMinutes = temp_end;
-}
-//   if( temp_end < temp_start ){
-//     showToast("To Time can't greater than from time");
-//     return;
-//   }
-  if ( !document.getElementById("mDate").value || !from || !to  || ! document.getElementById('mStatus').value || selectedStaff.length === 0 )   {
-     showToast("Date,From,To,Status and Staff are Mandatory", "error");
-    return;
+async function saveEvent() {
+  const dateKey = toYYYYMMDD(activeEvent.date);
+  
+  // ✅ STEP 1: Remove ALL existing rows for this zoho_id first
+  if (eventDatabase[dateKey]) {
+    eventDatabase[dateKey] = eventDatabase[dateKey].filter(
+      (e) => e.zoho_id !== activeEvent.zoho_id
+    );
   }
-   if (!activeEvent) return;
-   activeEvent.startMinutes = timeToMinutes(document.getElementById('mFrom').value);
-   activeEvent.endMinutes = timeToMinutes(document.getElementById('mTo').value);
-//    activeEvent.employee = document.getElementById('mStaff').value;
-   let cur_sts = document.getElementById('mStatus').value.replace(' ', '_');
-   activeEvent.status = cur_sts;
-   activeEvent.event_status = cur_sts.replace(' ', '_');
-   activeEvent.Manager_Notes = document.getElementById('mNotes').value;
-   activeEvent.cancel_notice = sts_reason;
-//    activeEvent.staff = document.getElementById('mStaff').value; 
-   activeEvent.startMinute = temp_start;
-   activeEvent.endMinutes = temp_end;
-   activeEvent.from = `${from}`;
-   activeEvent.to = `${to}`;
-   activeEvent.actualStartMinutes = temp_start;  
-   activeEvent.actualEndMinutes = temp_end; 
-   const [yyyy, mm, dd] = document.getElementById('mDate').value.split('-');
-   activeEvent.date = `${dd}-${mm}-${yyyy}`;
-    const dateKey = toYYYYMMDD(activeEvent.date);
-  const rows = getEventGroupRows(activeEvent);
 
- const unassignedRows = rows.filter(isUnassigned);
-const assignedRows   = rows.filter(r => !isUnassigned(r));
-
-const existingStaff = assignedRows.map(r => r.employee);
-
-const toAdd    = selectedStaff.filter(s => !existingStaff.includes(s));
-const toRemove = existingStaff.filter(s => !selectedStaff.includes(s));
-
-assignedRows
-  .filter(r => selectedStaff.includes(r.employee))
-  .forEach(evt => {
-    evt.from = `${from}`;
-    evt.to = `${to}`;
-    evt.startMinutes = temp_start;
-    evt.endMinutes = temp_end;
-    evt.status = cur_sts;
-    evt.cancel_notice = sts_reason;
-    evt.event_status = cur_sts.replace('_', ' ');
-    evt.date = `${dd}-${mm}-${yyyy}`;
-    evt.Manager_notes = document.getElementById('mNotes').value;
-  });
-
-
-if (toRemove.length) {
-  eventDatabase[dateKey] = eventDatabase[dateKey].filter(evt =>
-    !(
-      isSameLogicalEvent(evt, activeEvent) &&
-      toRemove.includes(evt.employee)
-    )
-  );
-  ensurePlaceholderRow(activeEvent);
-}
-
-toAdd.forEach((staff, index) => {
-  if (unassignedRows[index]) {
-    console.log(activeEvent.event_status);
-    
-    unassignedRows[index].employee = staff;
-    unassignedRows[index].from = `${from}`;
-    unassignedRows[index].to = `${to}`;
-    unassignedRows[index].startMinutes = temp_start;
-    unassignedRows[index].endMinutes = temp_end;
-    unassignedRows[index].status = cur_sts;
-    unassignedRows[index].status_reason = sts_reason;
-    unassignedRows[index].event_status = cur_sts.replace('_', ' ');
-    unassignedRows[index].date = `${dd}-${mm}-${yyyy}`;
-    unassignedRows[index].Manager_notes = document.getElementById('mNotes').value;
-    if( staff ){
-               employee_id =  allStaffDetails.find(emp => emp.name === staff).id;
-            }
-            else{
-                employee_id = null;
-            }
-            unassignedRows[index].employee_id = employee_id;
+  // ✅ STEP 2: Re-add rows only for the new selected staff
+  if (selectedStaff.length === 0) {
+    // No staff selected — push a single unassigned placeholder
+    eventDatabase[dateKey].push({
+      ...activeEvent,
+      employee: "",
+      employee_id: null,
+    });
   } else {
-    const base = assignedRows[0] || rows[0] || activeEvent;
-    const newEvt = cloneEventForEmployee(base, staff);
-    eventDatabase[dateKey].push(newEvt);
+    selectedStaff.forEach((staffName) => {
+      const newRow = cloneEventForEmployee(activeEvent, staffName);
+      eventDatabase[dateKey].push(newRow);
+    });
   }
-});
-  showLoader();
-  await updateEventZoho(activeEvent);
-  if (currentView === 'day') {
-    if (currentViewType === 'employee') {
-      await renderDayView();
-    } else {
-      await renderRunView();
-    }
-  } else {
-    await renderWeekView();
-  }
+
+  // ✅ STEP 3: Build Zoho payload with updated staff IDs
+  const empIds = selectedStaff
+    .map((name) => allStaffDetails.find((s) => s.name === name)?.id)
+    .filter(Boolean);
+
+  const payload = {
+    data: {
+      Care_Providers: empIds,
+      Status: document.getElementById("mStatus").value,
+      Manager_notes: document.getElementById("mNotes").value,
+      // ... other fields
+    },
+  };
+
+  const config = {
+    app_name: app_name,
+    report_name: "Bookings_Backend",
+    id: activeEvent.zoho_id,
+    payload,
+  };
+
+  await ZOHO.CREATOR.DATA.updateRecordById(config);
+
   closeEventModal();
-  hideLoader();
+
+  // Re-render
+  if (currentView === "day") {
+    currentViewType === "run" ? re_renderRunView() : re_renderDayView();
+  } else {
+    renderWeekView();
+  }
 }
 
 /* HELPERS */

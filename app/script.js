@@ -2004,7 +2004,9 @@ function renderWeekRunRows() {
   if (appliedFilters.length > 0) {
     displayRuns = getRunsFromEventsWeek();
   } else {
-    displayRuns = runRows.length > 0 ? [...new Set(runRows)] : ["—"];
+    displayRuns = runRows.length > 0
+      ? [...new Set(runRows)].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }))
+      : ["—"];
   }
   const fillHeight = calculateFillHeightCount(displayRuns.length);
   displayRuns.forEach((person) => {
@@ -2330,7 +2332,9 @@ function renderWeekRunColumn(rowHeightsMap = {}) {
   if (appliedFilters.length > 0) {
     displayRuns = getRunsFromEventsWeek();
   } else {
-    displayRuns = runRows.length > 0 ? [...new Set(runRows)] : ["—"];
+    displayRuns = runRows.length > 0
+      ? [...new Set(runRows)].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }))
+      : ["—"];
   }
   const weekStart = new Date(currentDate);
   weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1);
@@ -4318,8 +4322,12 @@ function getRunFromEvents() {
   });
 
   employeeSet.add("");
+  const sorted = Array.from(employeeSet)
+    .map(v => v?.trim())
+    .filter(v => v !== "")
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }));
 
-  return Array.from(employeeSet);
+  return ["", ...sorted];
 }
 function toggleAvDropdown(ddId) {
   const dd = document.getElementById(ddId);
@@ -4511,7 +4519,11 @@ function openAddVisitModal() {
   // Pre-fill date to current calendar date
   const d =
     typeof currentDate !== "undefined" ? new Date(currentDate) : new Date();
-  document.getElementById("av_date").value = d.toISOString().split("T")[0];
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+ 
+  document.getElementById("av_date").value = `${yyyy}-${mm}-${dd}`;
 
   // Close any open dropdowns
   document
