@@ -3864,62 +3864,105 @@ function closeEventModal() {
 }
 
 /* SAVE (UI level only) */
-async function saveEvent() {
+async function saveEvent() {    
+  const from = document.getElementById('mFrom').value;
+  const to = document.getElementById('mTo').value;
+  const [shours, sminutes] = from.split(":").map(Number);
+  var temp_start = shours * 60 + sminutes;
+  const [ehours, eminutes] = to.split(":").map(Number);
+  var temp_end = ehours * 60 + eminutes;
+  const sts_reason = document.getElementById("mCancellationNotice").value ?? "";
+
+  const isStillMultiDay = activeEvent.from_date !== activeEvent.to_date;
+  activeEvent.isMultiDay = isStillMultiDay;
+
+  if (isStillMultiDay && temp_end < temp_start) {
+    activeEvent.duration_mins = (1440 - temp_start) + temp_end;
+    activeEvent.endMinutes = 1440;
+  } else {
+    activeEvent.duration_mins = temp_end - temp_start;
+    activeEvent.endMinutes = temp_end;
+  }
+
+  if (!document.getElementById("mDate").value || !from || !to || !document.getElementById('mStatus').value || selectedStaff.length === 0) {
+    showToast("Date,From,To,Status and Staff are Mandatory", "error");
+    return;
+  }
+  if(  document.getElementById('mStatus').value == "Cancelled" && sts_reason.length === 0 ){
+    showToast("Please mention Cancell Notice", "error");
+    return;
+  }
+
+  if (!activeEvent) return;
+
+  activeEvent.startMinutes = temp_start;
+  activeEvent.endMinutes = temp_end;
+  activeEvent.actualStartMinutes = temp_start;
+  activeEvent.actualEndMinutes = temp_end;
+  let cur_sts = document.getElementById('mStatus').value.replace(' ', '_');
+  activeEvent.status = cur_sts;
+  activeEvent.event_status = cur_sts.replace('_', ' ');
+  activeEvent.Manager_Notes = document.getElementById('mNotes').value;
+  activeEvent.cancel_notice = sts_reason;
+  activeEvent.from = `${from}`;
+  activeEvent.to = `${to}`;
+
+  const [yyyy, mm, dd] = document.getElementById('mDate').value.split('-');
+  activeEvent.date = `${dd}-${mm}-${yyyy}`;
   const dateKey = toYYYYMMDD(activeEvent.date);
-  
-  // ✅ STEP 1: Remove ALL existing rows for this zoho_id first
+
+  // ✅ Wipe all rows for this zoho_id and rewrite cleanly
   if (eventDatabase[dateKey]) {
     eventDatabase[dateKey] = eventDatabase[dateKey].filter(
       (e) => e.zoho_id !== activeEvent.zoho_id
     );
   }
 
-  // ✅ STEP 2: Re-add rows only for the new selected staff
+  const baseEvent = {
+    ...activeEvent,
+    from: `${from}`,
+    to: `${to}`,
+    startMinutes: temp_start,
+    endMinutes: temp_end,
+    status: cur_sts,
+    event_status: cur_sts.replace('_', ' '),
+    cancel_notice: sts_reason,
+    date: `${dd}-${mm}-${yyyy}`,
+    Manager_Notes: document.getElementById('mNotes').value,
+  };
+
   if (selectedStaff.length === 0) {
-    // No staff selected — push a single unassigned placeholder
     eventDatabase[dateKey].push({
-      ...activeEvent,
+      ...baseEvent,
       employee: "",
       employee_id: null,
     });
   } else {
     selectedStaff.forEach((staffName) => {
-      const newRow = cloneEventForEmployee(activeEvent, staffName);
-      eventDatabase[dateKey].push(newRow);
+      const empRecord = allStaffDetails.find((emp) => emp.name === staffName);
+      eventDatabase[dateKey].push({
+        ...baseEvent,
+        employee: staffName,
+        employee_id: empRecord ? empRecord.id : null,
+      });
     });
   }
 
-  // ✅ STEP 3: Build Zoho payload with updated staff IDs
-  const empIds = selectedStaff
-    .map((name) => allStaffDetails.find((s) => s.name === name)?.id)
-    .filter(Boolean);
+  showLoader();
+  await updateEventZoho(activeEvent);
 
-  const payload = {
-    data: {
-      Care_Providers: empIds,
-      Status: document.getElementById("mStatus").value,
-      Manager_notes: document.getElementById("mNotes").value,
-      // ... other fields
-    },
-  };
-
-  const config = {
-    app_name: app_name,
-    report_name: "Bookings_Backend",
-    id: activeEvent.zoho_id,
-    payload,
-  };
-
-  await ZOHO.CREATOR.DATA.updateRecordById(config);
+  if (currentView === 'day') {
+    if (currentViewType === 'employee') {
+      await renderDayView();
+    } else {
+      await renderRunView();
+    }
+  } else {
+    await renderWeekView();
+  }
 
   closeEventModal();
-
-  // Re-render
-  if (currentView === "day") {
-    currentViewType === "run" ? re_renderRunView() : re_renderDayView();
-  } else {
-    renderWeekView();
-  }
+  hideLoader();
 }
 
 /* HELPERS */
