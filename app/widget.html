@@ -3906,6 +3906,8 @@ if (isStillMultiDay && temp_end < temp_start) {
    activeEvent.endMinutes = temp_end;
    activeEvent.from = `${from}`;
    activeEvent.to = `${to}`;
+   activeEvent.actualStartMinutes = temp_start;  
+   activeEvent.actualEndMinutes = temp_end; 
    const [yyyy, mm, dd] = document.getElementById('mDate').value.split('-');
    activeEvent.date = `${dd}-${mm}-${yyyy}`;
     const dateKey = toYYYYMMDD(activeEvent.date);

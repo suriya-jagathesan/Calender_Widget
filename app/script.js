@@ -4462,6 +4462,8 @@ function onAddVisitServiceChange(service) {
 }
 
 function openAddVisitModal() {
+  console.log("Modal Opened");
+  
   // Populate Service options
   const serviceOptions = document.getElementById("av_service_options");
   serviceOptions.innerHTML = "";
@@ -4482,6 +4484,11 @@ function openAddVisitModal() {
   document.getElementById("av_service_text").style.color = "#9ca3af";
   document.getElementById("av_service_val").value = "";
   document.getElementById("av_duration").value = "";
+  document.getElementById("av_title").value = "";
+  document.getElementById("av_visit_text").textContent = "Select";
+  document
+  .querySelectorAll("#av_visit_dd .av-custom-dropdown-option")
+  .forEach((opt) => opt.classList.remove("selected"));
 
   document.getElementById("avStaffSearchInput").value = "";
 
@@ -4522,6 +4529,8 @@ function closeAddVisitModal() {
 }
 
 async function submitAddVisit() {
+  console.log("Submit Function Called");
+  
   const service = document.getElementById("av_service_val").value;
   const date = document.getElementById("av_date").value;
   const from = document.getElementById("av_from").value;
@@ -4529,8 +4538,9 @@ async function submitAddVisit() {
   const status = document.getElementById("av_status_val").value;
   const staff = avSelectedStaff;
   const cancel_notice = document.getElementById("av_cancel_val").value;
+  const title = document.getElementById("av_title").value;
 
-  if (!service || !date || !from || !to || !status) {
+  if (!service || !date || !from || !to || !status || !title ) {
     showToast("Please fill in all required fields (*).");
     return;
   }
@@ -4631,6 +4641,8 @@ async function createNewBookingZoho(evt) {
     },
   };
   const add_res = await ZOHO.CREATOR.DATA.addRecords(config);
+  console.log(add_res);
+  
   if (add_res.code === 3000) {
     const newRecordId = add_res.data.ID;
     await getSingleBooking(newRecordId);
@@ -4685,6 +4697,7 @@ async function fetchNewStaffDetails(staffNames) {
   const employee_res = await ZOHO.CREATOR.DATA.getRecords(employees_config);
   if (employee_res.code === 3000 && employee_res.data?.length) {
     for (const rec of employee_res.data) {
+      const name = rec?.Name1;
       console.log(rec);
       const emp_service = rec.Sites ?? [];
       console.log(`${name} => ${JSON.stringify(rec.Sites)}`);
@@ -4693,7 +4706,7 @@ async function fetchNewStaffDetails(staffNames) {
         id: site.ID,
         zc_display: site.zc_display_value,
       }));
-      const name = rec?.Name1;
+      
       const staffId = rec?.ID;
       let week_hours = rec?.Contracted_Hours_Per_Week ?? 0.0;
       let skills = (rec?.Skills_Experience_Capacity || [])
