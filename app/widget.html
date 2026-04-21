@@ -4495,6 +4495,7 @@ function getEmployeeIconByCondition(employee, events) {
             try {
                 booking_resp = await ZOHO.CREATOR.DATA.getRecords(booking);
                 
+
                 
                 
                 
@@ -5300,11 +5301,14 @@ if (existing) {
             );
         }
         function getEventsForEmployee(employee, dateKey) {
+            
+            
+            
     const allEvents = eventDatabase[dateKey] || [];
     const hasStaffFilter = appliedFilters.some(f => f.field === 'staff' || f.field === 'employee' );
-             
     return allEvents.filter(evt => {
         if (evt.employee !== employee) return false;
+        if( evt.status === "Inactive" ) return false;
 
         return appliedFilters.every(f => {
             let search_key = null;
@@ -5473,7 +5477,7 @@ if (currentViewType === 'employee') {
     await getTodayAllEmployees();
 
     if (isDayView) {
-        await renderDayView();
+        await re_renderDayView();
         startAt6();
     } else {
         await renderWeekView();
@@ -5483,7 +5487,7 @@ if (currentViewType === 'employee') {
 
 else if (currentViewType === 'run') {
     if (isDayView) {
-        await renderRunView();
+        await re_renderRunView();
     } else {
         await renderWeekRunView();
         startWeekBackgroundFetch(); 
@@ -7634,7 +7638,8 @@ formatFilterText = function(filter) {
             renderWeekView();
             startWeekBackgroundFetch();
         } else {
-            renderDayView();
+            re_renderDayView();
+            startAt6();
         }
     }
 
@@ -7643,7 +7648,8 @@ formatFilterText = function(filter) {
             await renderRunViewWeek();
             startWeekBackgroundFetch(); 
         } else {
-            await renderRunView();
+            await re_renderRunView();
+            startAt6();
         }
     }
     else if (currentViewType === 'person') {
